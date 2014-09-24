@@ -4,13 +4,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#define PNM_ASCII_PBM	1
-#define PNM_ASCII_PGM	2
-#define PNM_ASCII_PPM	3
-#define PNM_BINARY_PBM	4
-#define PNM_BINARY_PGM	5
-#define PNM_BINARY_PPM	6
-
 #define MAX_LINE_LENGTH	512
 
 void pnm_error(const char *format, ...) {
@@ -119,8 +112,7 @@ struct pnm_image *pnm_read(FILE *fd) {
 		for (int i = 0; i < size; i++) {
 			if (fscanf(fd, scanf_string, image->data+i) != 1) {
 				pnm_error("Error: reading image data failed at position %i!\n", i);
-				free(image->data);
-				free(image);
+				pnm_free(image);
 				return NULL;
 			}
 		}
@@ -145,4 +137,99 @@ int pnm_write(FILE *fd, const struct pnm_image *image) {
 		for (int i = 0; i < size; i++)
 			fprintf(fd, "%c", image->data[i]);
 	}
+}
+
+int pnm_guess_maxvalue(int type) {
+	int maxvalue = 0;
+	switch (type) {
+		case PNM_ASCII_PBM:
+		case PNM_BINARY_PBM:
+			maxvalue = 1;
+			break;
+		default:
+			maxvalue = 255;
+	}
+	return maxvalue;
+}
+
+struct pnm_image *pnm_convert(const struct pnm_image *image, int new_type) {
+#ifdef DEBUG
+	if (!image || !image->data) {
+		pnm_error("Error: trying to acces NULLpointer by pnm_convert()\n");
+		return 0;
+	}
+#endif
+	struct pnm_image *dest = malloc(sizeof(struct pnm_image));
+	memcpy(dest, image, sizeof(struct pnm_image));
+
+	dest->type = new_type;
+	dest->maxvalue = pnm_guess_maxvalue(dest->type);
+
+	int new_size = pnm_size(dest);
+	dest->data = malloc(sizeof(int)*new_size);
+
+	int convert_type = (image->type <= PNM_ASCII_PPM) ? image->type : image->type - 3;
+	convert_type |= ((dest->type <= PNM_ASCII_PPM) ? dest->type : dest->type - 3) << 4;
+
+	if ((image->type == PNM_BINARY_PBM) || (dest->type == PNM_BINARY_PBM)) {
+		pnm_error("Conversion from/to binary PBM is not implemented!\n");
+		pnm_free(dest);
+		return NULL;
+	}
+
+	switch (convert_type) {
+		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PBM:
+		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PGM:
+		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PPM:
+			memcpy(dest->data, image->data, sizeof(int)*new_size);
+			break;
+		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PBM:
+			for (int i = 0; i < new_size; i++)
+				dest->data[i] = dest->maxvalue * (1-image->data[i]);
+			break;
+		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PBM:
+			for (int i = 0; i < new_size; i+=3) {
+				dest->data[i+0] = dest->maxvalue * (1-image->data[i/3]);
+				dest->data[i+1] = dest->maxvalue * (1-image->data[i/3]);
+				dest->data[i+2] = dest->maxvalue * (1-image->data[i/3]);
+			}
+			break;
+		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PGM:
+			for (int i = 0; i < new_size; i++)
+				dest->data[i] = (image->data[i] >= 128) ? 0 : 1;
+			break;
+		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PGM:
+			for (int i = 0; i < new_size; i+=3) {
+				dest->data[i+0] = image->data[i/3];
+				dest->data[i+1] = image->data[i/3];
+				dest->data[i+2] = image->data[i/3];
+			}
+			break;
+		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PPM:
+			for (int i = 0; i < new_size; i++)
+				dest->data[i] = (image->data[i*3] + image->data[i*3 + 1] + image->data[i*3 + 2] >= 128*3) ? 0 : 1;
+			break;
+		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PPM:
+			for (int i = 0; i < new_size; i++)
+				dest->data[i] = (image->data[i*3] + image->data[i*3 + 1] + image->data[i*3 + 2]) / 3;
+			break;
+		default:
+			pnm_error("Unknown conversion types (from %i, to %i).\n", image->type, dest->type);
+			pnm_free(dest);
+			dest = NULL;
+			break;
+	}
+
+	return dest;
+}
+
+void pnm_free(struct pnm_image *image) {
+#ifdef DEBUG
+	if (!image || !image->data) {
+		pnm_error("Error: trying to acces NULLpointer by pnm_free()\n");
+		return;
+	}
+#endif
+	free(image->data);
+	free(image);
 }

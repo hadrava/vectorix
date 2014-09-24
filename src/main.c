@@ -10,5 +10,6 @@ int main(int argc, char **argv) {
 		test = pnm_read(input);
 		fclose(input);
 	}
-	pnm_write(stdout, test);
+	struct pnm_image * converted = pnm_convert(test, PNM_BINARY_PBM);
+	pnm_write(stdout, converted);
 }
