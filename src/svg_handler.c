@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-
+#include <locale.h>
 
 void svg_error(const char *format, ...) {
 	va_list args;
@@ -36,6 +36,7 @@ void svg_write_footer(FILE *fd, const struct svg_image * image) {
 }
 
 void svg_write(FILE *fd, const struct svg_image * image) {
+	setlocale(LC_ALL, "C");
 	svg_write_header(fd, image);
 	struct svg_line * line = image->data;
 	while (line) {

@@ -22,5 +22,6 @@ struct pnm_image *pnm_read(FILE *fd);
 int pnm_write(FILE *fd, const struct pnm_image *image);
 struct pnm_image *pnm_convert(const struct pnm_image *image, int new_type);
 void pnm_free(struct pnm_image *image);
+void pnm_erase_image(struct pnm_image * image);
 
 #endif

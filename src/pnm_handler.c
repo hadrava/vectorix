@@ -233,3 +233,7 @@ void pnm_free(struct pnm_image *image) {
 	free(image->data);
 	free(image);
 }
+
+void pnm_erase_image(struct pnm_image * image) {
+	memset(image->data, 255, pnm_size(image)*sizeof(int));
+}
