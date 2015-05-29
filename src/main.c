@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 	struct pnm_image * converted = pnm_convert(test, PNM_BINARY_PGM);
 	pnm_free(test);
 
-	struct svg_image * vector = vectorize(converted);
+	struct svg_image * vector = vectorize_2(converted);
 	//struct svg_image * vector = vectorize_bare(converted);
 	render(converted, vector);
 

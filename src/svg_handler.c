@@ -40,8 +40,15 @@ void svg_write(FILE *fd, const struct svg_image * image) {
 	svg_write_header(fd, image);
 	struct svg_line * line = image->data;
 	while (line) {
+		struct svg_line * segment = line;
 		fprintf(fd, "    <path\n");
-		fprintf(fd, "       d=\"M %f %f C %f %f %f %f %f %f\"\n", line->x0, line->y0, line->x1, line->y1, line->x2, line->y2, line->x3, line->y3);
+		fprintf(fd, "       d=\"M %f %f C %f %f %f %f %f %f", line->x0, line->y0, line->x1, line->y1, line->x2, line->y2, line->x3, line->y3);
+		segment = segment->next_segment;
+		while (segment) {
+			fprintf(fd, " C %f %f %f %f %f %f", segment->x1, segment->y1, segment->x2, segment->y2, segment->x3, segment->y3);
+			segment = segment->next_segment;
+		}
+		fprintf(fd, "\"\n");
 		fprintf(fd, "       style=\"fill:none;stroke:#000000;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", line->width, line->opacity);
 		line = line->next;
 	}
