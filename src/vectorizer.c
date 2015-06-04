@@ -18,9 +18,25 @@ void vectorizer_error(const char *format, ...) {
 }
 
 struct svg_line *create_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3) {
-	struct svg_line *ret  = malloc(sizeof(struct svg_line));
+	struct svg_line *ret = malloc(sizeof(struct svg_line));
+	ret->segment = malloc(sizeof(struct svg_segment));
 	ret->width = 4.0;
 	ret->opacity = 1;
+	ret->segment->x0 = x0;
+	ret->segment->y0 = y0;
+	ret->segment->x1 = x1;
+	ret->segment->y1 = y1;
+	ret->segment->x2 = x2;
+	ret->segment->y2 = y2;
+	ret->segment->x3 = x3;
+	ret->segment->y3 = y3;
+	ret->segment->next_segment = NULL;
+	ret->next = NULL;
+	return ret;
+}
+
+struct svg_segment *create_bezier_segment(int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3) {
+	struct svg_segment *ret = malloc(sizeof(struct svg_segment));
 	ret->x0 = x0;
 	ret->y0 = y0;
 	ret->x1 = x1;
@@ -30,7 +46,6 @@ struct svg_line *create_bezier(int x0, int y0, int x1, int y1, int x2, int y2, i
 	ret->x3 = x3;
 	ret->y3 = y3;
 	ret->next_segment = NULL;
-	ret->next = NULL;
 	return ret;
 }
 
@@ -39,7 +54,7 @@ struct svg_image *vectorize_bare(const struct pnm_image * image) {
 	vect->width = image->width;
 	vect->height = image->height;
 	vect->data = create_bezier(0, 0, image->width/2, image->height/2, image->width, image->height/2, image->width, image->height);
-	vect->data->next_segment = create_bezier(image->width, image->height, image->width, image->height/2*3, -image->width/2, -image->height/2, 0, 0);
+	vect->data->segment->next_segment = create_bezier_segment(image->width, image->height, image->width, image->height/2*3, -image->width/2, -image->height/2, 0, 0);
 	return vect;
 }
 
@@ -97,9 +112,9 @@ CvPoint find_adj(IplImage *out, CvPoint pos) {
 struct svg_line *trace(IplImage *out, IplImage *seg, CvPoint pos, CvScalar col, struct svg_line *last) {
 	CvPoint next;
 	CvPoint old = pos;
-	int a=10;
+	//int a=10;
 	int first = 1;
-	struct svg_line *actual;
+	struct svg_segment *actual;
 	while (pos.x >= 0 && out->imageData[pos.y*out->widthStep + pos.x]) {
 		out->imageData[pos.y*out->widthStep + pos.x] = 0;
 		seg->imageData[pos.y*seg->widthStep + pos.x*3 + 0] = col.val[0];
@@ -107,21 +122,22 @@ struct svg_line *trace(IplImage *out, IplImage *seg, CvPoint pos, CvScalar col, 
 		seg->imageData[pos.y*seg->widthStep + pos.x*3 + 2] = col.val[2];
 		next = find_adj(out, pos);
 	//	del(out, pos, next);
-		a--;
-		if (a<=0 && next.x >= 0) {
-			struct svg_line *new_bezier = create_bezier(old.x, old.y, old.x, old.y, next.x, next.y, next.x, next.y);
+		//a--;
+		if (next.x >= 0) {
 			if (first) {
+				struct svg_line *new_bezier = create_bezier(old.x, old.y, old.x, old.y, next.x, next.y, next.x, next.y);
 				new_bezier->next = last;
 				last = new_bezier;
 				first = 0;
-				actual = last;
+				actual = last->segment;
 			}
 			else {
+				struct svg_segment *new_bezier = create_bezier_segment(old.x, old.y, old.x, old.y, next.x, next.y, next.x, next.y);
 				actual->next_segment = new_bezier;
 				actual = new_bezier;
 			}
 			old = next;
-			a=10;
+			//a=10;
 		}
 		pos = next;
 		//printf("%i %i %i\n", next.x, next.y, out->imageData[pos.y*out->widthStep + pos.x]);
@@ -188,11 +204,11 @@ struct svg_image *vectorize(const struct pnm_image * image) {
 	//cvDilate(out, out, kernel, 1);
 	//normalize(out, iterace-1);
 	threshold(out);
-	cvShowImage("source", out);
-	cvWaitKey(0);
+	//cvShowImage("source", out);
+	//cvWaitKey(0);
 	struct svg_line *last_bezier = segment(out, seg);
-	cvShowImage("source", seg);
-	cvWaitKey(0);
+	//cvShowImage("source", seg);
+	//cvWaitKey(0);
 
 	/*
 	CvMemStorage* storage = cvCreateMemStorage(0);
@@ -309,11 +325,12 @@ void render(struct pnm_image *bitmap, const struct svg_image *vector) {
 void bezier_render(struct pnm_image * image, const struct svg_line *line) {
 	if (image->type != PNM_BINARY_PGM)
 		vectorizer_error("Error: Image type %i not supported.\n", image->type);
-	while (line) {
+	struct svg_segment *sgm = line->segment;
+	while (sgm) {
 		for (float u=0; u<=1; u+=0.005) {
 			float v = 1-u;
-			float x = v*v*v*line->x0 + 3*v*v*u*line->x1 + 3*v*u*u*line->x2 + u*u*u*line->x3;
-			float y = v*v*v*line->y0 + 3*v*v*u*line->y1 + 3*v*u*u*line->y2 + u*u*u*line->y3;
+			float x = v*v*v*sgm->x0 + 3*v*v*u*sgm->x1 + 3*v*u*u*sgm->x2 + u*u*u*sgm->x3;
+			float y = v*v*v*sgm->y0 + 3*v*v*u*sgm->y1 + 3*v*u*u*sgm->y2 + u*u*u*sgm->y3;
 			for (int j = y - line->width/2; j<= y + line->width/2; j++) {
 				if (j<0 || j>=image->height)
 					continue;
@@ -325,6 +342,6 @@ void bezier_render(struct pnm_image * image, const struct svg_line *line) {
 				}
 			}
 		}
-		line = line->next_segment;
+		sgm = sgm->next_segment;
 	}
 }
