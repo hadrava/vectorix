@@ -17,7 +17,7 @@ void vectorizer_error(const char *format, ...) {
 	return;
 }
 
-struct svg_line *create_bezier(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3) {
+struct svg_line *create_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3) {
 	struct svg_line *ret = malloc(sizeof(struct svg_line));
 	ret->segment = malloc(sizeof(struct svg_segment));
 	ret->width = 4.0;
@@ -35,7 +35,7 @@ struct svg_line *create_bezier(float x0, float y0, float x1, float y1, float x2,
 	return ret;
 }
 
-struct svg_segment *create_bezier_segment(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3) {
+struct svg_segment *create_bezier_segment(int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3) {
 	struct svg_segment *ret = malloc(sizeof(struct svg_segment));
 	ret->x0 = x0;
 	ret->y0 = y0;
@@ -145,94 +145,6 @@ struct svg_line *trace(IplImage *out, IplImage *seg, CvPoint pos, CvScalar col, 
 	return last;
 }
 
-void pouzij_pixel(IplImage *out, IplImage *seg, CvPoint pos, CvScalar col) {
-	out->imageData[pos.y*out->widthStep + pos.x] = 0;
-	seg->imageData[pos.y*seg->widthStep + pos.x*3 + 0] = col.val[0];
-	seg->imageData[pos.y*seg->widthStep + pos.x*3 + 1] = col.val[1];
-	seg->imageData[pos.y*seg->widthStep + pos.x*3 + 2] = col.val[2];
-}
-
-struct svg_line *trace_2(IplImage *out, IplImage *seg, CvPoint pos, CvScalar col, struct svg_line *last) {
-	CvPoint next;
-	CvPoint old = pos;
-	//int a=10;
-	int first = 1;
-	struct svg_segment *actual;
-
-	if (pos.x == 0)
-		pos.x++;
-	if (pos.y == 0)
-		pos.y++;
-	if (pos.x == out->width-1)
-		pos.x--;
-	if (pos.y == out->height-1)
-		pos.y--;
-	pos.x--;
-	pos.y--;
-
-	//find best
-	float best_x=0, best_y=0;
-	float sum=0;
-	for (int a=pos.x; a<=pos.x+2; a++) {
-		for (int b=pos.y; b<=pos.y+2; b++) {
-			sum += out->imageData[b*out->widthStep + a];
-			best_x+=a*out->imageData[b*out->widthStep + a];
-			best_y+=b*out->imageData[b*out->widthStep + a];
-			CvPoint del;
-			del.x=a;
-			del.y=b;
-			pouzij_pixel(out, seg, del, col);
-		}
-	}
-	if (sum>=0) {
-		best_x/=sum;
-		best_y/=sum;
-	}
-	else
-		printf("fail\n");
-	int mov_x=7;
-	int mov_y=9;
-	while (sum>=0) {
-		float old_best_x=best_x, old_best_y=best_y;
-
-		best_x=0;
-		best_y=0;
-		sum=0;
-		for (int a=old_best_x+mov_x; a<=old_best_x+2+mov_x; a++) {
-			for (int b=old_best_y+mov_y; b<=old_best_y+2+mov_y; b++) {
-				sum += out->imageData[b*out->widthStep + a];
-				best_x+=a*out->imageData[b*out->widthStep + a];
-				best_y+=b*out->imageData[b*out->widthStep + a];
-				CvPoint del;
-				del.x=a;
-				del.y=b;
-				pouzij_pixel(out, seg, del, col);
-			}
-		}
-		if (sum>=0) {
-			best_x/=sum;
-			best_y/=sum;
-			if (first) {
-				struct svg_line *new_bezier = create_bezier(old_best_x, old_best_y, old_best_x, old_best_y, best_x, best_y, best_x, best_y);
-				new_bezier->next = last;
-				last = new_bezier;
-				first = 0;
-				actual = last->segment;
-			}
-			else {
-				struct svg_segment *new_bezier = create_bezier_segment(old_best_x, old_best_y, old_best_x, old_best_y, best_x, best_y, best_x, best_y);
-				actual->next_segment = new_bezier;
-				actual = new_bezier;
-			}
-			//a=10;
-		}
-		mov_x=best_x-old_best_x;
-		mov_y=best_y-old_best_y;
-		//printf("%i %i %i\n", next.x, next.y, out->imageData[pos.y*out->widthStep + pos.x]);
-	}
-	return last;
-}
-
 struct svg_line *segment(IplImage *out, IplImage *seg) {
 	double max;
 	CvPoint max_pos;
@@ -246,26 +158,6 @@ struct svg_line *segment(IplImage *out, IplImage *seg) {
 		last = trace(out, seg, max_pos, CV_RGB(0,255,0), last);
 		cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
 		last = trace(out, seg, max_pos, CV_RGB(0,0,255), last);
-		cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
-		count +=3;
-	}
-	printf("lines found: %i\n", count);
-	return last;
-}
-
-struct svg_line *segment_2(IplImage *out, IplImage *seg) {
-	double max;
-	CvPoint max_pos;
-	cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
-
-	struct svg_line *last = NULL;
-	int count = 0;
-	while (max !=0) {
-		last = trace_2(out, seg, max_pos, CV_RGB(255,0,0), last);
-		cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
-		last = trace_2(out, seg, max_pos, CV_RGB(0,255,0), last);
-		cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
-		last = trace_2(out, seg, max_pos, CV_RGB(0,0,255), last);
 		cvMinMaxLoc(out, NULL, &max, NULL, &max_pos, NULL);
 		count +=3;
 	}
@@ -351,6 +243,7 @@ struct svg_image *vectorize_2(const struct pnm_image * image) {
 	struct svg_image * vect = malloc(sizeof(const struct svg_image));
 	vect->width = image->width;
 	vect->height = image->height;
+	//vect->data = NULL;
 
 	IplImage* source = cvCreateImage(cvSize(image->width, image->height), 8, 1);
 	IplImage* bw = cvCreateImage(cvSize(image->width, image->height), 8, 1);
@@ -374,23 +267,47 @@ struct svg_image *vectorize_2(const struct pnm_image * image) {
 		cvMorphologyEx(source, bw, tmp, kernel, CV_MOP_OPEN, 1);	//dilate(erode(source))
 		cvNot(bw, bw);
 		cvAnd(source, bw, bw, NULL);
+		//cvOr(out, bw, out, NULL);
 		pridej(out, bw, iterace++);
 		cvErode(source, source, kernel, 1);
 		cvMinMaxLoc(source, NULL, &max, NULL, NULL, NULL);
 	}
 
+	//cvShowImage("source", out);
+	//cvWaitKey(0);
+	//cvDilate(out, out, kernel, 1);
+	//normalize(out, iterace-1);
 	threshold(out);
 	cvShowImage("source", out);
 	cvWaitKey(0);
-	struct svg_line *last_bezier = segment_2(out, seg);
+	struct svg_line *last_bezier = segment(out, seg);
 	cvShowImage("source", seg);
 	cvWaitKey(0);
 
+	/*
+	CvMemStorage* storage = cvCreateMemStorage(0);
+
+	CvSeq *hough = cvHoughLines2( out, storage, CV_HOUGH_PROBABILISTIC, 1, CV_PI/180, 1, 15, 5 );
+
+
+
+	fprintf(stderr, "%i\n", hough->total);
+	struct svg_line *last_bezier = NULL;
+	for(int i = 0; i < hough->total; i++ )
+	{
+		CvPoint* line = (CvPoint*)cvGetSeqElem(hough,i);
+		cvLine( col, line[0], line[1], CV_RGB(255,0,0), 3, CV_AA, 0 );
+		struct svg_line *new_bezier = create_bezier(line[0].x, line[0].y, line[0].x, line[0].y, line[1].x, line[1].y, line[1].x, line[1].y);
+		new_bezier->next = last_bezier;
+		last_bezier = new_bezier;
+	}
+	*/
 	vect->data = last_bezier;
 	cvShowImage("source", col);
 	cvWaitKey(0);
 	printf("end of vectorization\n");
 
+	//cvReleaseMemStorage(&storage);
 	cvReleaseImage(&source);
 
 	return vect;
