@@ -33,9 +33,9 @@ public:
 	v_point(v_pt _control_prev, v_pt _main, v_pt _control_next):
 		main(_main), control_prev(_control_prev), control_next(_control_next),
 		opacity(1), width(1) {};
-	v_point(v_pt _control_prev, v_pt _main, v_pt _control_next, v_co _color):
+	v_point(v_pt _control_prev, v_pt _main, v_pt _control_next, v_co _color, p _width = 1):
 		main(_main), control_prev(_control_prev), control_next(_control_next),
-		opacity(1), width(1), color(_color) {};
+		opacity(1), width(_width), color(_color) {};
 	v_pt main;
 	v_pt control_prev;
 	v_pt control_next;
@@ -49,9 +49,9 @@ public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
 	v_line() {};
 	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main);
-	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co &&_color);
+	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co &&_color, p _width);
 	void add_point(v_pt &&_main);
-	void add_point(v_pt &&_main, v_co &&_color);
+	void add_point(v_pt &&_main, v_co &&_color, p _width);
 	std::list<v_point> segment;
 };
 
