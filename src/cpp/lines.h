@@ -17,12 +17,12 @@ class v_co {
 public:
 	v_co(int _r, int _g, int _b) { val[0] = _r; val[1] = _g; val[2] = _b; };
 	v_co() { val[0] = 0; val[1] = 0; val[2] = 0; };
-	class v_co &operator+=(const class v_co &other) {
+	v_co &operator+=(const v_co &other) {
 		val[0] += other.val[0];
 		val[1] += other.val[1];
 		val[2] += other.val[2];
 	};
-	class v_co &operator/=(int other) {
+	v_co &operator/=(int other) {
 		val[0] /= other;
 		val[1] /= other;
 		val[2] /= other;

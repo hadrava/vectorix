@@ -218,7 +218,7 @@ int pnm_image::guess_maxvalue() {
 	return maxvalue;
 }
 
-class pnm_image &pnm_image::operator=(class pnm_image &&move) {
+pnm_image &pnm_image::operator=(pnm_image &&move) {
 	width = move.width;
 	height = move.height;
 	type = move.type;

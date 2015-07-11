@@ -16,7 +16,7 @@ void svg_error(const char *format, ...) {
 	return;
 }
 
-void svg_write_header(FILE *fd, const class v_image &image) {
+void svg_write_header(FILE *fd, const v_image &image) {
 	fprintf(fd, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 	fprintf(fd, "<svg\n");
 	fprintf(fd, "   xmlns:svg=\"http://www.w3.org/2000/svg\"\n");
@@ -30,12 +30,12 @@ void svg_write_header(FILE *fd, const class v_image &image) {
 
 }
 
-void svg_write_footer(FILE *fd, const class v_image &image) {
+void svg_write_footer(FILE *fd, const v_image &image) {
 	fprintf(fd, "  </g>\n");
 	fprintf(fd, "</svg>\n");
 }
 
-void svg_write(FILE *fd, const class v_image &image) {
+void svg_write(FILE *fd, const v_image &image) {
 	setlocale(LC_ALL, "C");
 	svg_write_header(fd, image);
 	for (v_line line: image.line) {
@@ -72,7 +72,7 @@ void svg_write(FILE *fd, const class v_image &image) {
 	svg_write_footer(fd, image);
 }
 
-void v_free(class v_image &&image) {
+void v_free(v_image &&image) {
 	for (v_line line: image.line) {
 		line.segment.erase(line.segment.begin(), line.segment.end());
 	}

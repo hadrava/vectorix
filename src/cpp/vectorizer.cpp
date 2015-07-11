@@ -31,7 +31,7 @@ void vectorizer_error(const char *format, ...) {
 	return;
 }
 
-class v_image vectorize_bare(const class pnm_image &image) {
+v_image vectorize_bare(const pnm_image &image) {
 	auto out = v_image(image.width, image.height);
 	auto line = v_line(0, 0, image.width/2, image.height/2, image.width, image.height/2, image.width, image.height);
 	line.add_point(v_pt(image.width, image.height/2*3), v_pt(-image.width/2, -image.height/2), v_pt(0,0));
@@ -127,7 +127,7 @@ void my_segment(Mat &out, const Mat &orig, Mat &seg, v_image &vect) {
 	printf("lines found: %i\n", count);
 }
 
-class v_image vectorize(const class pnm_image &original) {
+v_image vectorize(const pnm_image &original) {
 	pnm_image image = original;
 	image.convert(PNM_BINARY_PGM);
 

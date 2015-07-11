@@ -35,8 +35,8 @@ public:
 	int type;
 	int maxvalue;
 	int *data;
-	pnm_image(class pnm_image &&) = default;
-	class pnm_image &operator=(class pnm_image &&move);
+	pnm_image(pnm_image &&) = default;
+	pnm_image &operator=(pnm_image &&move);
 private:
 	void pnm_error(const char *format, ...);
 	int fscanf_comment(FILE *stream, const char *format, ...);

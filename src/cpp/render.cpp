@@ -16,7 +16,7 @@ void render_error(const char *format, ...) {
 	return;
 }
 
-void bezier_render(class pnm_image &bitmap, const class v_line &line) {
+void bezier_render(pnm_image &bitmap, const v_line &line) {
 	if (bitmap.type != PNM_BINARY_PGM)
 		render_error("Error: Image type %i not supported.\n", bitmap.type);
 	auto two = line.segment.cbegin();
@@ -45,7 +45,7 @@ void bezier_render(class pnm_image &bitmap, const class v_line &line) {
 	}
 }
 
-class pnm_image render(const class v_image &vector) {
+pnm_image render(const v_image &vector) {
 	auto bitmap = pnm_image(vector.width, vector.height);
 	bitmap.erase_image();
 	for (v_line line: vector.line) {

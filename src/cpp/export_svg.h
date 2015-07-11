@@ -6,7 +6,7 @@
 
 namespace vect {
 
-void svg_write(FILE *fd, const class v_image & image);
+void svg_write(FILE *fd, const v_image & image);
 
 };
 
