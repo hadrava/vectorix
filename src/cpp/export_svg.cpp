@@ -47,6 +47,7 @@ void svg_write(FILE *fd, const class v_image &image) {
 		int count = 1;
 		p width = segment->width;
 		p opacity = segment->opacity;
+		v_co color = segment->color;
 		segment++;
 		while (segment != line.segment.cend()) {
 			fprintf(fd, " C %f %f %f %f %f %f", cn.x, cn.y, segment->control_prev.x, segment->control_prev.y, segment->main.x, segment->main.y);
@@ -54,10 +55,12 @@ void svg_write(FILE *fd, const class v_image &image) {
 			count ++;
 			width += segment->width;
 			opacity += segment->opacity;
+			color += segment->color;
 			segment++;
 		}
+		color /= count;
 		fprintf(fd, "\"\n");
-		fprintf(fd, "       style=\"fill:none;stroke:#000000;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", width/count, opacity/count);
+		fprintf(fd, "       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/count, opacity/count);
 	}
 	svg_write_footer(fd, image);
 }

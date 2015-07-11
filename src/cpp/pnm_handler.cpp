@@ -226,4 +226,3 @@ class pnm_image &pnm_image::operator=(class pnm_image &&move) {
 	data = move.data;
 	move.data = NULL;
 }
-

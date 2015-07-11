@@ -13,7 +13,7 @@ using namespace cv;
 uchar nullpixel;
 
 uchar &safeat(const Mat &image, int i, int j) {
-	if (i>0 && i<image.rows && j>0 && j<image.cols)
+	if (i>=0 && i<image.rows && j>=0 && j<image.step)
 		return image.data[i*image.step + j];
 	else {
 		nullpixel = 0;
@@ -37,25 +37,23 @@ class v_image vectorize_bare(const class pnm_image &image) {
 	return out;
 }
 
-/*
-void pridej(IplImage *out, IplImage *bw, int iterace) {
-	for (int i = 0; i < out->height; i++) {
-		for (int j = 0; j < out->width; j++) {
-			if (!out->data[i*out->widthStep + j]) {
-				out->data[i*out->widthStep + j] = (!!bw->data[i*bw->widthStep + j]) * iterace;
+void pridej(Mat &out, Mat &bw, int iterace) {
+	for (int i = 0; i < out.rows; i++) {
+		for (int j = 0; j < out.cols; j++) {
+			if (!out.data[i*out.step + j]) {
+				out.data[i*out.step + j] = (!!bw.data[i*bw.step + j]) * iterace;
 			}
 		}
 	}
 }
 
-void normalize(IplImage *out, int max) {
-	for (int i = 0; i < out->height; i++) {
-		for (int j = 0; j < out->width; j++) {
-			out->data[i*out->widthStep + j] *= 255/max;
+void normalize(Mat &out, int max) {
+	for (int i = 0; i < out.rows; i++) {
+		for (int j = 0; j < out.cols; j++) {
+			out.data[i*out.step + j] *= 255/max;
 		}
 	}
 }
-*/
 
 void my_threshold(Mat &out) {
 	for (int i = 0; i < out.rows; i++) {
@@ -79,7 +77,7 @@ Point find_adj(const Mat &out, Point pos) {
 				max = (unsigned char)safeat(out, i, j);
 				max_x = j;
 				max_y = i;
-				printf("%i %i %i\n", i, j, safeat(out, i, j));
+				printf("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
 			}
 		}
 	}
@@ -89,34 +87,36 @@ Point find_adj(const Mat &out, Point pos) {
 	return ret;
 }
 
-v_line *trace(Mat &out, Mat &seg, Point pos, Scalar col) {
-	v_line * line = new v_line;
+v_line *trace(Mat &out, const Mat &orig, Mat &seg, Point pos) {
+	v_line *line = new v_line;
 	line->add_point(v_pt(pos.x, pos.y));
 	int first = 1;
 	while (pos.x >= 0 && safeat(out, pos.y, pos.x)) {
 		safeat(out, pos.y, pos.x) = 0;
-		safeat(seg, pos.y, pos.x*3 + 0) = col.val[0];
-		safeat(seg, pos.y, pos.x*3 + 1) = col.val[1];
-		safeat(seg, pos.y, pos.x*3 + 2) = col.val[2];
+		safeat(seg, pos.y, pos.x*3 + 0) = safeat(orig, pos.y, pos.x*3 + 0);
+		safeat(seg, pos.y, pos.x*3 + 1) = safeat(orig, pos.y, pos.x*3 + 1);
+		safeat(seg, pos.y, pos.x*3 + 2) = safeat(orig, pos.y, pos.x*3 + 2);
 		pos = find_adj(out, pos);
 		if (pos.x >= 0) {
-			line->add_point(v_pt(pos.x, pos.y));
+			line->add_point(v_pt(pos.x, pos.y), v_co(safeat(orig, pos.y, pos.x*3 + 2), safeat(orig, pos.y, pos.x*3 + 1), safeat(orig, pos.y, pos.x*3 + 0)));
 		}
-		//printf("%i %i %i\n", pos.x, pos.y, out.data[pos.y*out.step + pos.x]);
+		printf("trace: %i %i %i\n", pos.x, pos.y, out.data[pos.y*out.step + pos.x]);
 	}
 	return line;
 }
 
-void my_segment(Mat &out, Mat &seg, v_image &vect) {
+void my_segment(Mat &out, const Mat &orig, Mat &seg, v_image &vect) {
 	double max;
 	Point max_pos;
 	minMaxLoc(out, NULL, &max, NULL, &max_pos);
 
 	int count = 0;
 	while (max !=0) {
-		v_line *last = trace(out, seg, max_pos, Scalar(255,0,0));
+		printf("my_segment: %i %i\n", max_pos.x, max_pos.y);
+		v_line *last = trace(out, orig, seg, max_pos);
 		if (last) {
 			vect.add_line(*last);
+			delete last;
 			count ++;
 		}
 		minMaxLoc(out, NULL, &max, NULL, &max_pos);
@@ -124,21 +124,30 @@ void my_segment(Mat &out, Mat &seg, v_image &vect) {
 	printf("lines found: %i\n", count);
 }
 
-class v_image vectorize(const class pnm_image &image) {
+class v_image vectorize(const class pnm_image &original) {
+	pnm_image image = original;
+	image.convert(PNM_BINARY_PGM);
+
 	v_image vect = v_image(image.width, image.height);
 
 	Mat source (image.height, image.width, CV_8UC(1));
+	Mat orig   (image.height, image.width, CV_8UC(3));
 	Mat bw     (image.height, image.width, CV_8UC(1));
 	Mat out = Mat::zeros(image.height, image.width, CV_8UC(1));
-	Mat seg    (image.height, image.width, CV_8UC(3));
+	Mat seg = Mat::ones(image.height, image.width, CV_8UC(3));
 	for (int j = 0; j < image.height; j++) {
 		for (int i = 0; i<image.width; i++) {
 			source.data[i+j*source.step] = 255 - image.data[i+j*image.width];
+			orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
+			orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
+			orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
 		}
 	}
-	imshow("source", source);
+	imshow("vectorizer", orig);
 	waitKey(0);
-	threshold(source, source, 127, 255, THRESH_BINARY);
+	imshow("vectorizer", source);
+	waitKey(0);
+	threshold(source, source, 127, 255, THRESH_BINARY | THRESH_OTSU);
 	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3));
 
 	double max = 1;
@@ -147,25 +156,24 @@ class v_image vectorize(const class pnm_image &image) {
 		morphologyEx(source, bw, MORPH_OPEN, kernel);	//dilate(erode(source))
 		bitwise_not(bw, bw);
 		bitwise_and(source, bw, bw);
-		bitwise_or(out, bw, out);
-		//pridej(out, bw, iterace++);
+		//bitwise_or(out, bw, out);
+		pridej(out, bw, iterace++);
 		erode(source, source, kernel);
 		minMaxLoc(source, NULL, &max, NULL, NULL);
 	}
 
-	imshow("source", out);
+	imshow("vectorizer", out);
 	waitKey(0);
 	//cvDilate(out, out, kernel, 1);
-	//normalize(out, iterace-1);
-	my_threshold(out);
-	//cvShowImage("source", out);
-	//cvWaitKey(0);
-	my_segment(out, seg, vect);
+	////normalize(out, iterace-1);
+	////my_threshold(out);
+	my_segment(out, orig, seg, vect);
 	//cvShowImage("source", seg);
 	//cvWaitKey(0);
 
-	imshow("source", seg);
+	imshow("vectorizer", seg);
 	waitKey(0);
+	destroyWindow("vectorizer");
 	printf("end of vectorization\n");
 
 	return vect;

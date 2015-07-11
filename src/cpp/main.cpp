@@ -4,6 +4,7 @@
 #include "pnm_handler.h"
 #include "export_svg.h"
 #include "vectorizer.h"
+#include "render.h"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ int main(int argc, char **argv) {
 	if (argc > 3)
 		pnm_output = fopen(argv[3], "w");
 
-	input_image.convert(PNM_BINARY_PGM);
+	input_image.convert(PNM_BINARY_PPM);
 
 	auto vector = vectorize(input_image);
 	//auto vector = vectorize_bare(input_image);
