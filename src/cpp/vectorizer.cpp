@@ -137,13 +137,16 @@ v_image vectorize(const pnm_image &original) {
 	Mat orig   (image.height, image.width, CV_8UC(3));
 	Mat bw     (image.height, image.width, CV_8UC(1));
 	Mat out = Mat::zeros(image.height, image.width, CV_8UC(1));
-	Mat seg = Mat::zeros(image.height, image.width, CV_8UC(3));
+	Mat seg    (image.height, image.width, CV_8UC(3));
 	for (int j = 0; j < image.height; j++) {
 		for (int i = 0; i<image.width; i++) {
 			source.data[i+j*source.step] = 255 - image.data[i+j*image.width];
 			orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
 			orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
 			orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
+			seg.data[i*3+j*orig.step+2] = 255;
+			seg.data[i*3+j*orig.step+1] = 255;
+			seg.data[i*3+j*orig.step+0] = 255;
 		}
 	}
 	imshow("vectorizer", orig);

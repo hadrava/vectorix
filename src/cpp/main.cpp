@@ -30,12 +30,13 @@ int main(int argc, char **argv) {
 
 	auto vector = vectorize(input_image);
 	//auto vector = vectorize_bare(input_image);
-	input_image = render(vector);
 
 	if (svg_output)
-		svg_write(svg_output, vector);
-	if (pnm_output)
+		export_svg<editable>::write(svg_output, vector);
+	if (pnm_output) {
+		input_image = render(vector);
 		input_image.write(pnm_output);
+	}
 
 	if (argc > 2)
 		fclose(svg_output);
