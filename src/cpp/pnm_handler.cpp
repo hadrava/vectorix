@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+namespace pnm {
+
 #define MAX_LINE_LENGTH	512
 
 void pnm_image::pnm_error(const char *format, ...) {
@@ -226,3 +228,5 @@ class pnm_image &pnm_image::operator=(class pnm_image &&move) {
 	data = move.data;
 	move.data = NULL;
 }
+
+};

@@ -7,6 +7,8 @@
 #include "render.h"
 
 using namespace std;
+using namespace vect;
+using namespace pnm;
 
 int main(int argc, char **argv) {
 	FILE *svg_output = stdout;

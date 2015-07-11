@@ -6,6 +6,8 @@
 #include <string.h>
 #include <locale.h>
 
+namespace vect {
+
 void svg_error(const char *format, ...) {
 	va_list args;
 	va_start(args, format);
@@ -76,3 +78,5 @@ void v_free(class v_image &&image) {
 	}
 	image.line.erase(image.line.begin(), image.line.end());
 }
+
+};

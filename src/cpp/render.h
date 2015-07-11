@@ -4,6 +4,6 @@
 #include "pnm_handler.h"
 #include "lines.h"
 
-class pnm_image render(const class v_image &vector);
+class pnm::pnm_image render(const vect::v_image &vector);
 
 #endif

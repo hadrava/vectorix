@@ -5,6 +5,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+using namespace vect;
+using namespace pnm;
+
 void render_error(const char *format, ...) {
 	va_list args;
 	va_start(args, format);

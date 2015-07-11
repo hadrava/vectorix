@@ -9,6 +9,8 @@
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
+using namespace vect;
+using namespace pnm;
 
 uchar nullpixel;
 

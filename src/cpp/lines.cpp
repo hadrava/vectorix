@@ -1,5 +1,7 @@
 #include "lines.h"
 
+namespace vect {
+
 void v_image::clean() {
 	for (v_line _line: line) {
 		_line.segment.erase(_line.segment.begin(), _line.segment.end());
@@ -33,3 +35,5 @@ void v_line::add_point(v_pt &&_main, v_co &&_color, p _width = 1) {
 void v_image::add_line(v_line _line) {
 	line.push_back(_line);
 }
+
+};

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace pnm {
+
 #define PNM_ASCII_PBM	1
 #define PNM_ASCII_PGM	2
 #define PNM_ASCII_PPM	3
@@ -42,6 +44,8 @@ private:
 	void write_header(FILE *fd);
 	int size();
 	int guess_maxvalue();
+};
+
 };
 
 #endif

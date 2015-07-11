@@ -4,6 +4,8 @@
 #include <list>
 #include "config.h"
 
+namespace vect {
+
 class v_pt {
 public:
 	v_pt(p _x = 0, p _y = 0): x(_x), y(_y) {};
@@ -65,4 +67,5 @@ public:
 	std::list<v_line> line;
 };
 
+};
 #endif
