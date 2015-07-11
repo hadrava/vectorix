@@ -104,7 +104,7 @@ struct pnm_image *pnm_read(FILE *fd) {
 		else if (image->type >= PNM_BINARY_PBM)
 			strcpy(scanf_string, "%c");
 
-		image->data = malloc(sizeof(int)*size);
+		image->data = calloc(size, sizeof(int));
 		if (!image->data) {
 			free(image);
 			return NULL;
