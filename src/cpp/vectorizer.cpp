@@ -92,7 +92,7 @@ v_line *trace(Mat &out, const Mat &orig, Mat &seg, Point pos) {
 	line->add_point(v_pt(pos.x, pos.y));
 	int first = 1;
 	while (pos.x >= 0 && safeat(out, pos.y, pos.x)) {
-		p width = safeat(out, pos.y, pos.x);
+		p width = safeat(out, pos.y, pos.x) * 2;
 		safeat(out, pos.y, pos.x) = 0;
 		safeat(seg, pos.y, pos.x*3 + 0) = safeat(orig, pos.y, pos.x*3 + 0);
 		safeat(seg, pos.y, pos.x*3 + 1) = safeat(orig, pos.y, pos.x*3 + 1);
