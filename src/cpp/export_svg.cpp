@@ -67,11 +67,4 @@ void svg_write(FILE *fd, const v_image &image) {
 	svg_write_footer(fd, image);
 }
 
-void v_free(v_image &&image) {
-	for (v_line line: image.line) {
-		line.segment.erase(line.segment.begin(), line.segment.end());
-	}
-	image.line.erase(image.line.begin(), image.line.end());
-}
-
 };
