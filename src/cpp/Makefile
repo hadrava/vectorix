@@ -3,7 +3,7 @@ all: main
 #COMP=clang
 COMP=g++
 
-main: main.o lines.o export_svg.o pnm_handler.o vectorizer.o
+main: main.o lines.o export_svg.o pnm_handler.o vectorizer.o render.o
 	${COMP} $^ -o $@ `pkg-config --libs --cflags opencv`
 
 %.o: %.cpp
