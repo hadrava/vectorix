@@ -6,12 +6,12 @@
 
 namespace pnm {
 
-#define PNM_ASCII_PBM	1
-#define PNM_ASCII_PGM	2
-#define PNM_ASCII_PPM	3
-#define PNM_BINARY_PBM	4
-#define PNM_BINARY_PGM	5
-#define PNM_BINARY_PPM	6
+const int PNM_ASCII_PBM  = 1;
+const int PNM_ASCII_PGM  = 2;
+const int PNM_ASCII_PPM  = 3;
+const int PNM_BINARY_PBM = 4;
+const int PNM_BINARY_PGM = 5;
+const int PNM_BINARY_PPM = 6;
 
 class pnm_image {
 public:

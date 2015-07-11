@@ -137,7 +137,7 @@ v_image vectorize(const pnm_image &original) {
 	Mat orig   (image.height, image.width, CV_8UC(3));
 	Mat bw     (image.height, image.width, CV_8UC(1));
 	Mat out = Mat::zeros(image.height, image.width, CV_8UC(1));
-	Mat seg = Mat::ones(image.height, image.width, CV_8UC(3));
+	Mat seg = Mat::zeros(image.height, image.width, CV_8UC(3));
 	for (int j = 0; j < image.height; j++) {
 		for (int i = 0; i<image.width; i++) {
 			source.data[i+j*source.step] = 255 - image.data[i+j*image.width];
@@ -165,7 +165,9 @@ v_image vectorize(const pnm_image &original) {
 		minMaxLoc(source, NULL, &max, NULL, NULL);
 	}
 
-	imshow("vectorizer", out);
+	bw = out.clone();
+	normalize(bw, iterace-1);
+	imshow("vectorizer", bw);
 	waitKey(0);
 	//cvDilate(out, out, kernel, 1);
 	////normalize(out, iterace-1);
@@ -176,7 +178,6 @@ v_image vectorize(const pnm_image &original) {
 
 	imshow("vectorizer", seg);
 	waitKey(0);
-	destroyWindow("vectorizer");
 	printf("end of vectorization\n");
 
 	return vect;
