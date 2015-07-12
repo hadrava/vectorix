@@ -5,10 +5,12 @@
 #include "export_svg.h"
 #include "vectorizer.h"
 #include "render.h"
+#include "time_measurement.h"
 
 using namespace std;
 using namespace vect;
 using namespace pnm;
+using namespace time_measurement;
 
 int main(int argc, char **argv) {
 	FILE *svg_output = stdout;
@@ -28,8 +30,12 @@ int main(int argc, char **argv) {
 
 	input_image.convert(PNM_BINARY_PPM);
 
-	auto vector = vectorize(input_image);
-	//auto vector = vectorize_bare(input_image);
+	timer vectorization_timer(0);
+	vectorization_timer.start();
+		//auto vector = vectorize(input_image);
+		auto vector = vectorize_bare(input_image);
+	vectorization_timer.stop();
+	cerr << "Vectorization time: " << vectorization_timer.read()/1e6 << endl;
 
 	if (svg_output)
 		export_svg<editable>::write(svg_output, vector);

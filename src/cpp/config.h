@@ -6,5 +6,6 @@ namespace vect {
 typedef float p;
 
 };
+#define TIMER_MEASURE
 
 #endif
