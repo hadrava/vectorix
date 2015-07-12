@@ -3,8 +3,8 @@ all: main
 #COMP=clang
 COMP=g++
 
-main: main.o lines.o export_svg.o pnm_handler.o vectorizer.o render.o
-	${COMP} $^ -o $@ `pkg-config --libs --cflags opencv`
+main: main.o lines.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o
+	${COMP} $^ -o $@ `pkg-config --libs --cflags opencv` -L potrace/lib/ -lpotrace -lm
 
 %.o: %.cpp
 	${COMP} -c -o $@ $< -std=c++11 -ggdb -DDEBUG

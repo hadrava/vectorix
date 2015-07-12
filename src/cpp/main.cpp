@@ -4,6 +4,7 @@
 #include "pnm_handler.h"
 #include "export_svg.h"
 #include "vectorizer.h"
+#include "potrace_handler.h"
 #include "render.h"
 #include "time_measurement.h"
 
@@ -33,7 +34,8 @@ int main(int argc, char **argv) {
 	timer vectorization_timer(0);
 	vectorization_timer.start();
 		//auto vector = vectorize(input_image);
-		auto vector = vectorize_bare(input_image);
+		//auto vector = vectorize_bare(input_image);
+		auto vector = vectorize_potrace(input_image);
 	vectorization_timer.stop();
 	cerr << "Vectorization time: " << vectorization_timer.read()/1e6 << endl;
 

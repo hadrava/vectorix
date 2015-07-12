@@ -67,5 +67,5 @@ public:
 	std::list<v_line> line;
 };
 
-};
+}; // namespace
 #endif

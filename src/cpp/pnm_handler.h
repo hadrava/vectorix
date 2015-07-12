@@ -6,6 +6,9 @@
 
 namespace pnm {
 
+//typedef int pnm_data_t;
+typedef unsigned char pnm_data_t;
+
 const int PNM_ASCII_PBM  = 1;
 const int PNM_ASCII_PGM  = 2;
 const int PNM_ASCII_PPM  = 3;
@@ -19,11 +22,11 @@ public:
 	pnm_image(FILE *fd) { read(fd); };
 	pnm_image(int _width, int _height, int _type=PNM_BINARY_PGM): width(_width), height(_height), type(_type) {
 		maxvalue = guess_maxvalue();
-		data = new int[size()];
+		data = new pnm_data_t[size()];
 	};
 	pnm_image(const pnm_image & copy): width(copy.width), height(copy.height), type(copy.type), maxvalue(copy.maxvalue) {
-		data = new int[size()];
-		memcpy(data, copy.data, sizeof(int) * size());
+		data = new pnm_data_t[size()];
+		memcpy(data, copy.data, sizeof(pnm_data_t) * size());
 	};
 	~pnm_image();
 	void read(FILE *fd);
@@ -34,7 +37,7 @@ public:
 	int height;
 	int type;
 	int maxvalue;
-	int *data;
+	pnm_data_t *data;
 	pnm_image(pnm_image &&) = default;
 	pnm_image &operator=(pnm_image &&move);
 private:
@@ -46,6 +49,6 @@ private:
 	int guess_maxvalue();
 };
 
-};
+}; // namespace
 
 #endif

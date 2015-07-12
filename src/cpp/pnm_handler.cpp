@@ -81,16 +81,17 @@ void pnm_image::read(FILE *fd) {
 		else if (type >= PNM_BINARY_PBM)
 			strcpy(scanf_string, "%c");
 
-		data = new int [nsize];
+		data = new pnm_data_t [nsize];
 		if (!data) {
 			return;
 		}
 		for (int i = 0; i < nsize; i++) {
-			data[i] = 0;
-			if (fscanf(fd, scanf_string, data+i) != 1) {
+			int read;
+			if (fscanf(fd, scanf_string, &read) != 1) {
 				pnm_error("Error: reading image data failed at position %i!\n", i);
 				return;
 			}
+			data[i] = read;
 		}
 	}
 }
@@ -109,29 +110,63 @@ void pnm_image::write(FILE *fd) {
 			fprintf(fd, "%i ", data[i]);
 	}
 	if (nsize && (type >= PNM_BINARY_PBM)) {
-		for (int i = 0; i < nsize; i++)
+		for (int i = 0; i < nsize; i++) {
 			fprintf(fd, "%c", data[i]);
+		}
 	}
 }
 
 void pnm_image::convert(int new_type) {
+	if (type == new_type)
+		return;
+
 	auto dest = pnm_image(width, height, new_type);
+	int new_size = dest.size();
 
 	int convert_type = (type <= PNM_ASCII_PPM) ? type : type - 3;
 	convert_type |= ((dest.type <= PNM_ASCII_PPM) ? dest.type : dest.type - 3) << 4;
 
-	if ((type == PNM_BINARY_PBM) || (dest.type == PNM_BINARY_PBM)) {
+	if (((convert_type&3) == PNM_ASCII_PGM) && (dest.type == PNM_BINARY_PBM)) {
+		for (int r = 0; r < height; r++) {
+			for (int i = 0; i <= (width - 1)/8; i++) {
+				dest.data[r*((width-1)/8+1) + i] = \
+					((data[r*width+i*8+0] > maxvalue/2) ? 0x00 : 0x80) | \
+					((data[r*width+i*8+1] > maxvalue/2) ? 0x00 : 0x40) | \
+					((data[r*width+i*8+2] > maxvalue/2) ? 0x00 : 0x20) | \
+					((data[r*width+i*8+3] > maxvalue/2) ? 0x00 : 0x10) | \
+					((data[r*width+i*8+4] > maxvalue/2) ? 0x00 : 0x08) | \
+					((data[r*width+i*8+5] > maxvalue/2) ? 0x00 : 0x04) | \
+					((data[r*width+i*8+6] > maxvalue/2) ? 0x00 : 0x02) | \
+					((data[r*width+i*8+7] > maxvalue/2) ? 0x00 : 0x01);
+			}
+		}
+	}
+	else if (((convert_type&3) == PNM_ASCII_PPM) && (dest.type == PNM_BINARY_PBM)) {
+		for (int r = 0; r < height; r++) {
+			for (int i = 0; i <= (width - 1)/8; i++) {
+				dest.data[r*((width-1)/8+1) + i] = \
+					((data[(r*width+i*8+0)*3+0] + data[(r*width+i*8+0)*3+1] + data[(r*width+i*8+0)*3+2] > maxvalue*3/2) ? 0x00 : 0x80) | \
+					((data[(r*width+i*8+1)*3+0] + data[(r*width+i*8+1)*3+1] + data[(r*width+i*8+1)*3+2] > maxvalue*3/2) ? 0x00 : 0x40) | \
+					((data[(r*width+i*8+2)*3+0] + data[(r*width+i*8+2)*3+1] + data[(r*width+i*8+2)*3+2] > maxvalue*3/2) ? 0x00 : 0x20) | \
+					((data[(r*width+i*8+3)*3+0] + data[(r*width+i*8+3)*3+1] + data[(r*width+i*8+3)*3+2] > maxvalue*3/2) ? 0x00 : 0x10) | \
+					((data[(r*width+i*8+4)*3+0] + data[(r*width+i*8+4)*3+1] + data[(r*width+i*8+4)*3+2] > maxvalue*3/2) ? 0x00 : 0x08) | \
+					((data[(r*width+i*8+5)*3+0] + data[(r*width+i*8+5)*3+1] + data[(r*width+i*8+5)*3+2] > maxvalue*3/2) ? 0x00 : 0x04) | \
+					((data[(r*width+i*8+6)*3+0] + data[(r*width+i*8+6)*3+1] + data[(r*width+i*8+6)*3+2] > maxvalue*3/2) ? 0x00 : 0x02) | \
+					((data[(r*width+i*8+7)*3+0] + data[(r*width+i*8+7)*3+1] + data[(r*width+i*8+7)*3+2] > maxvalue*3/2) ? 0x00 : 0x01);
+			}
+		}
+	}
+	else if ((type == PNM_BINARY_PBM) || (dest.type == PNM_BINARY_PBM)) {
 		pnm_error("Conversion from/to binary PBM is not implemented!\n");
 		return;
 	}
-
-	int new_size = dest.size();
+	else {
 
 	switch (convert_type) {
 		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PBM:
 		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PGM:
 		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PPM:
-			memcpy(dest.data, data, sizeof(int)*new_size);
+			memcpy(dest.data, data, sizeof(pnm_data_t)*new_size);
 			break;
 		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PBM:
 			for (int i = 0; i < new_size; i++)
@@ -168,6 +203,7 @@ void pnm_image::convert(int new_type) {
 			return;
 			break;
 	}
+	}
 
 	*this = std::move(dest);
 }
@@ -178,7 +214,7 @@ pnm_image::~pnm_image() {
 }
 
 void pnm_image::erase_image() {
-	memset(data, 255, size()*sizeof(int));
+	memset(data, 255, size()*sizeof(pnm_data_t));
 }
 
 int pnm_image::size() {
@@ -188,7 +224,7 @@ int pnm_image::size() {
 			size = width * height;
 			break;
 		case PNM_BINARY_PBM: //(black/white)
-			size = width * height / 8;
+			size = ((width - 1) / 8 + 1) * height;
 			break;
 		case PNM_ASCII_PGM: //(gray scale)
 		case PNM_BINARY_PGM: //(gray scale)
@@ -229,4 +265,4 @@ pnm_image &pnm_image::operator=(pnm_image &&move) {
 	move.data = NULL;
 }
 
-};
+}; // namespace

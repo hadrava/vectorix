@@ -36,4 +36,4 @@ void v_image::add_line(v_line _line) {
 	line.push_back(_line);
 }
 
-};
+}; // namespace
