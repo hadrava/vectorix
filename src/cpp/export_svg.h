@@ -2,11 +2,9 @@
 #define _EXPORT_SVG_H
 
 #include "lines.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <locale.h>
+#include <cstdio>
+#include <cstdarg>
+#include <locale>
 
 
 namespace vect {
@@ -26,7 +24,7 @@ template <class Exporter = editable>
 class export_svg {
 public:
 	static void write(FILE *fd, const v_image & image) {
-		setlocale(LC_ALL, "C");
+		std::locale("C");
 		svg_write_header(fd, image);
 		for (v_line line: image.line) {
 			if (line.segment.empty())

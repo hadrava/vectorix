@@ -1,8 +1,8 @@
 #ifndef _PNM_HANDLER_H
 #define _PNM_HANDLER_H
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 namespace pnm {
 
@@ -26,7 +26,7 @@ public:
 	};
 	pnm_image(const pnm_image & copy): width(copy.width), height(copy.height), type(copy.type), maxvalue(copy.maxvalue) {
 		data = new pnm_data_t[size()];
-		memcpy(data, copy.data, sizeof(pnm_data_t) * size());
+		std::memcpy(data, copy.data, sizeof(pnm_data_t) * size());
 	};
 	~pnm_image();
 	void read(FILE *fd);
