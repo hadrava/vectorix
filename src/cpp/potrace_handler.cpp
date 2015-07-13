@@ -1,12 +1,11 @@
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <stdlib.h>
 #include "potrace/include/potracelib.h"
 #include "lines.h"
 #include "pnm_handler.h"
 #include "potrace_handler.h"
 #include <iostream>
+#include <new>
 
 using namespace vect;
 using namespace pnm;
@@ -32,14 +31,14 @@ v_image vectorize_potrace(const pnm_image &original) {
 
 	potrace_param_t *pot_params = potrace_param_default();
 	if (!pot_params) {
-		fprintf(stderr, "Error allocating parameters: %s\n", strerror(errno)); 
-		throw 1;//TODO
+		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << ": In " << __func__ << "(): " << strerror(errno) << std::endl;
+		throw std::bad_alloc();//TODO
 	}
 
 	potrace_state_t *pot_state = potrace_trace(pot_params, &pot_bitmap);
 	if (!pot_state || pot_state->status != POTRACE_STATUS_OK) {
-		fprintf(stderr, "Error tracing bitmap: %s\n", strerror(errno));
-		throw 1;
+		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << ": In " << __func__ << "(): " << strerror(errno) << std::endl;
+		throw std::bad_alloc();
 	}
 
 	delete [] pot_bitmap.map;
