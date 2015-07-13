@@ -46,15 +46,24 @@ public:
 	v_co color;
 };
 
+enum v_line_type {
+	stroke,
+	fill
+};
+
 class v_line {
 public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
-	v_line() {};
+	v_line(): type_(stroke) {};
 	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main);
 	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co &&_color, p _width);
 	void add_point(v_pt &&_main);
 	void add_point(v_pt &&_main, v_co &&_color, p _width);
+	void set_type(v_line_type type) { type_ = type; };
+	v_line_type get_type() const { return type_; };
 	std::list<v_point> segment;
+private:
+	v_line_type type_;
 };
 
 class v_image {

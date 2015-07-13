@@ -12,6 +12,7 @@ void v_image::clean() {
 v_line::v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3) {
 	segment.emplace_back(v_point(v_pt(x0,y0), v_pt(x0,y0), v_pt(x1,y1)));
 	segment.emplace_back(v_point(v_pt(x2,y2), v_pt(x3,y3), v_pt(x3,y3)));
+	type_ = stroke;
 }
 
 void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main) {

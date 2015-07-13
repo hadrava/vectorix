@@ -29,11 +29,16 @@ void editable::write_line(FILE *fd, const v_line &line) {
 		segment++;
 	}
 	color /= count;
-	fprintf(fd, "\"\n");
-	fprintf(fd, "       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/count, opacity/count);
+	if (line.get_type() == stroke)
+		fprintf(fd, "\"\n       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/count, opacity/count);
+	else
+		fprintf(fd, " Z\"\n       style=\"fill:#%02x%02x%02x;stroke:none\" />\n", color.val[0], color.val[1], color.val[2]);
 };
 
 void grouped::write_line(FILE *fd, const v_line &line) {
+	if (line.get_type() == fill)
+		return editable::write_line(fd, line);
+
 	auto segment = line.segment.cbegin();
 	fprintf(fd, "    <g>\n");
 

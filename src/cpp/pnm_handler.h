@@ -36,7 +36,7 @@ public:
 	int width;
 	int height;
 	int type;
-	int maxvalue;
+	pnm_data_t maxvalue;
 	pnm_data_t *data;
 	pnm_image(pnm_image &&) = default;
 	pnm_image &operator=(pnm_image &&move);
