@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <new>
 #include "potrace/include/potracelib.h"
-#include "lines.h"
+#include "v_image.h"
 #include "pnm_handler.h"
 #include "potrace_handler.h"
 

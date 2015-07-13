@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdio>
-#include "lines.h"
+#include "v_image.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
 #include <opencv2/opencv.hpp>

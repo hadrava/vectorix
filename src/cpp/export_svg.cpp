@@ -1,5 +1,5 @@
 #include <cstdio>
-#include "lines.h"
+#include "v_image.h"
 #include "export_svg.h"
 
 namespace vect {

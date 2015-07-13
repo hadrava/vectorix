@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <locale>
-#include "lines.h"
+#include "v_image.h"
 
 
 namespace vect {

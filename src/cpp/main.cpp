@@ -1,7 +1,7 @@
 #include <iostream>
 #include <utility>
 #include <cstdio>
-#include "lines.h"
+#include "v_image.h"
 #include "pnm_handler.h"
 #include "export_svg.h"
 #include "vectorizer.h"
