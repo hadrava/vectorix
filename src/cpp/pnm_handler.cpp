@@ -130,14 +130,14 @@ void pnm_image::convert(int new_type) {
 		for (int r = 0; r < height; r++) {
 			for (int i = 0; i <= (width - 1)/8; i++) {
 				dest.data[r*((width-1)/8+1) + i] = \
-					((data[r*width+i*8+0] > maxvalue/2) ? 0x00 : 0x80) | \
-					((data[r*width+i*8+1] > maxvalue/2) ? 0x00 : 0x40) | \
-					((data[r*width+i*8+2] > maxvalue/2) ? 0x00 : 0x20) | \
-					((data[r*width+i*8+3] > maxvalue/2) ? 0x00 : 0x10) | \
-					((data[r*width+i*8+4] > maxvalue/2) ? 0x00 : 0x08) | \
-					((data[r*width+i*8+5] > maxvalue/2) ? 0x00 : 0x04) | \
-					((data[r*width+i*8+6] > maxvalue/2) ? 0x00 : 0x02) | \
-					((data[r*width+i*8+7] > maxvalue/2) ? 0x00 : 0x01);
+					(((i*8+0 < width) || (data[r*width+i*8+0] > maxvalue/2)) ? 0x00 : 0x80) | \
+					(((i*8+1 < width) || (data[r*width+i*8+1] > maxvalue/2)) ? 0x00 : 0x40) | \
+					(((i*8+2 < width) || (data[r*width+i*8+2] > maxvalue/2)) ? 0x00 : 0x20) | \
+					(((i*8+3 < width) || (data[r*width+i*8+3] > maxvalue/2)) ? 0x00 : 0x10) | \
+					(((i*8+4 < width) || (data[r*width+i*8+4] > maxvalue/2)) ? 0x00 : 0x08) | \
+					(((i*8+5 < width) || (data[r*width+i*8+5] > maxvalue/2)) ? 0x00 : 0x04) | \
+					(((i*8+6 < width) || (data[r*width+i*8+6] > maxvalue/2)) ? 0x00 : 0x02) | \
+					(((i*8+7 < width) || (data[r*width+i*8+7] > maxvalue/2)) ? 0x00 : 0x01);
 			}
 		}
 	}
@@ -145,14 +145,14 @@ void pnm_image::convert(int new_type) {
 		for (int r = 0; r < height; r++) {
 			for (int i = 0; i <= (width - 1)/8; i++) {
 				dest.data[r*((width-1)/8+1) + i] = \
-					((data[(r*width+i*8+0)*3+0] + data[(r*width+i*8+0)*3+1] + data[(r*width+i*8+0)*3+2] > maxvalue*3/2) ? 0x00 : 0x80) | \
-					((data[(r*width+i*8+1)*3+0] + data[(r*width+i*8+1)*3+1] + data[(r*width+i*8+1)*3+2] > maxvalue*3/2) ? 0x00 : 0x40) | \
-					((data[(r*width+i*8+2)*3+0] + data[(r*width+i*8+2)*3+1] + data[(r*width+i*8+2)*3+2] > maxvalue*3/2) ? 0x00 : 0x20) | \
-					((data[(r*width+i*8+3)*3+0] + data[(r*width+i*8+3)*3+1] + data[(r*width+i*8+3)*3+2] > maxvalue*3/2) ? 0x00 : 0x10) | \
-					((data[(r*width+i*8+4)*3+0] + data[(r*width+i*8+4)*3+1] + data[(r*width+i*8+4)*3+2] > maxvalue*3/2) ? 0x00 : 0x08) | \
-					((data[(r*width+i*8+5)*3+0] + data[(r*width+i*8+5)*3+1] + data[(r*width+i*8+5)*3+2] > maxvalue*3/2) ? 0x00 : 0x04) | \
-					((data[(r*width+i*8+6)*3+0] + data[(r*width+i*8+6)*3+1] + data[(r*width+i*8+6)*3+2] > maxvalue*3/2) ? 0x00 : 0x02) | \
-					((data[(r*width+i*8+7)*3+0] + data[(r*width+i*8+7)*3+1] + data[(r*width+i*8+7)*3+2] > maxvalue*3/2) ? 0x00 : 0x01);
+					(((i*8+0 < width) || (data[(r*width+i*8+0)*3+0] + data[(r*width+i*8+0)*3+1] + data[(r*width+i*8+0)*3+2] > maxvalue*3/2)) ? 0x00 : 0x80) | \
+					(((i*8+1 < width) || (data[(r*width+i*8+1)*3+0] + data[(r*width+i*8+1)*3+1] + data[(r*width+i*8+1)*3+2] > maxvalue*3/2)) ? 0x00 : 0x40) | \
+					(((i*8+2 < width) || (data[(r*width+i*8+2)*3+0] + data[(r*width+i*8+2)*3+1] + data[(r*width+i*8+2)*3+2] > maxvalue*3/2)) ? 0x00 : 0x20) | \
+					(((i*8+3 < width) || (data[(r*width+i*8+3)*3+0] + data[(r*width+i*8+3)*3+1] + data[(r*width+i*8+3)*3+2] > maxvalue*3/2)) ? 0x00 : 0x10) | \
+					(((i*8+4 < width) || (data[(r*width+i*8+4)*3+0] + data[(r*width+i*8+4)*3+1] + data[(r*width+i*8+4)*3+2] > maxvalue*3/2)) ? 0x00 : 0x08) | \
+					(((i*8+5 < width) || (data[(r*width+i*8+5)*3+0] + data[(r*width+i*8+5)*3+1] + data[(r*width+i*8+5)*3+2] > maxvalue*3/2)) ? 0x00 : 0x04) | \
+					(((i*8+6 < width) || (data[(r*width+i*8+6)*3+0] + data[(r*width+i*8+6)*3+1] + data[(r*width+i*8+6)*3+2] > maxvalue*3/2)) ? 0x00 : 0x02) | \
+					(((i*8+7 < width) || (data[(r*width+i*8+7)*3+0] + data[(r*width+i*8+7)*3+1] + data[(r*width+i*8+7)*3+2] > maxvalue*3/2)) ? 0x00 : 0x01);
 			}
 		}
 	}
