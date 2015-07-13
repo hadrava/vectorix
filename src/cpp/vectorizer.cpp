@@ -26,7 +26,6 @@ void vectorizer_error(const char *format, ...) {
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
-	return;
 }
 
 #ifdef VECTORIZER_DEBUG
@@ -35,7 +34,6 @@ void vectorizer_debug(const char *format, ...) {
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
-	return;
 }
 #else
 void vectorizer_debug(const char *format, ...) {};

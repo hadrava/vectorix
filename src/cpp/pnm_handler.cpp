@@ -15,7 +15,6 @@ void pnm_image::pnm_error(const char *format, ...) {
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
-	return;
 }
 
 int pnm_image::fscanf_comment(FILE *stream, const char *format, ...) {
@@ -34,26 +33,27 @@ int pnm_image::fscanf_comment(FILE *stream, const char *format, ...) {
 	return ret;
 }
 
-void pnm_image::read_header(FILE *fd) {
+bool pnm_image::read_header(FILE *fd) {
 	char magic, ntype;
 	if (fscanf_comment(fd, "%c%c\n", &magic, &ntype) != 2 || magic != 'P' || ntype < '1' || ntype > '6') {
 		pnm_error("Error reading image header.\n");
-		return;
+		return false;
 	}
 	if (fscanf_comment(fd, "%i%i\n", &width, &height) != 2) {
 		pnm_error("Error reading image dimensions.\n");
-		return;
+		return false;
 	}
 	if (ntype != '1' && ntype != '4') {
 		if (fscanf_comment(fd, "%i\n", &maxvalue) != 1) {
 			pnm_error("Error reading image maxvalue.\n");
-			return;
+			return false;
 		}
 	}
 	type = ntype - '0';
 	if (data)
 		delete[] data;
 	data = NULL;
+	return true;
 }
 
 void pnm_image::write_header(FILE *fd) {
@@ -66,7 +66,8 @@ void pnm_image::write_header(FILE *fd) {
 
 
 void pnm_image::read(FILE *fd) {
-	read_header(fd);
+	if (!read_header(fd))
+		throw std::underflow_error("Unable to read image header.");
 
 	int nsize = size();
 #ifdef PNM_DEBUG
@@ -83,14 +84,11 @@ void pnm_image::read(FILE *fd) {
 			strcpy(scanf_string, "%c");
 
 		data = new pnm_data_t [nsize];
-		if (!data) {
-			return;
-		}
 		for (int i = 0; i < nsize; i++) {
 			int read;
 			if (fscanf(fd, scanf_string, &read) != 1) {
 				pnm_error("Error: reading image data failed at position %i.\n", i);
-				return;
+				throw std::underflow_error("Unable to read image data.");
 			}
 			data[i] = read;
 		}

@@ -43,7 +43,7 @@ public:
 private:
 	void pnm_error(const char *format, ...);
 	int fscanf_comment(FILE *stream, const char *format, ...);
-	void read_header(FILE *fd);
+	bool read_header(FILE *fd);
 	void write_header(FILE *fd);
 	int size();
 	int guess_maxvalue();

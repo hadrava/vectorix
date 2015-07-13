@@ -39,7 +39,6 @@ private:
 		va_start(args, format);
 		vfprintf(stderr, format, args);
 		va_end(args);
-		return;
 	};
 
 	static void svg_write_header(FILE *fd, const v_image &image) {

@@ -13,7 +13,6 @@ void render_error(const char *format, ...) {
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
-	return;
 }
 
 void bezier_render(pnm_image &bitmap, const v_line &line) {
