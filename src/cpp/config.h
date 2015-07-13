@@ -8,5 +8,7 @@ typedef float p;
 }; // namespace
 
 #define TIMER_MEASURE
+//#define VECTORIZER_DEBUG
+//#define VECTORIZER_HIGHGUI
 
 #endif

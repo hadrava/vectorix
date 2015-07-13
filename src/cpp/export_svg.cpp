@@ -1,10 +1,6 @@
+#include <cstdio>
 #include "lines.h"
 #include "export_svg.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <locale.h>
 
 namespace vect {
 

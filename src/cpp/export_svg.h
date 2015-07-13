@@ -1,10 +1,10 @@
 #ifndef _EXPORT_SVG_H
 #define _EXPORT_SVG_H
 
-#include "lines.h"
 #include <cstdio>
 #include <cstdarg>
 #include <locale>
+#include "lines.h"
 
 
 namespace vect {

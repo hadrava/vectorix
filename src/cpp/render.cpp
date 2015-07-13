@@ -1,9 +1,9 @@
+#include <cstdlib>
+#include <cstdarg>
+#include <cstdio>
 #include "lines.h"
 #include "pnm_handler.h"
 #include "render.h"
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
 
 using namespace vect;
 using namespace pnm;

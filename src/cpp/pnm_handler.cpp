@@ -1,9 +1,10 @@
-#include "pnm_handler.h"
 #include <utility>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
+#include <cstring>
+#include <stdexcept>
+#include "pnm_handler.h"
 
 namespace pnm {
 
@@ -36,16 +37,16 @@ int pnm_image::fscanf_comment(FILE *stream, const char *format, ...) {
 void pnm_image::read_header(FILE *fd) {
 	char magic, ntype;
 	if (fscanf_comment(fd, "%c%c\n", &magic, &ntype) != 2 || magic != 'P' || ntype < '1' || ntype > '6') {
-		pnm_error("Error reading image header!\n");
+		pnm_error("Error reading image header.\n");
 		return;
 	}
 	if (fscanf_comment(fd, "%i%i\n", &width, &height) != 2) {
-		pnm_error("Error reading image dimensions!\n");
+		pnm_error("Error reading image dimensions.\n");
 		return;
 	}
 	if (ntype != '1' && ntype != '4') {
 		if (fscanf_comment(fd, "%i\n", &maxvalue) != 1) {
-			pnm_error("Error reading image maxvalue!\n");
+			pnm_error("Error reading image maxvalue.\n");
 			return;
 		}
 	}
@@ -88,7 +89,7 @@ void pnm_image::read(FILE *fd) {
 		for (int i = 0; i < nsize; i++) {
 			int read;
 			if (fscanf(fd, scanf_string, &read) != 1) {
-				pnm_error("Error: reading image data failed at position %i!\n", i);
+				pnm_error("Error: reading image data failed at position %i.\n", i);
 				return;
 			}
 			data[i] = read;
@@ -99,8 +100,8 @@ void pnm_image::read(FILE *fd) {
 void pnm_image::write(FILE *fd) {
 #ifdef DEBUG
 	if (!data) {
-		pnm_error("Error: trying to acces NULLpointer by pnm_write()\n");
-		return;
+		pnm_error("Error: trying to acces NULLpointer by pnm_image::write().\n");
+		throw std::length_error("Error: trying to acces NULLpointer by pnm_image::write().");
 	}
 #endif
 	write_header(fd);
@@ -156,55 +157,52 @@ void pnm_image::convert(int new_type) {
 			}
 		}
 	}
-	else if ((type == PNM_BINARY_PBM) || (dest.type == PNM_BINARY_PBM)) {
-		pnm_error("Conversion from/to binary PBM is not implemented!\n");
-		return;
+	else if (type == PNM_BINARY_PBM) {
+		pnm_error("Conversion from binary PBM is not implemented.\n");
+		throw std::invalid_argument("Conversion from binary PBM is not implemented.");
 	}
 	else {
-
-	switch (convert_type) {
-		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PBM:
-		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PGM:
-		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PPM:
-			memcpy(dest.data, data, sizeof(pnm_data_t)*new_size);
-			break;
-		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PBM:
-			for (int i = 0; i < new_size; i++)
-				dest.data[i] = dest.maxvalue * (1-data[i]);
-			break;
-		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PBM:
-			for (int i = 0; i < new_size; i+=3) {
-				dest.data[i+0] = dest.maxvalue * (1-data[i/3]);
-				dest.data[i+1] = dest.maxvalue * (1-data[i/3]);
-				dest.data[i+2] = dest.maxvalue * (1-data[i/3]);
-			}
-			break;
-		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PGM:
-			for (int i = 0; i < new_size; i++)
-				dest.data[i] = (data[i] >= 128) ? 0 : 1;
-			break;
-		case (PNM_ASCII_PPM << 4) | PNM_ASCII_PGM:
-			for (int i = 0; i < new_size; i+=3) {
-				dest.data[i+0] = data[i/3];
-				dest.data[i+1] = data[i/3];
-				dest.data[i+2] = data[i/3];
-			}
-			break;
-		case (PNM_ASCII_PBM << 4) | PNM_ASCII_PPM:
-			for (int i = 0; i < new_size; i++)
-				dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2] >= 128*3) ? 0 : 1;
-			break;
-		case (PNM_ASCII_PGM << 4) | PNM_ASCII_PPM:
-			for (int i = 0; i < new_size; i++)
-				dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2]) / 3;
-			break;
-		default:
-			pnm_error("Unknown conversion types (from %i, to %i).\n", type, dest.type);
-			return;
-			break;
+		switch (convert_type) {
+			case (PNM_ASCII_PBM << 4) | PNM_ASCII_PBM:
+			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PGM:
+			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PPM:
+				std::memcpy(dest.data, data, sizeof(pnm_data_t)*new_size);
+				break;
+			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PBM:
+				for (int i = 0; i < new_size; i++)
+					dest.data[i] = dest.maxvalue * (1-data[i]);
+				break;
+			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PBM:
+				for (int i = 0; i < new_size; i+=3) {
+					dest.data[i+0] = dest.maxvalue * (1-data[i/3]);
+					dest.data[i+1] = dest.maxvalue * (1-data[i/3]);
+					dest.data[i+2] = dest.maxvalue * (1-data[i/3]);
+				}
+				break;
+			case (PNM_ASCII_PBM << 4) | PNM_ASCII_PGM:
+				for (int i = 0; i < new_size; i++)
+					dest.data[i] = (data[i] >= 128) ? 0 : 1;
+				break;
+			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PGM:
+				for (int i = 0; i < new_size; i+=3) {
+					dest.data[i+0] = data[i/3];
+					dest.data[i+1] = data[i/3];
+					dest.data[i+2] = data[i/3];
+				}
+				break;
+			case (PNM_ASCII_PBM << 4) | PNM_ASCII_PPM:
+				for (int i = 0; i < new_size; i++)
+					dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2] >= 128*3) ? 0 : 1;
+				break;
+			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PPM:
+				for (int i = 0; i < new_size; i++)
+					dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2]) / 3;
+				break;
+			default:
+				pnm_error("Unknown conversion types (from %i, to %i).\n", type, dest.type);
+				throw std::invalid_argument("Invalid conversion types.");
+		}
 	}
-	}
-
 	*this = std::move(dest);
 }
 
@@ -214,7 +212,7 @@ pnm_image::~pnm_image() {
 }
 
 void pnm_image::erase_image() {
-	memset(data, 255, size()*sizeof(pnm_data_t));
+	std::memset(data, 255, size()*sizeof(pnm_data_t));
 }
 
 int pnm_image::size() {

@@ -1,11 +1,9 @@
+#include <cstdlib>
+#include <cstdarg>
+#include <cstdio>
 #include "lines.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
-//#include <cv.h>
-//#include <highgui.h>
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
@@ -30,6 +28,34 @@ void vectorizer_error(const char *format, ...) {
 	va_end(args);
 	return;
 }
+
+#ifdef VECTORIZER_DEBUG
+void vectorizer_debug(const char *format, ...) {
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+	return;
+}
+#else
+void vectorizer_debug(const char *format, ...) {};
+#endif
+
+#ifdef VECTORIZER_HIGHGUI
+void vectorize_imshow(const string& winname, InputArray mat) {
+	return imshow(winname, mat);
+}
+int vectorize_waitKey(int delay = 0) {
+	return waitKey(delay);
+}
+#else
+void vectorize_imshow(const string& winname, InputArray mat) {
+	return;
+}
+int vectorize_waitKey(int delay = 0) {
+	return -1;
+}
+#endif
 
 v_image vectorize_bare(const pnm_image &image) {
 	auto out = v_image(image.width, image.height);
@@ -79,7 +105,7 @@ Point find_adj(const Mat &out, Point pos) {
 				max = (unsigned char)safeat(out, i, j);
 				max_x = j;
 				max_y = i;
-				printf("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
+				vectorizer_debug("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
 			}
 		}
 	}
@@ -103,7 +129,7 @@ v_line *trace(Mat &out, const Mat &orig, Mat &seg, Point pos) {
 		if (pos.x >= 0) {
 			line->add_point(v_pt(pos.x, pos.y), v_co(safeat(orig, pos.y, pos.x*3 + 2), safeat(orig, pos.y, pos.x*3 + 1), safeat(orig, pos.y, pos.x*3 + 0)), width);
 		}
-		printf("trace: %i %i %i\n", pos.x, pos.y, out.data[pos.y*out.step + pos.x]);
+		vectorizer_debug("trace: %i %i %i\n", pos.x, pos.y, out.data[pos.y*out.step + pos.x]);
 	}
 	return line;
 }
@@ -115,7 +141,7 @@ void my_segment(Mat &out, const Mat &orig, Mat &seg, v_image &vect) {
 
 	int count = 0;
 	while (max !=0) {
-		printf("my_segment: %i %i\n", max_pos.x, max_pos.y);
+		vectorizer_debug("my_segment: %i %i\n", max_pos.x, max_pos.y);
 		v_line *last = trace(out, orig, seg, max_pos);
 		if (last) {
 			vect.add_line(*last);
@@ -124,7 +150,7 @@ void my_segment(Mat &out, const Mat &orig, Mat &seg, v_image &vect) {
 		}
 		minMaxLoc(out, NULL, &max, NULL, &max_pos);
 	}
-	printf("lines found: %i\n", count);
+	vectorizer_debug("lines found: %i\n", count);
 }
 
 v_image vectorize(const pnm_image &original) {
@@ -149,39 +175,38 @@ v_image vectorize(const pnm_image &original) {
 			seg.data[i*3+j*orig.step+0] = 255;
 		}
 	}
-	imshow("vectorizer", orig);
-	waitKey(0);
-	imshow("vectorizer", source);
-	waitKey(0);
+	vectorize_imshow("vectorizer", orig);
+	vectorize_waitKey(0);
+	vectorize_imshow("vectorizer", source);
+	vectorize_waitKey(0);
 	threshold(source, source, 127, 255, THRESH_BINARY | THRESH_OTSU);
 	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3));
 
 	double max = 1;
 	int iterace = 1;
 	while (max !=0) {
-		morphologyEx(source, bw, MORPH_OPEN, kernel);	//dilate(erode(source))
+		morphologyEx(source, bw, MORPH_OPEN, kernel); // = dilate(erode(source))
 		bitwise_not(bw, bw);
 		bitwise_and(source, bw, bw);
-		//bitwise_or(out, bw, out);
-		pridej(out, bw, iterace++);
+		pridej(out, bw, iterace++); // bitwise_or(out, bw, out);
 		erode(source, source, kernel);
 		minMaxLoc(source, NULL, &max, NULL, NULL);
 	}
 
 	bw = out.clone();
 	normalize(bw, iterace-1);
-	imshow("vectorizer", bw);
-	waitKey(0);
-	//cvDilate(out, out, kernel, 1);
+	vectorize_imshow("vectorizer", bw);
+	vectorize_waitKey(0);
+	//dilate(out, out, kernel, 1);
 	////normalize(out, iterace-1);
 	////my_threshold(out);
 	my_segment(out, orig, seg, vect);
-	//cvShowImage("source", seg);
-	//cvWaitKey(0);
+	//vectorize_imshow("vectorizer", seg);
+	//vectorize_waitKey(0);
 
-	imshow("vectorizer", seg);
-	waitKey(0);
-	printf("end of vectorization\n");
+	vectorize_imshow("vectorizer", seg);
+	vectorize_waitKey(0);
+	vectorizer_debug("end of vectorization\n");
 
 	return vect;
 }
