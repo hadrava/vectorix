@@ -17,7 +17,7 @@ private:
 	static const int step = 2;
 	static void vectorize_imshow(const cv::string& winname, cv::InputArray mat);
 	static int vectorize_waitKey(int delay = 0);
-	static void pridej(cv::Mat &out, cv::Mat &bw, int iterace);
+	static void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration);
 	static void normalize(cv::Mat &out, int max);
 	static void my_threshold(cv::Mat &out);
 	static cv::Point find_adj(const cv::Mat &out, cv::Point pos);

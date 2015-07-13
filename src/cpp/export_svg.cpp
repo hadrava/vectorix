@@ -4,7 +4,7 @@
 
 namespace vect {
 
-void editable::write_line(FILE *fd, const v_line &line) {
+void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output in editable way - one path.
 	auto segment = line.segment.cbegin();
 	fprintf(fd, "    <path\n");
 	fprintf(fd, "       d=\"M %f %f", segment->main.x, segment->main.y);
@@ -28,12 +28,12 @@ void editable::write_line(FILE *fd, const v_line &line) {
 	if (line.get_type() == stroke)
 		fprintf(fd, "\"\n       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/count, opacity/count);
 	else
-		fprintf(fd, " Z\"\n       style=\"fill:#%02x%02x%02x;stroke:none\" />\n", color.val[0], color.val[1], color.val[2]);
+		fprintf(fd, " Z\"\n       style=\"fill:#%02x%02x%02x;stroke:none\" />\n", color.val[0], color.val[1], color.val[2]); // filled regions are closed (Z) and have no stroke.
 };
 
-void grouped::write_line(FILE *fd, const v_line &line) {
+void grouped::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output with changing colors and width using group tag.
 	if (line.get_type() == fill)
-		return editable::write_line(fd, line);
+		return editable::write_line(fd, line); // Filled regions should be rendered in `editable' way.
 
 	auto segment = line.segment.cbegin();
 	fprintf(fd, "    <g>\n");

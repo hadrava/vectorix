@@ -17,7 +17,7 @@ class v_co {
 public:
 	v_co(int _r, int _g, int _b) { val[0] = _r; val[1] = _g; val[2] = _b; };
 	v_co() { val[0] = 0; val[1] = 0; val[2] = 0; };
-	v_co &operator+=(const v_co &other) {
+	v_co &operator+=(const v_co &other) { // Simple operators (in header for inlining).
 		val[0] += other.val[0];
 		val[1] += other.val[1];
 		val[2] += other.val[2];
@@ -56,9 +56,9 @@ public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
 	v_line(): type_(stroke) {};
 	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main);
-	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co &&_color, p _width);
+	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co _color, p _width = 1);
 	void add_point(v_pt &&_main);
-	void add_point(v_pt &&_main, v_co &&_color, p _width);
+	void add_point(v_pt &&_main, v_co _color, p _width = 1);
 	void set_type(v_line_type type) { type_ = type; };
 	v_line_type get_type() const { return type_; };
 	std::list<v_point> segment;

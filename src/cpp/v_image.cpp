@@ -20,7 +20,7 @@ void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_mai
 	segment.emplace_back(v_point(_control_prev, _main, _main));
 }
 
-void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co &&_color, p _width = 1) {
+void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co _color, p _width) {
 	segment.back().control_next = _p_control_next;
 	segment.emplace_back(v_point(_control_prev, _main, _main, _color, _width));
 }
@@ -29,7 +29,7 @@ void v_line::add_point(v_pt &&_main) {
 	segment.emplace_back(v_point(_main, _main, _main));
 }
 
-void v_line::add_point(v_pt &&_main, v_co &&_color, p _width = 1) {
+void v_line::add_point(v_pt &&_main, v_co _color, p _width) {
 	segment.emplace_back(v_point(_main, _main, _main, _color, _width));
 }
 

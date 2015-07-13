@@ -16,7 +16,7 @@ void renderer::render_error(const char *format, ...) {
 	va_end(args);
 }
 
-void renderer::bezier_render(pnm_image &bitmap, const v_line &line) {
+void renderer::bezier_render(pnm_image &bitmap, const v_line &line) { // Render one path from bezier curves (also works with straight lines).
 	if (bitmap.type != PNM_BINARY_PGM)
 		render_error("Error: Image type %i not supported.\n", bitmap.type);
 	auto two = line.segment.cbegin();
@@ -26,10 +26,10 @@ void renderer::bezier_render(pnm_image &bitmap, const v_line &line) {
 	while (two != line.segment.cend()) {
 		for (p u=0; u<=1; u+=0.0005) {
 			p v = 1-u;
-			p x = v*v*v*one->main.x + 3*v*v*u*one->control_next.x + 3*v*u*u*two->control_prev.x + u*u*u*two->main.x;
+			p x = v*v*v*one->main.x + 3*v*v*u*one->control_next.x + 3*v*u*u*two->control_prev.x + u*u*u*two->main.x; // Bezier coefficients.
 			p y = v*v*v*one->main.y + 3*v*v*u*one->control_next.y + 3*v*u*u*two->control_prev.y + u*u*u*two->main.y;
 			p w = v*one->width + u*two->width;
-			for (int j = y - w/2; j<= y + w/2; j++) {
+			for (int j = y - w/2; j<= y + w/2; j++) { // Line has some width.
 				if (j<0 || j>=bitmap.height)
 					continue;
 				for (int i = x - w/2; i<= x + w/2; i++) {
