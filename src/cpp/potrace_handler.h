@@ -3,7 +3,15 @@
 
 #include "pnm_handler.h"
 #include "v_image.h"
+#include "vectorizer.h"
 
-vect::v_image vectorize_potrace(const pnm::pnm_image &original);
+namespace vect {
+
+class potrace : generic_vectorizer {
+public:
+	static vect::v_image vectorize(const pnm::pnm_image &image);
+};
+
+}; // namespace
 
 #endif

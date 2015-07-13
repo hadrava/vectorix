@@ -3,8 +3,30 @@
 
 #include "pnm_handler.h"
 #include "v_image.h"
+#include <opencv2/opencv.hpp>
 
-vect::v_image vectorize(const pnm::pnm_image &image);
-vect::v_image vectorize_bare(const pnm::pnm_image &image);
+namespace vect {
+
+class generic_vectorizer {
+protected:
+	static void vectorizer_error(const char *format, ...);
+	static void vectorizer_debug(const char *format, ...);
+};
+
+class stupid : generic_vectorizer {
+public:
+	static vect::v_image vectorize(const pnm::pnm_image &image);
+};
+
+template <class Vectorizer = stupid>
+class vectorizer {
+public:
+	static vect::v_image run(const pnm::pnm_image &image) {
+		return Vectorizer::vectorize(image);
+	};
+};
+
+
+}; // namespace
 
 #endif

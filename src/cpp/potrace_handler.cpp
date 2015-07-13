@@ -7,10 +7,11 @@
 #include "pnm_handler.h"
 #include "potrace_handler.h"
 
-using namespace vect;
 using namespace pnm;
 
-v_image vectorize_potrace(const pnm_image &original) {
+namespace vect {
+
+v_image potrace::vectorize(const pnm_image &original) {
 	pnm_image image = original;
 	image.convert(PNM_BINARY_PBM);
 
@@ -70,3 +71,5 @@ v_image vectorize_potrace(const pnm_image &original) {
 
 	return vector;
 }
+
+}; // namespace

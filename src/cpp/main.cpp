@@ -6,6 +6,7 @@
 #include "export_svg.h"
 #include "vectorizer.h"
 #include "potrace_handler.h"
+#include "custom_vectorizer.h"
 #include "render.h"
 #include "time_measurement.h"
 
@@ -34,16 +35,20 @@ int main(int argc, char **argv) {
 
 	timer vectorization_timer(0);
 	vectorization_timer.start();
-		auto vector = vectorize(input_image);
-		//auto vector = vectorize_bare(input_image);
-		//auto vector = vectorize_potrace(input_image);
+		//auto vector = vectorizer<stupid>::run(input_image);
+		auto vector = vectorizer<custom>::run(input_image);
+		//auto vector = vectorizer<potrace>::run(input_image);
 	vectorization_timer.stop();
-	fprintf(stderr, "Vectorization time: %f\n", vectorization_timer.read()/1e6);
+	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
 	if (svg_output)
 		export_svg<editable>::write(svg_output, vector);
 	if (pnm_output) {
-		input_image = render(vector);
+		timer render_timer(0);
+		render_timer.start();
+			input_image = renderer::render(vector);
+		render_timer.stop();
+		fprintf(stderr, "Render time: %fs\n", render_timer.read()/1e6);
 		input_image.write(pnm_output);
 	}
 

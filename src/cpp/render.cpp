@@ -5,17 +5,18 @@
 #include "pnm_handler.h"
 #include "render.h"
 
-using namespace vect;
 using namespace pnm;
 
-void render_error(const char *format, ...) {
+namespace vect {
+
+void renderer::render_error(const char *format, ...) {
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
 }
 
-void bezier_render(pnm_image &bitmap, const v_line &line) {
+void renderer::bezier_render(pnm_image &bitmap, const v_line &line) {
 	if (bitmap.type != PNM_BINARY_PGM)
 		render_error("Error: Image type %i not supported.\n", bitmap.type);
 	auto two = line.segment.cbegin();
@@ -44,7 +45,7 @@ void bezier_render(pnm_image &bitmap, const v_line &line) {
 	}
 }
 
-pnm_image render(const v_image &vector) {
+pnm_image renderer::render(const v_image &vector) {
 	auto bitmap = pnm_image(vector.width, vector.height);
 	bitmap.erase_image();
 	for (v_line line: vector.line) {
@@ -52,3 +53,5 @@ pnm_image render(const v_image &vector) {
 	}
 	return bitmap;
 }
+
+}; // namespace

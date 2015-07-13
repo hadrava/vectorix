@@ -10,5 +10,6 @@ typedef float p;
 #define TIMER_MEASURE
 //#define VECTORIZER_DEBUG
 //#define VECTORIZER_HIGHGUI
+//#define DEBUG
 
 #endif
