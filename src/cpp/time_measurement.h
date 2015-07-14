@@ -7,7 +7,7 @@
 
 #include <sys/time.h>
 
-namespace time_measurement {
+namespace tmea {
 
 typedef long long int usec_t;
 
@@ -41,7 +41,7 @@ private:
 
 #else
 
-namespace time_measurement {
+namespace tmea {
 
 typedef long long int usec_t;
 

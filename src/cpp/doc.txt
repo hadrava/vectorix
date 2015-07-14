@@ -1,0 +1,176 @@
++----------------------------------------+             Jan Hadrava <jhadrva@gmail.com>
+| Vector - vektorizovadlo čárové grafiky |
++----------------------------------------+
+
+Program je určen převážně pro testování a ladění vektorizačních algoritmů pro čárovou
+grafiku. Implementován byl jednoducúy algoritmus založený na sledování čar. Pro
+porovnání program podporuje i vektorizaci pomocí nástroje Potrace¹⁾, resp. jeho
+knihovní verze potracelib. Potrace však funguje na jiném principu - nesoustředí se na
+čáry, ale hledá plochy.
+
+Výstupy obou vektorizačních algoritmů jsou mírně odlišné. V případě Potrace jsou to
+uzavřené oblasti, jejich obvod je složený z beziérových křívek a rovných čar. Oblasti
+mohou mít černou a bílou barvu. Jejich obvody se sice nepřekrývají, ale jedna oblast
+může ležet uvnitř jiné. To při obyčejném vykreslování na monitor nevadí, nepříjemné
+problémy nastanou až když chceme obrázek dál upravovat, případně využít průhlednost.
+(Místo bílé bychom chtěli průhlednou barvu, na daném místě však již máme černou
+plochu.)
+
+Výstupem čárového vektorizačního algoritmu jsou křivky složené opět z beziérových
+křivek a rovných čar. V jednotlivých vrcholech je navíc uložena barva a šířka.
+Výstupní křivka tedy může průběžně měnit svoji barvu i tloušťku.
+
+* Datový model *
+
+Program reprezentuje jednak rastrové a jednak vektorové obrázky. Rastrové jsou interně
+ukládané ve třech podobách:
+
+pnm::pnm_image (pnm_handler.h/cpp)
+	vlastní implementace, přímé načítání ze souborů formátu Netpbm²⁾
+	umožňuje přímé načítání ze souboru (read)
+	         konverze mezi jednotlivými typy (convert)
+	         přímý přístup k datům (data)
+
+cv::Mat
+	obrazová data v knihovně OpenCV³), v této formě se data nacházejí jen v rámci
+	vlastního vektorizéru custom_vectorizer.h/cpp
+
+potrace_bitmap_t
+	formát definovaný v knihovně Potrace, výskyt pouze v potrace_handler.h/cpp
+
+
+Vektorové obrázky jsou v porgramu pouze ve dvou podobách. Jendak ve formátu
+definovaném knihovnou Potrace a jednak ve vlastním.
+
+vect::v_image (v_image.h/cpp)
+	vlastní vektorový obrázek - obsahuje rozměry a std::list jednotlivých
+	křivek/oblastí (vect::v_line)
+	umí přídat křivku (add_line)
+
+vect::v_line
+	reprezentuje jednu křivku/oblast jako std::list bodů/segmentů (vect::v_point).
+
+vect::v_point
+	jeden bod beziérovy křívky/úsečky, obsahuje:
+		main                - hlavní bod (počáteční/koncový bod křivky)
+		control_{prev|next} - kontrolní bod předchozí/následující křivky
+		width               - šířka čáry v hlavním bodě
+		opacity             - průhlednost v hlavním bodě
+		color               - barva
+
+
+----------------
+1) Peter Selinger, Potrace: http://potrace.sourceforge.net/
+2) Netpbm project: http://netpbm.sourceforge.net/
+3) OpenCV, Open Source Computer Vision: http://opencv.org/
+* Rozdělení do zdrojových souborů *
+
+   soubor         |namespace|
+------------------+---------+---------------------------------------------------------
+config.h          |         | Kompilační nastavení
+pnm_handler       |  ::pnm  | Obrázky ve formátu Netpbm
+v_image           | ::vect  | Vektorové obrázky
+export_svg        | ::vect  | Exportování do svg, třída export_svg<editable|grouped>
+vectorizer        | ::vect  | Obecné vektorizační rozhraní vectorizer<>
+custom_vectorizer | ::vect  | Vlastní vektorizační algoritmus vectorizer<custom>
+potrace_handler   | ::vect  | Vektorizace pomocí Potrace
+render            | ::vect  | Vykreselní z v_image do pnm_image (třída renderer)
+time_measurement  | ::tmea  | Měření času potřebného na běh jednotlivých částí
+
+
+Kompilace, závislosti
+
+Program vyžaduje nainstalovanou knihovnu OpenCV (testováno s verzí 2.4.9). Knihovnu
+Potracelib automaticky stáhne a zkompiluje příkaz `make' v podadresáři potrace (1.12).
+Poté je možné program přeložit pomocí `make' v hlavním adresáři.
+
+Nastavení v config.h
+
+Dvě nejdůležitější nastavení:
+	TIMER_MEASURE - povolí měření času v mikrosekundách
+	VECTORIZER_HIGHGUI - zapne pomocné výstupy na obrazovku v vectorizer<custom>
+	                     (nutné OpenCV/highgui a podpora OpenGL).
+
+
+Spuštění
+
+Program bere až tři parametry, vstupní soubor s bitmapou ve formátu libovolného pnm
+(s výjimkou binárního PBM), výstupní soubor svg, a výstupní bitmapu s vyrenderovaným
+výstupem vektorizování.
+
+./vector [input.pnm [output.svg [output.pnm]]]
+
+Pří menším počtu parametrů zapisuje na standardní výstup / čte ze standardního vstupu.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Původní specifikace
+-------------------
+
+* Prvotní motivace *
+
+Pro převod bitmap na vektorové obrázky existuje celá řada programů. Ty přijímají velké
+množství parametrů, které je potřeba umět správně nastavovat. Navíc každý z programů
+je vhodný na trochu jiný typ vstupů. Často pracují s plochami a ne čarami. Může tak
+docházet například ke slévání čar (pokud svírají ostrý úhel). Občas se také stává, že
+se tloušťka čáry ve vektorizovaném obrázku průběžně mění podle toho, na kolik pixelů
+se zrovna v daném místě promítla v bitmapě.
+
+
+* Cíl *
+
+Cílem tohoto "vektorizovadla" je různým již existujícím opensource vektorizačním
+programům (potrace, autotrace) přidat jednotné rozhraní a následně umožnit kombinování
+jejich výsledků.
+
+V ideálním případě bude vektorizovadlo umět optimální parametry hledat a zpětně
+nastavovat samostatně.
+
+
+* Základní součásti (v závorce možná rozšíření do budoucna) *
+
+•Ovládání z příkazové řádky
+•Práce s bitmapou - načítání a ukládání pnm (png, jpeg, …)
+•Práce s vektorovými formáty - ukládání svg (ps)
+•Vektorizace - vlastní hloupý vektorizér, použití potrace (autotrace)
+•Renderování - pro zpětné ohodnocování jednotlivých nastavení/vektorizérů
+•Optimalizování
+  •Ohodnocení výstupu dle rozdílu od originálu a hladkosti
+  •Fitování parametrů + výběr vektorizovacího algoritmu
+•(Drobná ladění zbývajících parametrů, ukládání/načítání přednastavených parametrů, …)
+•(Postprocessing vektorového obrázku - vyhlazování, zjednodušóvání, převod plocha <-> křivka, …)
+•(Grafické rozhraní)
+
+* Plánované použití knihoven: *
+
+OpenCV pro vlastní vektorizér
+potrace, autotrace
+NLopt pro fitování
+
+
+
+

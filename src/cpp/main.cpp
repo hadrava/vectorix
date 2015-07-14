@@ -13,7 +13,7 @@
 using namespace std;
 using namespace vect;
 using namespace pnm;
-using namespace time_measurement;
+using namespace tmea;
 
 int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	FILE *svg_output = stdout;
