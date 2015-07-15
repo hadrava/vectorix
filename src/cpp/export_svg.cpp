@@ -53,7 +53,7 @@ void grouped::write_line(FILE *fd, const v_line &line) { // Write one `v_line' i
 
 		fprintf(fd, "    <path d=\"M %f %f", ma.x, ma.y);
 		fprintf(fd, " C %f %f %f %f %f %f\"", cn.x, cn.y, segment->control_prev.x, segment->control_prev.y, segment->main.x, segment->main.y);
-		fprintf(fd, "       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/2, opacity/2);
+		fprintf(fd, "\n       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/2, opacity/2);
 		cn = segment->control_next;
 		ma = segment->main;
 		width = segment->width;

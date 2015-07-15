@@ -3,6 +3,7 @@
 #include "pnm_handler.h"
 #include "vectorizer.h"
 #include "custom_vectorizer.h"
+#include "time_measurement.h"
 
 using namespace cv;
 using namespace pnm;
@@ -149,18 +150,65 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 	vectorize_imshow("vectorizer", source); // Show grayscale input image.
 	vectorize_waitKey(0);
 	threshold(source, source, 127, 255, THRESH_BINARY | THRESH_OTSU); // Apply thresholdnig with threshold found by Otsu's algorithm.
+
+
+	tmea::timer skeletonization_timer;
+	skeletonization_timer.start();
+	// fast skeletonization:
+	///*
 	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // Kernel for morphological operations -- skeletonization.
+	Mat kernel_2 = getStructuringElement(MORPH_RECT, Size(3,3)); // Kernel for morphological operations -- skeletonization.
 
 	double max = 1;
 	int iteration = 1;
-	while (max !=0) { // CAlculate image skeleton (with boundary peeling
+	while (max !=0) { // Calculate image skeleton (with boundary peeling)
 		morphologyEx(source, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
 		bitwise_not(bw, bw);
 		bitwise_and(source, bw, bw);
 		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
 		erode(source, source, kernel);
 		minMaxLoc(source, NULL, &max, NULL, NULL);
+		std::swap(kernel,kernel_2);
 	}
+	//*/
+	// slow full:
+	/*
+	double max = 1;
+	int iteration = 1;
+	Mat peeled = source.clone();
+	while (max !=0) {
+		Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3));
+		morphologyEx(peeled, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
+		bitwise_not(bw, bw);
+		bitwise_and(peeled, bw, bw);
+		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
+
+		int size = iteration * 2 + 1;
+		kernel = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
+		erode(source, peeled, kernel);
+		minMaxLoc(peeled, NULL, &max, NULL, NULL);
+	}
+	*/
+	// slow sparse:
+	/*
+	double max = 1;
+	int iteration = 1;
+	Mat peeled = source.clone();
+	while (max !=0) {
+		int size = iteration * 2 + 1;
+		Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
+		morphologyEx(source, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
+		bitwise_not(bw, bw);
+		bitwise_and(peeled, bw, bw);
+		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
+
+		erode(source, peeled, kernel);
+		minMaxLoc(peeled, NULL, &max, NULL, NULL);
+	}
+	*/
+	//
+	skeletonization_timer.stop();
+	fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
 	bw = out.clone();
 	normalize(bw, iteration-1); // Normalize skeleton image for displaying on screen.

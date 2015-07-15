@@ -23,6 +23,7 @@ private:
 	static cv::Point find_adj(const cv::Mat &out, cv::Point pos);
 	static vect::v_line *trace(cv::Mat &out, const cv::Mat &orig, cv::Mat &seg, cv::Point pos);
 	static void my_segment(cv::Mat &out, const cv::Mat &orig, cv::Mat &seg, v_image &vect);
+	//static int param_skeletonization = 0;
 };
 
 }; // namespace

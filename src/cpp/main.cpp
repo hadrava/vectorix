@@ -41,8 +41,10 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
-	if (svg_output)
-		export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+	if (svg_output) {
+		//export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+	}
 	if (pnm_output) {
 		timer render_timer(0);
 		render_timer.start();
