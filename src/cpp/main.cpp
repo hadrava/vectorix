@@ -33,6 +33,18 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 
 	input_image.convert(PNM_BINARY_PPM);
 
+	custom::par.step1.threshold_type = 0;
+	custom::par.step1.threshold = 127;
+	custom::par.step1.save_threshold_name = "out/threshold.png";
+
+	custom::par.step2.type = 0;
+	custom::par.step2.show_window = 1;
+	custom::par.step2.save_peeled_name = "out/skeletonization_%03d.png";
+	custom::par.step2.save_skeleton_name = "out/skeleton.png";
+	custom::par.step2.save_distance_name = "out/distance.png";
+	custom::par.step2.save_skeleton_normalized_name = "out/skeleton_norm.png";
+	custom::par.step2.save_distance_normalized_name = "out/distance_norm.png";
+
 	timer vectorization_timer(0); // Measure time (if compiled with TIMER_MEASURE), without cpu preheating.
 	vectorization_timer.start();
 		//auto vector = vectorizer<stupid>::run(input_image); // Stupid vectorizer - just output simple line.

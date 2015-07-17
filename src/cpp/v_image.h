@@ -38,6 +38,10 @@ public:
 	v_point(v_pt _control_prev, v_pt _main, v_pt _control_next, v_co _color, p _width = 1):
 		main(_main), control_prev(_control_prev), control_next(_control_next),
 		opacity(1), width(_width), color(_color) {};
+	v_point(v_pt _pt, v_co _color, p _width):
+		main(_pt), control_prev(_pt), control_next(_pt),
+		opacity(1), width(_width), color(_color) {};
+	v_point() {};
 	v_pt main;
 	v_pt control_prev;
 	v_pt control_next;
@@ -60,6 +64,8 @@ public:
 	void add_point(v_pt &&_main);
 	void add_point(v_pt &&_main, v_co _color, p _width = 1);
 	void set_type(v_line_type type) { type_ = type; };
+	void reverse();
+	bool empty() const { return segment.empty(); };
 	v_line_type get_type() const { return type_; };
 	std::list<v_point> segment;
 private:

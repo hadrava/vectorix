@@ -33,6 +33,13 @@ void v_line::add_point(v_pt &&_main, v_co _color, p _width) {
 	segment.emplace_back(v_point(_main, _main, _main, _color, _width));
 }
 
+void v_line::reverse() {
+	segment.reverse();
+	for (v_point control: segment) {
+		std::swap(control.control_next, control.control_prev);
+	}
+};
+
 void v_image::add_line(v_line _line) {
 	line.push_back(_line);
 }

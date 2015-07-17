@@ -4,6 +4,7 @@
 #include "vectorizer.h"
 #include "custom_vectorizer.h"
 #include "time_measurement.h"
+#include <string>
 
 using namespace cv;
 using namespace pnm;
@@ -28,12 +29,18 @@ void custom::vectorize_imshow(const string& winname, InputArray mat) { // Displa
 int custom::vectorize_waitKey(int delay) { // Wait for key press in any window.
 	return waitKey(delay);
 }
+void custom::vectorize_destroyWindow(const string& winname) {
+	return destroyWindow(winname);
+}
 #else
 void custom::vectorize_imshow(const string& winname, InputArray mat) { // Highgui disabled, do nothing.
 	return;
 }
 int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'.
 	return -1;
+}
+void custom::vectorize_destroyWindow(const string& winname) {
+	return;
 }
 #endif
 
@@ -51,14 +58,6 @@ void custom::normalize(Mat &out, int max) { // Normalize grayscale image for dis
 	for (int i = 0; i < out.rows; i++) {
 		for (int j = 0; j < out.cols; j++) {
 			out.data[i*out.step + j] *= 255/max;
-		}
-	}
-}
-
-void custom::my_threshold(Mat &out) { // Simple threshold function.
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			out.data[i*out.step + j] = (!!out.data[i*out.step + j])*255;
 		}
 	}
 }
@@ -85,141 +84,308 @@ Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for t
 	return ret;
 }
 
-v_line *custom::trace(Mat &out, const Mat &orig, Mat &seg, Point pos) { // Trace line in bitmap `out' from point `pos'. Orig is used for colors only. Seg is auxiliary output for debuging.
-	v_line *line = new v_line;
-	line->add_point(v_pt(pos.x, pos.y));
-	int first = 1;
-	while (pos.x >= 0 && safeat(out, pos.y, pos.x)) {
-		p width = safeat(out, pos.y, pos.x) * 2; // Compute `width' from distance of a skeleton pixel to boundary in the original image.
-		safeat(out, pos.y, pos.x) = 0; // Delete pixel from source to prevent cycling.
-		safeat(seg, pos.y, pos.x*3 + 0) = safeat(orig, pos.y, pos.x*3 + 0); // Copy pixel to output.
-		safeat(seg, pos.y, pos.x*3 + 1) = safeat(orig, pos.y, pos.x*3 + 1);
-		safeat(seg, pos.y, pos.x*3 + 2) = safeat(orig, pos.y, pos.x*3 + 2);
-		pos = find_adj(out, pos);
-		if (pos.x >= 0) {
-			line->add_point(v_pt(pos.x, pos.y), v_co(safeat(orig, pos.y, pos.x*3 + 2), safeat(orig, pos.y, pos.x*3 + 1), safeat(orig, pos.y, pos.x*3 + 0)), width); // Add pixel to output line with color from `orig'.
-		}
-		vectorizer_debug("trace: %i %i %i\n", pos.x, pos.y, out.data[pos.y*out.step + pos.x]);
+params custom::par;
+
+void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
+	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm.
+	if (par.threshold_type == 1) {
+		type = THRESH_BINARY;
+		vectorizer_debug("threshold: Using binary threshold %i.\n", par.threshold);
 	}
-	return line;
+	else {
+		vectorizer_debug("threshold: Using Otsu's algorithm\n");
+	}
+	threshold(to_threshold, to_threshold, par.threshold, 255, type);
+	if (!par.save_threshold_name.empty()) {
+		imwrite(par.save_threshold_name, to_threshold);
+	}
 }
 
-void custom::my_segment(Mat &out, const Mat &orig, Mat &seg, v_image &vect) { // Trace whole image `out', write output to `vect'.
+void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration, step2_params &par) {
+	Mat bw     (binary_input.rows, binary_input.cols, CV_8UC(1));
+	Mat source = binary_input.clone();
+	Mat peeled = binary_input.clone();
+	Mat next_peeled (binary_input.rows, binary_input.cols, CV_8UC(1));
+	skeleton = Scalar(0);
+	distance = Scalar(0);
+
+	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // diamond
+	Mat kernel_2 = getStructuringElement(MORPH_RECT, Size(3,3)); // square
+
+	double max = 1;
+	iteration = 1;
+	if (par.type == 1)
+		std::swap(kernel, kernel_2); // use only square
+
+	while (max !=0) {
+		if (!par.save_peeled_name.empty()) {
+			char filename [128];
+			std::snprintf(filename, sizeof(filename), par.save_peeled_name.c_str(), iteration);
+			imwrite(filename, peeled);
+		}
+		if (par.show_window == 1) {
+			vectorize_imshow("Boundary peeling", peeled);
+			vectorize_waitKey(0);
+		}
+		int size = iteration * 2 + 1;
+		// skeleton
+		morphologyEx(peeled, bw, MORPH_OPEN, kernel);
+		bitwise_not(bw, bw);
+		bitwise_and(peeled, bw, bw);
+		add_to_skeleton(skeleton, bw, iteration);
+
+		// distance
+		if (par.type == 3) {
+			kernel_2 = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
+			erode(source, next_peeled, kernel_2);
+		}
+		else {
+			erode(peeled, next_peeled, kernel);
+		}
+		bitwise_not(next_peeled, bw);
+		bitwise_and(peeled, bw, bw);
+		add_to_skeleton(distance, bw, iteration++);
+
+		std::swap(peeled, next_peeled);
+		minMaxLoc(peeled, NULL, &max, NULL, NULL);
+		if (par.type == 0)
+			std::swap(kernel, kernel_2);
+	}
+	if (par.show_window == 1) {
+		vectorize_destroyWindow("Boundary peeling");
+	}
+	if (!par.save_skeleton_name.empty()) {
+		imwrite(par.save_skeleton_name, skeleton);
+	}
+	if (!par.save_distance_name.empty()) {
+		imwrite(par.save_distance_name, distance);
+	}
+	if (!par.save_skeleton_normalized_name.empty()) {
+		Mat skeleton_normalized = skeleton.clone();
+		normalize(skeleton_normalized, iteration-1);
+		imwrite(par.save_skeleton_normalized_name, skeleton_normalized);
+	}
+	if (!par.save_distance_normalized_name.empty()) {
+		Mat distance_normalized = distance.clone();
+		normalize(distance_normalized, iteration-1);
+		imwrite(par.save_distance_normalized_name, distance_normalized);
+	}
+}
+
+void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
+	Mat starting_points = skeleton.clone();
+	used_pixels = Scalar(0);
+
 	double max;
 	Point max_pos;
-	minMaxLoc(out, NULL, &max, NULL, &max_pos);
+	minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
 
 	int count = 0;
 	while (max !=0) { // While we have unused pixel.
-		vectorizer_debug("my_segment: %i %i\n", max_pos.x, max_pos.y);
-		v_line *last = trace(out, orig, seg, max_pos); // Trace whole line.
-		if (last) {
-			vect.add_line(*last);
-			delete last;
-			count ++;
-		}
-		minMaxLoc(out, NULL, &max, NULL, &max_pos);
+		vectorizer_debug("start tracing from: %i %i\n", max_pos.x, max_pos.y);
+		v_line line;
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, 1, line, par);
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save first point in same style
+		// assert, line neprázdné, jinak hlasitě ohlaš fail, odeber bod a continue
+		line.reverse();
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, 0, line, par);
+
+		vectorization_output.add_line(line);
+		count++;
+
+		bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), starting_points, used_pixels);
+
+		minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
 	}
 	vectorizer_debug("lines found: %i\n", count);
 }
 
+int pix(const Mat &img, const v_pt &point) {
+	int x = point.x;
+	int y = point.y;
+	return img.data[y*img.step + x];
+}
+
+void spix(const Mat &img, const v_pt &point, int value) {
+	int x = point.x;
+	int y = point.y;
+	img.data[y*img.step + x] = value;
+}
+
+int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) {
+	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
+		spix(used_pixels, point, value);
+		return 1;
+	}
+	else
+		return 0;
+}
+
+int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_depth, v_line &line, Mat &used_pixels) { // přidej do linie, označ body jako využité
+	int sum = 0;
+	if (line.empty()) {
+		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
+	}
+	else {
+		//TODO přidej vše, co leží mezi v_line.segment.last a new_point;
+		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
+	}
+	line.segment.push_back(new_point);
+	fprintf(stderr, "place_next_point_at: %f %f, %i = %i\n", new_point.main.x, new_point.main.y, current_depth, sum);
+	return sum;
+}
+
+int find_best_variant_0(const Mat &color_input, const Mat &skeleton, const Mat &used_pixels, v_pt last, v_point &match) {
+	Point pos;
+	pos.x = last.x;
+	pos.y = last.y;
+	Mat out = skeleton.clone();
+	bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), out, used_pixels);
+
+	pos = custom::find_adj(out, pos);
+	p width = custom::safeat(out, pos.y, pos.x) * 2; // Compute `width' from distance of a skeleton pixel to boundary in the original image.
+	if (pos.x >= 0) {
+		match = v_point(v_pt(pos.x, pos.y), v_co(custom::safeat(color_input, pos.y, pos.x*3 + 2), custom::safeat(color_input, pos.y, pos.x*3 + 1), custom::safeat(color_input, pos.y, pos.x*3 + 0)), width);
+		return 1;
+	}
+	return 0;
+}
+
+double evaluate(v_point new_point, int last_depth, int allowed_depth) {
+	return 1;//TODO
+}
+
+int do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_pt last_placed, int allowed_depth, v_line &line, v_point &new_point, step3_params &par) {
+	if (allowed_depth <= 0) {
+		return 0;
+	}
+	double best_eval = 0;
+	v_point best_match;
+	int best_depth = -1;
+
+	for (int variant = 0; variant < 1; variant++) {
+		v_point last_match;
+
+		if (!find_best_variant_0(color_input, skeleton, used_pixels, last_placed, last_match))
+			continue;
+		// TODO
+		// do prediction:
+		// odhadne směr, kterým hledat
+		//   tam nastaví výhodnější váhu
+		// najde 5 nejlepších variant bodů:
+		//  1) zachování směru, rozměrů, skok bez kostry, navázání na kostru (2) - následně vynucený směr
+		//  2) trasování kupředu (2) (+se skokem mimo kostru)
+		//  3) trasování do zatáčky (2) (+se skokem mimo kostru)
+		//  4) konec (1)
+		//
+		//  if nejde najít, continue
+		int sum = place_next_point_at(skeleton, last_match, allowed_depth, line, used_pixels);
+		int last_depth = do_prediction(color_input, skeleton, distance, used_pixels, last_match.main, allowed_depth - 1, line, new_point, par);
+		fprintf(stderr, "last_depth, %i\n", last_depth);
+		line.segment.pop_back();
+
+		double last_eval = evaluate(last_match, last_depth, allowed_depth);
+		if (last_eval > best_eval) {
+			best_eval = last_eval;
+			best_match = last_match;
+			best_depth = last_depth;
+			fprintf(stderr, "expected, %i\n", best_depth);
+		}
+		if (best_eval >= par.eval_auto_choose) {
+			break;
+		}
+		threshold(used_pixels, used_pixels, allowed_depth, 0, THRESH_TOZERO);
+	}
+	new_point = best_match;
+	return best_depth + 1;
+}
+
+
+void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, int first_point, v_line &line, step3_params &par) {
+	v_pt last_placed;
+	last_placed.x = startpoint.x;
+	last_placed.y = startpoint.y;
+	int sum = 0;
+	for (;;) {
+		v_point new_point;
+		int depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO);
+		if (depth_found >= 1) {
+			if (first_point == 1) {
+				sum += place_next_point_at(skeleton, new_point, 254, line, used_pixels);
+				first_point = 0;
+			}
+			else
+				sum += place_next_point_at(skeleton, new_point, 255, line, used_pixels);
+		}
+		else {
+			break;
+		}
+		last_placed = new_point.main;
+	}
+	if (sum == 0) {
+		vectorizer_debug("trace_part: no new pixel used, program is doomed\n");//TODO
+	}
+}
+
 v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color).
-	pnm_image image = original;
-	image.convert(PNM_BINARY_PGM); // Convert to grayscale for thresholding and skeletonization.
-
-	v_image vect = v_image(image.width, image.height);
-
-	Mat source (image.height, image.width, CV_8UC(1));
-	Mat orig   (image.height, image.width, CV_8UC(3));
-	Mat bw     (image.height, image.width, CV_8UC(1));
-	Mat out = Mat::zeros(image.height, image.width, CV_8UC(1));
-	Mat seg    (image.height, image.width, CV_8UC(3));
-	for (int j = 0; j < image.height; j++) { // Copy data from PNM images to OpenCV image structures.
-		for (int i = 0; i<image.width; i++) {
-			source.data[i+j*source.step] = 255 - image.data[i+j*image.width];
+	Mat orig (original.height, original.width, CV_8UC(3));
+	for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures.
+		for (int i = 0; i<original.width; i++) {
 			orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
 			orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
 			orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
-			seg.data[i*3+j*orig.step+2] = 255;
-			seg.data[i*3+j*orig.step+1] = 255;
-			seg.data[i*3+j*orig.step+0] = 255;
 		}
 	}
+
+	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255));
+
+	Mat source (orig.rows, orig.cols, CV_8UC(1));
+	cvtColor(orig, source, CV_RGB2GRAY);
+	subtract(Scalar(255,255,255), source,source);
+
+
+	Mat seg    (orig.rows, orig.cols, CV_8UC(3));
+	bitwise_not(seg, seg);
+	v_image vect = v_image(orig.cols, orig.rows);
+
 	vectorize_imshow("vectorizer", orig); // Show original color image.
 	vectorize_waitKey(0);
 	vectorize_imshow("vectorizer", source); // Show grayscale input image.
 	vectorize_waitKey(0);
-	threshold(source, source, 127, 255, THRESH_BINARY | THRESH_OTSU); // Apply thresholdnig with threshold found by Otsu's algorithm.
+	tmea::timer threshold_timer;
+	threshold_timer.start();
+		step1_threshold(source, par.step1);
+	threshold_timer.stop();
+	fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
 
-
+	Mat skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+	Mat distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+	int iteration;
 	tmea::timer skeletonization_timer;
 	skeletonization_timer.start();
-	// fast skeletonization:
-	///*
-	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // Kernel for morphological operations -- skeletonization.
-	Mat kernel_2 = getStructuringElement(MORPH_RECT, Size(3,3)); // Kernel for morphological operations -- skeletonization.
-
-	double max = 1;
-	int iteration = 1;
-	while (max !=0) { // Calculate image skeleton (with boundary peeling)
-		morphologyEx(source, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
-		bitwise_not(bw, bw);
-		bitwise_and(source, bw, bw);
-		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
-		erode(source, source, kernel);
-		minMaxLoc(source, NULL, &max, NULL, NULL);
-		std::swap(kernel,kernel_2);
-	}
-	//*/
-	// slow full:
-	/*
-	double max = 1;
-	int iteration = 1;
-	Mat peeled = source.clone();
-	while (max !=0) {
-		Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3));
-		morphologyEx(peeled, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
-		bitwise_not(bw, bw);
-		bitwise_and(peeled, bw, bw);
-		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
-
-		int size = iteration * 2 + 1;
-		kernel = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
-		erode(source, peeled, kernel);
-		minMaxLoc(peeled, NULL, &max, NULL, NULL);
-	}
-	*/
-	// slow sparse:
-	/*
-	double max = 1;
-	int iteration = 1;
-	Mat peeled = source.clone();
-	while (max !=0) {
-		int size = iteration * 2 + 1;
-		Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
-		morphologyEx(source, bw, MORPH_OPEN, kernel); // Morphological open = dilate(erode(source)).
-		bitwise_not(bw, bw);
-		bitwise_and(peeled, bw, bw);
-		add_to_skeleton(out, bw, iteration++); // Almost same as bitwise_or(out, bw, out). Save distance from object boudary (interation number).
-
-		erode(source, peeled, kernel);
-		minMaxLoc(peeled, NULL, &max, NULL, NULL);
-	}
-	*/
-	//
+		step2_skeletonization(source, skeleton, distance, iteration, par.step2);
 	skeletonization_timer.stop();
 	fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
-	bw = out.clone();
-	normalize(bw, iteration-1); // Normalize skeleton image for displaying on screen.
-	vectorize_imshow("vectorizer", bw);
+	//show distance
+	Mat distance_show = distance.clone();
+	normalize(distance_show, iteration-1);
+	vectorize_imshow("vectorizer", distance_show);
 	vectorize_waitKey(0);
-	//dilate(out, out, kernel, 1);
-	////normalize(out, iteration-1);
-	////my_threshold(out);
-	my_segment(out, orig, seg, vect); // Trace skeleton.
-	//vectorize_imshow("vectorizer", seg);
-	//vectorize_waitKey(0);
+
+	//show skeleton
+	Mat skeleton_show = skeleton.clone();
+	normalize(skeleton_show, iteration-1);
+	vectorize_imshow("vectorizer", skeleton_show);
+	vectorize_waitKey(0);
+
+	Mat used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+	tmea::timer tracing_timer;
+	tracing_timer.start();
+		step3_tracing(orig, skeleton, distance, used_pixels, vect, par.step3);
+	tracing_timer.stop();
+	fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
 
 	vectorize_imshow("vectorizer", seg);
 	vectorize_waitKey(0);
