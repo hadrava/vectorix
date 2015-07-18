@@ -85,6 +85,7 @@ private:
 class v_image {
 public:
 	v_image(p _w, p _h): width(_w), height(_h) {};
+	v_image(): width(0), height(0) {};
 	void clean();
 	void add_line(v_line _line);
 	p width;

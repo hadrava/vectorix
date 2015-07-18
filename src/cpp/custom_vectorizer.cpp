@@ -4,6 +4,7 @@
 #include "vectorizer.h"
 #include "custom_vectorizer.h"
 #include "time_measurement.h"
+#include "parameters.h"
 #include <string>
 
 using namespace cv;
@@ -74,7 +75,7 @@ Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for t
 				max = (unsigned char)safeat(out, i, j);
 				max_x = j;
 				max_y = i;
-				vectorizer_debug("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
+				//vectorizer_debug("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
 			}
 		}
 	}
@@ -83,8 +84,6 @@ Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for t
 	ret.y = max_y;
 	return ret;
 }
-
-params custom::par;
 
 void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm.
@@ -182,7 +181,7 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 
 	int count = 0;
 	while (max !=0) { // While we have unused pixel.
-		vectorizer_debug("start tracing from: %i %i\n", max_pos.x, max_pos.y);
+		//vectorizer_debug("start tracing from: %i %i\n", max_pos.x, max_pos.y);
 		v_line line;
 		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
 		line.reverse();
@@ -353,51 +352,75 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 	cvtColor(orig, source, CV_RGB2GRAY);
 	subtract(Scalar(255,255,255), source,source);
 
-
-	Mat seg    (orig.rows, orig.cols, CV_8UC(3));
-	bitwise_not(seg, seg);
-	v_image vect = v_image(orig.cols, orig.rows);
-
-	vectorize_imshow("vectorizer", orig); // Show original color image.
-	vectorize_waitKey(0);
-	vectorize_imshow("vectorizer", source); // Show grayscale input image.
-	vectorize_waitKey(0);
 	tmea::timer threshold_timer;
-	threshold_timer.start();
-		step1_threshold(source, par.step1);
-	threshold_timer.stop();
-	fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
-
-	Mat skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
-	Mat distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+	Mat skeleton;
+	Mat distance;
 	int iteration;
 	tmea::timer skeletonization_timer;
-	skeletonization_timer.start();
-		step2_skeletonization(source, skeleton, distance, iteration, par.step2);
-	skeletonization_timer.stop();
-	fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
-
-	//show distance
-	Mat distance_show = distance.clone();
-	normalize(distance_show, iteration-1);
-	vectorize_imshow("vectorizer", distance_show);
-	vectorize_waitKey(0);
-
-	//show skeleton
-	Mat skeleton_show = skeleton.clone();
-	normalize(skeleton_show, iteration-1);
-	vectorize_imshow("vectorizer", skeleton_show);
-	vectorize_waitKey(0);
-
-	Mat used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+	Mat distance_show;
+	Mat skeleton_show;
+	v_image vect = v_image(orig.cols, orig.rows);
+	Mat used_pixels;
 	tmea::timer tracing_timer;
-	tracing_timer.start();
-		step3_tracing(orig, skeleton, distance, used_pixels, vect, par.step3);
-	tracing_timer.stop();
-	fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
 
-	vectorize_imshow("vectorizer", seg);
-	vectorize_waitKey(0);
+	global_params.last_changed_param_step = 1;
+	int break_ = 0;
+	do {
+		switch (global_params.last_changed_param_step) {
+			case 1:
+			default:
+				vectorize_imshow("Original", orig); // Show original color image.
+				vectorize_waitKey(0);
+				vectorize_imshow("Grayscale", source); // Show grayscale input image.
+				vectorize_waitKey(0);
+				threshold_timer.start();
+					step1_threshold(source, global_params.step1);
+				threshold_timer.stop();
+				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
+
+			case 2:
+				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+				skeletonization_timer.start();
+					step2_skeletonization(source, skeleton, distance, iteration, global_params.step2);
+				skeletonization_timer.stop();
+				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
+
+				//show distance
+				distance_show = distance.clone();
+				normalize(distance_show, iteration-1);
+				vectorize_imshow("Distance", distance_show);
+				//vectorize_waitKey(0);
+
+				//show skeleton
+				skeleton_show = skeleton.clone();
+				normalize(skeleton_show, iteration-1);
+				vectorize_imshow("Skeleton", skeleton_show);
+				//vectorize_waitKey(0);
+
+			case 3:
+				used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
+				tracing_timer.start();
+					step3_tracing(orig, skeleton, distance, used_pixels, vect, global_params.step3);
+				tracing_timer.stop();
+				fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
+			case 0:
+				global_params.last_changed_param_step = 0;
+				int key = vectorize_waitKey(0);
+				vectorizer_debug("Key: %i\n", key);
+				switch (key & 0x7F) {
+					case 'q':
+					case 'Q':
+						break_ = 1;
+						break;
+					case 'r':
+					case 'R':
+						global_params.last_changed_param_step = 1;
+						break;
+				}
+		}
+	} while ((global_params.interactive == 2) && (break_ == 0));
+
 	vectorizer_debug("end of vectorization\n");
 
 	return vect;

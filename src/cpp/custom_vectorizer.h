@@ -5,41 +5,14 @@
 #include "pnm_handler.h"
 #include "v_image.h"
 #include "vectorizer.h"
+#include "parameters.h"
 #include <string>
 
 namespace vect {
 
-typedef struct {
-	int threshold = 127;
-	int threshold_type = 0; // 0=otsu, 1 fixed
-	std::string save_threshold_name = "";
-} step1_params;
-
-typedef struct {
-	int type = 0; // 0=fast diamod-square, 1=square, 2=diamond, 3=circle
-	int show_window = 0; // 0 - no, 1 - yes
-	std::string save_peeled_name = ""; // "out/boundary_%03d.png"
-	std::string save_skeleton_name = "";
-	std::string save_distance_name = "";
-	std::string save_skeleton_normalized_name = "";
-	std::string save_distance_normalized_name = "";
-} step2_params;
-
-typedef struct {
-	float depth_auto_choose = 0;
-	int max_dfs_depth = 1;
-} step3_params;
-
-typedef struct {
-	step1_params step1;
-	step2_params step2;
-	step3_params step3;
-} params;
-
 class custom : generic_vectorizer {
 public:
 	static vect::v_image vectorize(const pnm::pnm_image &image);
-	static params par;
 private:
 	static uchar nullpixel;
 public:

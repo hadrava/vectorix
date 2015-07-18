@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include "v_image.h"
 #include "opencv_render.h"
+#include "parameters.h"
 #include <cmath>
 
 using namespace cv;
@@ -17,13 +18,13 @@ p distance(const v_point &a, const v_point &b) {
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
 
-void prepare_for_render(v_line &line) {
+void chop_line(v_line &line, p max_distance = 1) {
 	auto two = line.segment.begin();
 	auto one = two;
 	if (two != line.segment.end())
 		++two;
 	while (two != line.segment.end()) {
-		while (distance(*one, *two) > 2) {
+		while (distance(*one, *two) > max_distance) {
 			v_point newpoint;
 			newpoint.control_prev.x = ((one->control_next.x + one->main.x)/2 + (one->control_next.x + two->control_prev.x)/2)/2;
 			newpoint.control_prev.y = ((one->control_next.y + one->main.y)/2 + (one->control_next.y + two->control_prev.y)/2)/2;
@@ -50,7 +51,6 @@ void prepare_for_render(v_line &line) {
 		one=two;
 		two++;
 	}
-
 }
 
 void opencv_render(const v_image &vector, Mat &output) {
@@ -59,8 +59,8 @@ void opencv_render(const v_image &vector, Mat &output) {
 	lout = Scalar(255, 255, 255);
 	for (v_line line: vector.line) {
 		v_line l = line;
-		prepare_for_render(l);
-		
+		chop_line(l, global_params.opencv_render.render_max_distance);
+
 		if (l.get_type() == stroke) {
 			auto two = l.segment.cbegin();
 			auto one = two;
