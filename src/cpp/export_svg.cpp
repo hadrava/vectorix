@@ -4,10 +4,18 @@
 
 namespace vect {
 
+v_co editable::group_col;
+
 void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output in editable way - one path.
 	auto segment = line.segment.cbegin();
-	fprintf(fd, "    <path\n");
-	fprintf(fd, "       d=\"M %f %f", segment->main.x, segment->main.y);
+	if ((line.get_group() == group_normal) || (line.get_group() == group_first)) {
+		fprintf(fd, "    <path\n");
+		fprintf(fd, "       d=\"M %f %f", segment->main.x, segment->main.y);
+	}
+	else if ((line.get_group() == group_continue) || (line.get_group() == group_last)) {
+		fprintf(fd, " Z\n");
+		fprintf(fd, "          M %f %f", segment->main.x, segment->main.y);
+	}
 
 	v_pt cn = segment->control_next;
 	int count = 1;
@@ -27,8 +35,14 @@ void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' 
 	color /= count;
 	if (line.get_type() == stroke)
 		fprintf(fd, "\"\n       style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:%fpx;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:%f\" />\n", color.val[0], color.val[1], color.val[2], width/count, opacity/count);
-	else
-		fprintf(fd, " Z\"\n       style=\"fill:#%02x%02x%02x;stroke:none\" />\n", color.val[0], color.val[1], color.val[2]); // filled regions are closed (Z) and have no stroke.
+	else {
+		if ((line.get_group() == group_normal) || (line.get_group() == group_first)) {
+			group_col = color;
+		}
+		if ((line.get_group() == group_normal) || (line.get_group() == group_last)) {
+			fprintf(fd, " Z\"\n       style=\"fill:#%02x%02x%02x;stroke:none\" />\n", group_col.val[0], group_col.val[1], group_col.val[2]); // filled regions are closed (Z) and have no stroke.
+		}
+	}
 };
 
 void grouped::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output with changing colors and width using group tag.

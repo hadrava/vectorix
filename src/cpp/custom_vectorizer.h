@@ -26,7 +26,7 @@ typedef struct {
 } step2_params;
 
 typedef struct {
-	double eval_auto_choose = 0;
+	float depth_auto_choose = 0;
 	int max_dfs_depth = 1;
 } step3_params;
 
@@ -57,8 +57,14 @@ private:
 	static void step1_threshold(cv::Mat &to_threshold, step1_params &par);
 	static void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration, step2_params &par);
 	static void step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par);
-	static void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, int part, v_line &line, step3_params &par);
+	static void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par);
 };
+
+
+int pix(const cv::Mat &img, const v_pt &point);
+void spix(const cv::Mat &img, const v_pt &point, int value);
+void spix(const cv::Mat &img, const cv::Point &point, int value);
+int inc_pix_to(const cv::Mat &mask, int value, const v_pt &point, cv::Mat &used_pixels);
 
 }; // namespace
 

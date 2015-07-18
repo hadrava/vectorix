@@ -49,8 +49,14 @@ v_image potrace::vectorize(const pnm_image &original) { // Vectorize using potra
 	while (pot_path != NULL) { // Convert each path to our v_line format.
 		v_line line;
 		v_co color(0, 0, 0);
-		if (pot_path->sign == '-') // Inner curve (subtract) --> white color.
-			color = v_co(255, 255, 255);
+		if (pot_path->sign == '-') {
+			color = v_co(255, 255, 255); // Inner curve (subtract) --> white color.
+			if (vector.line.back().get_group() == group_normal) // +
+				vector.line.back().set_group(group_first); // previous object is unfinished
+			if (vector.line.back().get_group() == group_last) // -
+				vector.line.back().set_group(group_continue); // previous object is unfinished
+			line.set_group(group_last);
+		}
 		line.add_point(v_pt(pot_path->curve.c[pot_path->curve.n - 1][2].x, pot_path->curve.c[pot_path->curve.n - 1][2].y), color); // Add last point --> closed path.
 		for (int n = 0; n < pot_path->curve.n; n++) {
 			if (pot_path->curve.tag[n] == POTRACE_CORNER) { // Two straight segments.

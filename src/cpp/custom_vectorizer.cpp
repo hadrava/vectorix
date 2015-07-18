@@ -184,11 +184,17 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 	while (max !=0) { // While we have unused pixel.
 		vectorizer_debug("start tracing from: %i %i\n", max_pos.x, max_pos.y);
 		v_line line;
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, 1, line, par);
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save first point in same style
-		// assert, line neprázdné, jinak hlasitě ohlaš fail, odeber bod a continue
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
 		line.reverse();
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, 0, line, par);
+		threshold(used_pixels, used_pixels, 254, 255, THRESH_BINARY);
+		if (line.empty()) {
+			vectorizer_error("Vectorizer error: No new point found!\n");
+			spix(used_pixels, max_pos, 255);
+		}
+		else
+			line.segment.pop_back();
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save firsst point
 
 		vectorization_output.add_line(line);
 		count++;
@@ -212,6 +218,12 @@ void spix(const Mat &img, const v_pt &point, int value) {
 	img.data[y*img.step + x] = value;
 }
 
+void spix(const Mat &img, const Point &point, int value) {
+	int x = point.x;
+	int y = point.y;
+	img.data[y*img.step + x] = value;
+}
+
 int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) {
 	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
 		spix(used_pixels, point, value);
@@ -222,12 +234,14 @@ int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) 
 }
 
 int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_depth, v_line &line, Mat &used_pixels) { // přidej do linie, označ body jako využité
+	//TODO
 	int sum = 0;
 	if (line.empty()) {
 		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
 	}
 	else {
-		//TODO přidej vše, co leží mezi v_line.segment.last a new_point;
+		v_point old_point = line.segment.back();
+		//TODO přidej vše, co leží mezi old_point a new_point;
 		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
 	}
 	line.segment.push_back(new_point);
@@ -235,7 +249,20 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 	return sum;
 }
 
-int find_best_variant_0(const Mat &color_input, const Mat &skeleton, const Mat &used_pixels, v_pt last, v_point &match) {
+float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int variant, v_point &match, step3_params &par) {
+	
+	//TODO
+		// TODO
+		// do prediction:
+		// odhadne směr, kterým hledat
+		//   tam nastaví výhodnější váhu
+		// najde 5 nejlepších variant bodů:
+		//  1) zachování směru, rozměrů, skok bez kostry, navázání na kostru (2) - následně vynucený směr
+		//  2) trasování kupředu (2) (+se skokem mimo kostru)
+		//  3) trasování do zatáčky (2) (+se skokem mimo kostru)
+		//  4) konec (1), a jsi si jistý - přidej 2.
+		//
+		//  if nejde najít return 0;
 	Point pos;
 	pos.x = last.x;
 	pos.y = last.y;
@@ -251,66 +278,48 @@ int find_best_variant_0(const Mat &color_input, const Mat &skeleton, const Mat &
 	return 0;
 }
 
-double evaluate(v_point new_point, int last_depth, int allowed_depth) {
-	return 1;//TODO
-}
-
-int do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_pt last_placed, int allowed_depth, v_line &line, v_point &new_point, step3_params &par) {
+float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_pt last_placed, int allowed_depth, v_line &line, v_point &new_point, step3_params &par) {
 	if (allowed_depth <= 0) {
 		return 0;
 	}
-	double best_eval = 0;
 	v_point best_match;
-	int best_depth = -1;
+	float best_depth = -1;
+	float last_depth = 1;
 
-	for (int variant = 0; variant < 1; variant++) {
+	for (int variant = 0; last_depth > 0; variant++) {
 		v_point last_match;
 
-		if (!find_best_variant_0(color_input, skeleton, used_pixels, last_placed, last_match))
-			continue;
-		// TODO
-		// do prediction:
-		// odhadne směr, kterým hledat
-		//   tam nastaví výhodnější váhu
-		// najde 5 nejlepších variant bodů:
-		//  1) zachování směru, rozměrů, skok bez kostry, navázání na kostru (2) - následně vynucený směr
-		//  2) trasování kupředu (2) (+se skokem mimo kostru)
-		//  3) trasování do zatáčky (2) (+se skokem mimo kostru)
-		//  4) konec (1)
-		//
-		//  if nejde najít, continue
-		int sum = place_next_point_at(skeleton, last_match, allowed_depth, line, used_pixels);
-		int last_depth = do_prediction(color_input, skeleton, distance, used_pixels, last_match.main, allowed_depth - 1, line, new_point, par);
-		fprintf(stderr, "last_depth, %i\n", last_depth);
-		line.segment.pop_back();
+		last_depth = find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, variant, last_match, par);
+		if (last_depth > 0) {
+			int sum = place_next_point_at(skeleton, last_match, allowed_depth, line, used_pixels);
+			last_depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match.main, allowed_depth - 1, line, new_point, par);
+			line.segment.pop_back();
+		}
 
-		double last_eval = evaluate(last_match, last_depth, allowed_depth);
-		if (last_eval > best_eval) {
-			best_eval = last_eval;
+		if (last_depth > best_depth) {
 			best_match = last_match;
 			best_depth = last_depth;
-			fprintf(stderr, "expected, %i\n", best_depth);
 		}
-		if (best_eval >= par.eval_auto_choose) {
+		if (allowed_depth - best_depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ...
 			break;
 		}
 		threshold(used_pixels, used_pixels, allowed_depth, 0, THRESH_TOZERO);
 	}
 	new_point = best_match;
-	return best_depth + 1;
+	return best_depth;
 }
 
-
-void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, int first_point, v_line &line, step3_params &par) {
+void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par) {
 	v_pt last_placed;
 	last_placed.x = startpoint.x;
 	last_placed.y = startpoint.y;
 	int sum = 0;
+	int first_point = 1;
 	for (;;) {
 		v_point new_point;
-		int depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
+		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
 		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO);
-		if (depth_found >= 1) {
+		if (depth_found > 0) {
 			if (first_point == 1) {
 				sum += place_next_point_at(skeleton, new_point, 254, line, used_pixels);
 				first_point = 0;

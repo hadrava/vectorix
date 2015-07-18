@@ -12,6 +12,8 @@ namespace vect {
 class editable {
 public:
 	static void write_line(FILE *fd, const v_line &line);
+private:
+	static v_co group_col;
 };
 
 class grouped {

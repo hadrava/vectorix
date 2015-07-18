@@ -9,6 +9,8 @@
 #include "custom_vectorizer.h"
 #include "render.h"
 #include "time_measurement.h"
+#include "opencv_render.h"
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 using namespace vect;
@@ -44,18 +46,27 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	custom::par.step2.save_distance_name = "out/distance.png";
 	custom::par.step2.save_skeleton_normalized_name = "out/skeleton_norm.png";
 	custom::par.step2.save_distance_normalized_name = "out/distance_norm.png";
+	custom::par.step3.depth_auto_choose = 1; // error allowed (optimization)
+	custom::par.step3.max_dfs_depth = 1; // take first, no dfs allowed
 
 	timer vectorization_timer(0); // Measure time (if compiled with TIMER_MEASURE), without cpu preheating.
 	vectorization_timer.start();
 		//auto vector = vectorizer<stupid>::run(input_image); // Stupid vectorizer - just output simple line.
-		auto vector = vectorizer<custom>::run(input_image); // Custom center-line based vectorizer.
-		//auto vector = vectorizer<potrace>::run(input_image);
+		//auto vector = vectorizer<custom>::run(input_image); // Custom center-line based vectorizer.
+		auto vector = vectorizer<potrace>::run(input_image);
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
+	//show output
+	cv::Mat output = cv::Mat::zeros(vector.height, vector.width, CV_8UC(3));
+	opencv_render(vector, output);
+	cv::imshow("vectorizer", output);
+	cv::waitKey();
+
+
 	if (svg_output) {
-		//export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
-		export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		//export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
 	}
 	if (pnm_output) {
 		timer render_timer(0);
