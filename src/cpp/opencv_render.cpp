@@ -1,16 +1,20 @@
 #include <opencv2/opencv.hpp>
 #include "v_image.h"
 #include "opencv_render.h"
-#include <string>
+#include <cmath>
 
 using namespace cv;
 
 namespace vect {
 
-p calc_distance_squared(const v_point &a, const v_point &b) {//TODO look at control points
-	p x = (a.main.x - b.main.x);
-	p y = (a.main.y - b.main.y);
-	return x*x + y*y;
+p distance(const v_pt &a, const v_pt &b) {
+	p x = (a.x - b.x);
+	p y = (a.y - b.y);
+	return std::sqrt(x*x + y*y);
+
+}
+p distance(const v_point &a, const v_point &b) {
+	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
 
 void prepare_for_render(v_line &line) {
@@ -19,7 +23,7 @@ void prepare_for_render(v_line &line) {
 	if (two != line.segment.end())
 		++two;
 	while (two != line.segment.end()) {
-		while (calc_distance_squared(*one, *two) > 2) {
+		while (distance(*one, *two) > 2) {
 			v_point newpoint;
 			newpoint.control_prev.x = ((one->control_next.x + one->main.x)/2 + (one->control_next.x + two->control_prev.x)/2)/2;
 			newpoint.control_prev.y = ((one->control_next.y + one->main.y)/2 + (one->control_next.y + two->control_prev.y)/2)/2;

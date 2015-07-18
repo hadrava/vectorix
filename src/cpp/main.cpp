@@ -52,8 +52,8 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	timer vectorization_timer(0); // Measure time (if compiled with TIMER_MEASURE), without cpu preheating.
 	vectorization_timer.start();
 		//auto vector = vectorizer<stupid>::run(input_image); // Stupid vectorizer - just output simple line.
-		//auto vector = vectorizer<custom>::run(input_image); // Custom center-line based vectorizer.
-		auto vector = vectorizer<potrace>::run(input_image);
+		auto vector = vectorizer<custom>::run(input_image); // Custom center-line based vectorizer.
+		//auto vector = vectorizer<potrace>::run(input_image);
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
