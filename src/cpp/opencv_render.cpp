@@ -42,7 +42,6 @@ void prepare_for_render(v_line &line) {
 
 			line.segment.insert(two, newpoint);
 			--two;
-			fprintf(stderr, "insert %f %f\n", two->main.x, two->main.y);
 		}
 		one=two;
 		two++;
@@ -84,13 +83,20 @@ void opencv_render(const v_image &vector, Mat &output) {
 			int count = l.segment.size();
 			Point * pts = new Point[count];
 			int i = 0;
+			Scalar c(0,0,0);
 			for (v_point pt: l.segment) {
 				pts[i].x = pt.main.x;
 				pts[i].y = pt.main.y;
+				c.val[0] += pt.color.val[2];
+				c.val[1] += pt.color.val[1];
+				c.val[2] += pt.color.val[0];
 				i++;
 			}
+			c.val[0] /= i;
+			c.val[1] /= i;
+			c.val[2] /= i;
 			const Point* fillpoints[1] = { &pts[0] };
-			fillPoly(lout, fillpoints, &count, 1, Scalar(0,0,0));
+			fillPoly(lout, fillpoints, &count, 1, c);
 			delete []pts;
 		}
 
