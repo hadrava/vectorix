@@ -336,6 +336,32 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 	}
 }
 
+int interactive(int key) {
+	int break_ = 0;
+	switch (key & 0x7F) {
+		case 0:
+		case 0x7F:
+			break;
+		case 'q':
+		case 'Q':
+			break_ = 1;
+			break;
+		case 'r':
+		case 'R':
+			global_params.last_changed_param_step = 1;
+			break;
+		case 'h':
+		case 'H':
+		default:
+			fprintf(stderr, "Help:\n");
+			fprintf(stderr, "\tr\tRerun vectorization from begining\n");
+			fprintf(stderr, "\tq\tQuit\n");
+			fprintf(stderr, "\th\tHelp\n");
+			break;
+	}
+	return break_;
+}
+
 v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color).
 	Mat orig (original.height, original.width, CV_8UC(3));
 	for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures.
@@ -408,16 +434,7 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 				global_params.last_changed_param_step = 0;
 				int key = vectorize_waitKey(0);
 				vectorizer_debug("Key: %i\n", key);
-				switch (key & 0x7F) {
-					case 'q':
-					case 'Q':
-						break_ = 1;
-						break;
-					case 'r':
-					case 'R':
-						global_params.last_changed_param_step = 1;
-						break;
-				}
+				break_ = interactive(key);
 		}
 	} while ((global_params.interactive == 2) && (break_ == 0));
 

@@ -7,6 +7,7 @@ params global_params;
 
 void load_params(FILE *fd){
 	global_params.input.pnm_input_name = "";
+	global_params.vectorization_method = 2; // 0-custom, 1-potrace, 2-stupid
 	global_params.step1.threshold_type = 0;
 	global_params.step1.threshold = 127;
 	global_params.step1.save_threshold_name = "out/threshold.png";

@@ -8,51 +8,6 @@ using namespace cv;
 
 namespace vect {
 
-p distance(const v_pt &a, const v_pt &b) {
-	p x = (a.x - b.x);
-	p y = (a.y - b.y);
-	return std::sqrt(x*x + y*y);
-
-}
-p distance(const v_point &a, const v_point &b) {
-	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
-}
-
-void chop_line(v_line &line, p max_distance = 1) {
-	auto two = line.segment.begin();
-	auto one = two;
-	if (two != line.segment.end())
-		++two;
-	while (two != line.segment.end()) {
-		while (distance(*one, *two) > max_distance) {
-			v_point newpoint;
-			newpoint.control_prev.x = ((one->control_next.x + one->main.x)/2 + (one->control_next.x + two->control_prev.x)/2)/2;
-			newpoint.control_prev.y = ((one->control_next.y + one->main.y)/2 + (one->control_next.y + two->control_prev.y)/2)/2;
-
-			newpoint.control_next.x = ((two->control_prev.x + two->main.x)/2 + (one->control_next.x + two->control_prev.x)/2)/2;
-			newpoint.control_next.y = ((two->control_prev.y + two->main.y)/2 + (one->control_next.y + two->control_prev.y)/2)/2;
-
-			newpoint.main.x = (newpoint.control_prev.x  + newpoint.control_next.x)/2;
-			newpoint.main.y = (newpoint.control_prev.y  + newpoint.control_next.y)/2;
-
-			newpoint.opacity = (one->opacity + two->opacity)/2;
-			newpoint.width = (one->width + two->width)/2;
-			newpoint.color = one->color;
-			newpoint.color += two->color;
-			newpoint.color /= 2;
-			one->control_next.x = (one->control_next.x + one->main.x)/2;
-			one->control_next.y = (one->control_next.y + one->main.y)/2;
-			two->control_prev.x = (two->control_prev.x + two->main.x)/2;
-			two->control_prev.y = (two->control_prev.y + two->main.y)/2;
-
-			line.segment.insert(two, newpoint);
-			--two;
-		}
-		one=two;
-		two++;
-	}
-}
-
 void opencv_render(const v_image &vector, Mat &output) {
 	output = Scalar(255, 255, 255);
 	Mat lout(output.rows, output.cols, CV_8UC(3));

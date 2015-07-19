@@ -75,6 +75,7 @@ public:
 	void reverse();
 	bool empty() const { return segment.empty(); };
 	void set_group(v_line_group group) { group_ = group; };
+	void convert_to_outline(p max_error = 1);
 	v_line_group get_group() const { return group_; };
 	std::list<v_point> segment;
 private:
@@ -92,6 +93,12 @@ public:
 	p height;
 	std::list<v_line> line;
 };
+
+p distance(const v_pt &a, const v_pt &b);
+p distance(const v_point &a, const v_point &b);
+void chop_in_half(v_point &one, v_point &two, v_point &newpoint);
+void chop_line(v_line &line, p max_distance = 1);
+
 
 }; // namespace
 #endif

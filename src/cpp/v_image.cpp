@@ -1,4 +1,7 @@
 #include "v_image.h"
+#include <list>
+#include <cmath>
+#include <cstdio>
 
 namespace vect {
 
@@ -35,13 +38,270 @@ void v_line::add_point(v_pt &&_main, v_co _color, p _width) {
 
 void v_line::reverse() {
 	segment.reverse();
-	for (v_point control: segment) {
-		std::swap(control.control_next, control.control_prev);
+	for (auto control = segment.begin(); control != segment.end(); control++) {
+		std::swap(control->control_next, control->control_prev);
 	}
 };
 
 void v_image::add_line(v_line _line) {
 	line.push_back(_line);
+}
+
+p distance(const v_pt &a, const v_pt &b) {
+	p x = (a.x - b.x);
+	p y = (a.y - b.y);
+	return std::sqrt(x*x + y*y);
+}
+
+p distance(const v_point &a, const v_point &b) {
+	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
+}
+
+void chop_in_half(v_point &one, v_point &two, v_point &newpoint) {
+	newpoint.control_prev.x = ((one.control_next.x + one.main.x)/2 + (one.control_next.x + two.control_prev.x)/2)/2;
+	newpoint.control_prev.y = ((one.control_next.y + one.main.y)/2 + (one.control_next.y + two.control_prev.y)/2)/2;
+
+	newpoint.control_next.x = ((two.control_prev.x + two.main.x)/2 + (one.control_next.x + two.control_prev.x)/2)/2;
+	newpoint.control_next.y = ((two.control_prev.y + two.main.y)/2 + (one.control_next.y + two.control_prev.y)/2)/2;
+
+	newpoint.main.x = (newpoint.control_prev.x  + newpoint.control_next.x)/2;
+	newpoint.main.y = (newpoint.control_prev.y  + newpoint.control_next.y)/2;
+
+	newpoint.opacity = (one.opacity + two.opacity)/2;
+	newpoint.width = (one.width + two.width)/2;
+	newpoint.color = one.color;
+	newpoint.color += two.color;
+	newpoint.color /= 2;
+	one.control_next.x = (one.control_next.x + one.main.x)/2;
+	one.control_next.y = (one.control_next.y + one.main.y)/2;
+	two.control_prev.x = (two.control_prev.x + two.main.x)/2;
+	two.control_prev.y = (two.control_prev.y + two.main.y)/2;
+}
+
+void chop_line(v_line &line, p max_distance) {
+	auto two = line.segment.begin();
+	auto one = two;
+	if (two != line.segment.end())
+		++two;
+	while (two != line.segment.end()) {
+		while (distance(*one, *two) > max_distance) {
+			v_point newpoint;
+			chop_in_half(*one, *two, newpoint);
+			line.segment.insert(two, newpoint);
+			--two;
+		}
+		one=two;
+		two++;
+	}
+}
+
+void rot(v_pt &pt, int sign) {
+	p x = pt.x;
+	p y = pt.y;
+	pt.x = y * sign;
+	pt.y = -x * sign;
+}
+
+void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign) {
+	v_point pt = *pts;
+	if (distance(pt.control_prev, pt.main) < epsilon) {
+		if (pts != context.begin()) {
+			auto tmp = pts;
+			--tmp;
+			pt.control_prev = tmp->main;
+		}
+	}
+	if (distance(pt.control_next, pt.main) < epsilon) {
+		auto tmp = pts;
+		++tmp;
+		if (tmp != context.end()) {
+			pt.control_next = tmp->main;
+		}
+	}
+	if (distance(pt.control_prev, pt.main) < epsilon) {
+		pt.control_prev.x = 2*pt.main.x - pt.control_next.x;
+		pt.control_prev.y = 2*pt.main.y - pt.control_next.y;
+	}
+	if (distance(pt.control_next, pt.main) < epsilon) {
+		pt.control_next.x = 2*pt.main.x - pt.control_prev.x;
+		pt.control_next.y = 2*pt.main.y - pt.control_prev.y;
+	}
+	if (distance(pt.control_prev, pt.main) < epsilon) {
+		pt.control_prev = pt.main;
+		--pt.control_prev.x;
+		pt.control_next = pt.main;
+		++pt.control_next.x;
+	}
+	p dprev = distance(pt.control_prev, pt.main);
+	p dnext = distance(pt.control_next, pt.main);
+	v_pt prev, next;
+	prev.x = (pt.control_prev.x - pt.main.x) / dprev;
+	prev.y = (pt.control_prev.y - pt.main.y) / dprev;
+	next.x = (pt.control_next.x - pt.main.x) / dnext;
+	next.y = (pt.control_next.y - pt.main.y) / dnext;
+
+	v_pt prot = prev;
+	v_pt nrot = next;
+	rot(prot, -sign);
+	rot(nrot, sign);
+
+	v_pt shift;
+	shift.x = prot.x + nrot.x;
+	shift.y = prot.y + nrot.y;
+
+	if ((prot.x * next.x + prot.y * next.y) >= -epsilon) {
+		p d = shift.x * prot.x + shift.y * prot.y;
+		shift.x *= pts->width / 2 / d;
+		shift.y *= pts->width / 2 / d;
+
+		v_point out = *pts;
+		out.main.x += shift.x;
+		out.main.y += shift.y;
+
+		if (pts != context.begin()) {
+			out.control_prev.x += shift.x;
+			out.control_prev.y += shift.y;
+		}
+		else {
+			out.control_prev.x = out.main.x + prev.x*out.width*2/3;
+			out.control_prev.y = out.main.y + prev.y*out.width*2/3;
+		}
+		auto tmp = pts;
+		++tmp;
+		if (tmp != context.end()) {
+			out.control_next.x += shift.x;
+			out.control_next.y += shift.y;
+		}
+		else {
+			out.control_next.x = out.main.x + next.x*out.width*2/3;
+			out.control_next.y = out.main.y + next.y*out.width*2/3;
+		}
+		out.width = 1;
+
+		output.push_back(out);
+	}
+	else {
+		p lshift = std::sqrt(shift.x*shift.x + shift.y*shift.y);
+		shift.x /= lshift;
+		shift.y /= lshift;
+		p want = 1 - (prot.x*shift.x + prot.y*shift.y);
+		p curr = -prev.x*shift.x - prev.y*shift.y;
+
+		v_point out1 = *pts;
+		out1.main.x += prot.x * out1.width/2;
+		out1.main.y += prot.y * out1.width/2;
+		out1.control_prev.x += prot.x * out1.width/2;
+		out1.control_prev.y += prot.y * out1.width/2;
+		out1.control_next.x = out1.main.x - prev.x*out1.width*2/3*want/curr;//TODO
+		out1.control_next.y = out1.main.y - prev.y*out1.width*2/3*want/curr;//TODO
+		out1.width = 1;
+
+		v_point out2 = *pts;
+		out2.main.x += nrot.x * out2.width/2;
+		out2.main.y += nrot.y * out2.width/2;
+		out2.control_prev.x = out2.main.x - next.x*out2.width*2/3*want/curr;//TODO
+		out2.control_prev.y = out2.main.y - next.y*out2.width*2/3*want/curr;//TODO
+		out2.control_next.x += nrot.x * out2.width/2;
+		out2.control_next.y += nrot.y * out2.width/2;
+		out2.width = 1;
+
+		output.push_back(out1);
+		output.push_back(out2);
+	}
+}
+
+p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) {
+	v_pt u,c,l;
+	fprintf(stderr, "calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
+	//u.x = lc.control_next.x - uc.control_prev.x
+	//u.y = lc.control_next.y - uc.control_prev.y
+	c.x = cc.control_next.x - cc.control_prev.x;
+	c.y = cc.control_next.y - cc.control_prev.y;
+	p len = std::sqrt(c.x*c.x + c.y*c.y);
+	c.x *= cc.width/2 / len;
+	c.y *= cc.width/2 / len;
+	rot(c, 1);
+	//l.x = lc.control_next.x - lc.control_prev.x
+	//l.y = lc.control_next.y - lc.control_prev.y
+	u.x = cc.main.x + c.x;
+	u.y = cc.main.y + c.y;
+	l.x = cc.main.x - c.x;
+	l.y = cc.main.y - c.y;
+	fprintf(stderr, "calculate_error: u: %f, %f; cc: %f, %f; l: %f, %f\n", u.x, u.y, cc.main.x, cc.main.y, l.x, l.y);
+	fprintf(stderr, "calculate_error: distance %f, %f\n", distance(uc.main, u), distance(lc.main, l));
+	return distance(uc.main, u) + distance(lc.main, l);
+}
+
+void v_line::convert_to_outline(p max_error) {
+	v_line upper;
+	v_line lower;
+	auto two = segment.begin();
+	auto one = two;
+	if (two != segment.end())
+		++two;
+	else {
+		set_type(fill);
+		return;
+	}
+	std::list<v_point> up;
+	shift(segment, one, up, 1);
+	upper.segment.splice(upper.segment.end(), up);
+	std::list<v_point> down;
+	shift(segment, one, down, -1);
+	lower.segment.splice(lower.segment.end(), down);
+
+	while (two != segment.end()) {
+		p error;
+		do {
+			auto u = upper.segment.end();
+			auto l = lower.segment.end();
+			v_point u1 = *(--u);
+			v_point l1 = *(--l);
+
+			std::list<v_point> up;
+			shift(segment, two, up, 1);
+			upper.segment.splice(upper.segment.end(), up);
+			std::list<v_point> down;
+			shift(segment, two, down, -1);
+			lower.segment.splice(lower.segment.end(), down);
+
+			v_point u2 = *(++u);
+			v_point l2 = *(++l);
+
+			v_point c1 = *one;
+			v_point c2 = *two;
+			v_point uc;
+			v_point cc;
+			v_point lc;
+			chop_in_half(u1, u2, uc);
+			chop_in_half(c1, c2, cc);
+			chop_in_half(l1, l2, lc);
+
+			error = calculate_error(uc, cc, lc);
+			if (error > max_error) {
+				*one = c1;
+				*two = c2;
+				segment.insert(two, cc);
+				--two;
+				upper.segment.erase(u,upper.segment.end());
+				lower.segment.erase(l,lower.segment.end());
+
+				std::list<v_point> up;
+				shift(segment, one, up, 1);
+				upper.segment.back() = up.back();
+				std::list<v_point> down;
+				shift(segment, one, down, -1);
+				lower.segment.back() = down.back();
+			}
+		} while (error > max_error);
+		one=two;
+		two++;
+	}
+	upper.reverse();
+	lower.segment.splice(lower.segment.end(), upper.segment);
+	lower.segment.push_back(lower.segment.front());
+	std::swap(lower.segment, segment);
+	set_type(fill);
 }
 
 }; // namespace
