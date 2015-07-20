@@ -57,8 +57,8 @@ typedef struct {
 
 extern params global_params;
 
-void load_params(FILE *fd);
-void save_params(FILE *fd);
+int load_params(FILE *fd);
+int save_params(FILE *fd);
 
 }; // namespace
 

@@ -4,6 +4,7 @@
 #include "parameters.h"
 #include <cmath>
 
+
 using namespace cv;
 
 namespace vect {

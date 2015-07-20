@@ -4,6 +4,8 @@
 namespace vect {
 
 typedef float p; // Vector data precision. Float should me enought.
+const char p_scanf[] = "%f";
+const char p_printf[] = "%f";
 const p epsilon = 0.00001f;
 
 }; // namespace
