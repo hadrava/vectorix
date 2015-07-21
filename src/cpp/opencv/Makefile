@@ -1,7 +1,13 @@
-all: lib-3.0.0 include-3.0.0 lib-2.4.11 include-2.4.11
+all:
+	@echo "Specify OpenCV version:"
+	@echo "make v-2.4.11"
+	@echo "make v-3.0.0"
+
+v-%: lib-% include-% opencv-%.zip
 
 include-%: opencv-%
 	cp -r $</include $@
+	cp -r $</modules/*/include/* $@/
 	rm -f $@/CMakeLists.txt
 
 lib-%: build-%
@@ -22,4 +28,4 @@ opencv-%.zip:
 clean:
 	rm -rf lib-* include* build-* opencv-*/
 
-.PHONY: all clean
+.PHONY: all clean v-3.0.0 v-2.4.11

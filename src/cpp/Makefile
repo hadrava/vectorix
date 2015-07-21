@@ -1,13 +1,35 @@
 all: vector
 
-#COMP=clang
 COMP=g++
+L_FLAGS=
 
-vector: main.o v_image.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o custom_vectorizer.o opencv_render.o parameters.o
-	${COMP} $^ -o $@ `pkg-config --libs --cflags opencv` -L potrace/lib/ -lpotrace -lm
+# clang is not fully supported, use at your own risk
+#COMP=clang
+#L_FLAGS=-lstdc++
+
+OPENCV_LIBRARY2 = opencv_core opencv_imgproc opencv_highgui
+OPENCV_LIBRARY3 = opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs
+
+L_OPENCV_SYSTEM := `pkg-config --libs --cflags opencv`
+L_OPENCV_2.4.11 := -Wl,-rpath,$(abspath opencv/lib-2.4.11) -L $(abspath opencv/lib-2.4.11) $(patsubst %, opencv/lib-2.4.11/lib%.so, ${OPENCV_LIBRARY2}) $(patsubst %, -l%, ${OPENCV_LIBRARY2})
+L_OPENCV_3.0.0 := -Wl,-rpath,$(abspath opencv/lib-3.0.0) -L $(abspath opencv/lib-3.0.0) $(patsubst %, opencv/lib-3.0.0/lib%.so, ${OPENCV_LIBRARY3}) $(patsubst %, -l%, ${OPENCV_LIBRARY3})
+
+C_OPENCV_SYSTEM := `pkg-config --cflags opencv`
+C_OPENCV_2.4.11 := -I opencv/include-2.4.11
+C_OPENCV_3.0.0 := -I opencv/include-3.0.0
+
+# select OpenCV library version
+L_OPENCV=${L_OPENCV_3.0.0}
+C_OPENCV=${C_OPENCV_3.0.0}
+
+OBJS = main.o v_image.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o custom_vectorizer.o opencv_render.o parameters.o
+DEBUG = -ggdb
+
+vector: ${OBJS}
+	${COMP} $^ -o $@ ${L_OPENCV} -L potrace/lib/ -lpotrace -lm ${L_FLAGS}
 
 %.o: %.cpp
-	${COMP} -c -o $@ $< -std=c++11 -ggdb
+	${COMP} -c -o $@ $< ${C_OPENCV} -std=c++11 ${DEBUG}
 
 doc.ps: doc.txt
 	paps --font="Monospace 10" $< >$@
@@ -16,7 +38,7 @@ doc.pdf: doc.ps
 	ps2pdf $<
 
 clean:
-	rm -f vector *.o doc.ps doc.pdf
+	rm -f vector ${OBJS} doc.ps doc.pdf
 
 remake: clean all
 
