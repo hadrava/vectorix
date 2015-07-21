@@ -87,14 +87,36 @@ Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for t
 
 void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm.
-	if (par.threshold_type == 1) {
-		type = THRESH_BINARY;
-		vectorizer_debug("threshold: Using binary threshold %i.\n", par.threshold);
-	}
-	else {
+	if (par.threshold_type == 0) {
 		vectorizer_debug("threshold: Using Otsu's algorithm\n");
+		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY | THRESH_OTSU);
 	}
-	threshold(to_threshold, to_threshold, par.threshold, 255, type);
+	else if (par.threshold_type == 1) {
+		vectorizer_debug("threshold: Using binary threshold %i.\n", par.threshold);
+		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY);
+	}
+	else if ((par.threshold_type >= 2) && (par.threshold_type <= 3)) {
+		vectorizer_debug("threshold: Using adaptive thresholdbinary threshold %i.\n", par.threshold);
+		par.adaptive_threshold_size |= 1;
+		if (par.adaptive_threshold_size < 3)
+			par.adaptive_threshold_size = 3;
+		int type = ADAPTIVE_THRESH_GAUSSIAN_C;
+		if (par.threshold_type == 3)
+			type = ADAPTIVE_THRESH_MEAN_C;
+		adaptiveThreshold(to_threshold, to_threshold, 255, type, THRESH_BINARY, par.adaptive_threshold_size, par.threshold - 128);
+	}
+
+	for (int j = 0; j < to_threshold.rows; j += to_threshold.rows-1) { // Clear borders;
+		for (int i = 0; i < to_threshold.cols; i++) {
+			to_threshold.data[i+j*to_threshold.step] = 0;
+		}
+	}
+	for (int j = 0; j < to_threshold.rows; j++) {
+		for (int i = 0; i < to_threshold.cols; i += to_threshold.cols-1) {
+			to_threshold.data[i+j*to_threshold.step] = 0;
+		}
+	}
+
 	if (!par.save_threshold_name.empty()) {
 		imwrite(par.save_threshold_name, to_threshold);
 	}
@@ -233,15 +255,27 @@ int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) 
 }
 
 int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_depth, v_line &line, Mat &used_pixels) { // přidej do linie, označ body jako využité
-	//TODO
 	int sum = 0;
 	if (line.empty()) {
 		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
 	}
 	else {
-		v_point old_point = line.segment.back();
-		//TODO přidej vše, co leží mezi old_point a new_point;
-		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
+		v_point op = line.segment.back();
+		v_point np = new_point;
+		v_line new_segment;
+		new_segment.segment.push_back(op);
+		new_segment.segment.push_back(np);
+		chop_line(new_segment, 0.2);
+		for (v_point point: new_segment.segment) {
+			for (int i = -1; i<=1; i++) {
+				for (int j = -1; j<=1; j++) {
+					v_pt a = point.main;
+					a.x+=i;
+					a.y+=j;
+					sum += inc_pix_to(skeleton, current_depth, a, used_pixels);
+				}
+			}
+		}
 	}
 	line.segment.push_back(new_point);
 	fprintf(stderr, "place_next_point_at: %f %f, %i = %i\n", new_point.main.x, new_point.main.y, current_depth, sum);
@@ -249,7 +283,6 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 }
 
 float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int variant, v_point &match, step3_params &par) {
-	
 	//TODO
 		// TODO
 		// do prediction:
@@ -336,30 +369,49 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 	}
 }
 
-int interactive(int key) {
-	int break_ = 0;
-	switch (key & 0x7F) {
+int interactive(int state, int key) {
+	int ret = state;
+	switch (key) {
 		case 0:
-		case 0x7F:
+		case 0xFFFF:
+		case -1:
 			break;
 		case 'q':
 		case 'Q':
-			break_ = 1;
+		case 27:
+			ret = 0;
 			break;
 		case 'r':
 		case 'R':
-			global_params.last_changed_param_step = 1;
+			ret = 1;
+			break;
+		case '\n':
+			ret++;
 			break;
 		case 'h':
 		case 'H':
 		default:
 			fprintf(stderr, "Help:\n");
 			fprintf(stderr, "\tr\tRerun vectorization from begining\n");
-			fprintf(stderr, "\tq\tQuit\n");
+			fprintf(stderr, "\tq, Esc\tQuit\n");
 			fprintf(stderr, "\th\tHelp\n");
 			break;
 	}
-	return break_;
+	return ret;
+}
+
+volatile int state;
+
+void step1_changed(int, void*) {
+	global_params.step1.adaptive_threshold_size |= 1;
+	if (global_params.step1.adaptive_threshold_size < 3)
+		global_params.step1.adaptive_threshold_size = 3;
+	state = 2;
+}
+
+void step2_changed(int, void*) {
+	if (state >= 4)
+		state = 4;
 }
 
 v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color).
@@ -372,11 +424,11 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 		}
 	}
 
-	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255));
+	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255));
+	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255));
 
-	Mat source (orig.rows, orig.cols, CV_8UC(1));
-	cvtColor(orig, source, CV_RGB2GRAY);
-	subtract(Scalar(255,255,255), source,source);
+	Mat grayscale (orig.rows, orig.cols, CV_8UC(1));
+	Mat binary (orig.rows, orig.cols, CV_8UC(1));
 
 	tmea::timer threshold_timer;
 	Mat skeleton;
@@ -389,54 +441,92 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 	Mat used_pixels;
 	tmea::timer tracing_timer;
 
-	global_params.last_changed_param_step = 1;
-	int break_ = 0;
-	do {
-		switch (global_params.last_changed_param_step) {
-			case 1:
-			default:
-				vectorize_imshow("Original", orig); // Show original color image.
-				vectorize_waitKey(0);
-				vectorize_imshow("Grayscale", source); // Show grayscale input image.
-				vectorize_waitKey(0);
-				threshold_timer.start();
-					step1_threshold(source, global_params.step1);
-				threshold_timer.stop();
-				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
-
+	state = 2;
+	int max_image_size = (original.height+original.width)*2;
+	while (state) {
+		switch (state) {
 			case 2:
+				if (global_params.interactive) {
+					vectorize_imshow("Original", orig); // Show original color image.
+					vectorize_waitKey(global_params.interactive-1);
+				}
+				cvtColor(orig, grayscale, CV_RGB2GRAY);
+				if (global_params.step1.invert_input)
+					subtract(Scalar(255,255,255), grayscale, grayscale);
+				if (global_params.interactive) {
+					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image.
+					if (global_params.interactive == 2)
+						createTrackbar("Invert input", "Grayscale", &global_params.step1.invert_input, 1, step1_changed);
+					vectorize_waitKey(global_params.interactive-1);
+				}
+				binary = grayscale.clone();
+				threshold_timer.start();
+					step1_threshold(binary, global_params.step1);
+				threshold_timer.stop();
+				if (global_params.interactive) {
+					vectorize_imshow("Threshold", binary); // Show after thresholding
+					if (global_params.interactive == 2) {
+						createTrackbar("Threshold type", "Threshold", &global_params.step1.threshold_type, 3, step1_changed);
+						createTrackbar("Threshold", "Threshold", &global_params.step1.threshold, 255, step1_changed);
+						createTrackbar("Adaptive threshold", "Threshold", &global_params.step1.adaptive_threshold_size, max_image_size, step1_changed);
+					}
+					vectorize_waitKey(global_params.interactive-1);
+				}
+				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
+				if (global_params.interactive == 2)
+					state++;
+				else
+					state+=2;
+				break;
+			case 4:
 				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(source, skeleton, distance, iteration, global_params.step2);
+					step2_skeletonization(binary, skeleton, distance, iteration, global_params.step2);
 				skeletonization_timer.stop();
 				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
-				//show distance
-				distance_show = distance.clone();
-				normalize(distance_show, iteration-1);
-				vectorize_imshow("Distance", distance_show);
-				//vectorize_waitKey(0);
+				if (global_params.interactive) {
+					//show distance
+					distance_show = distance.clone();
+					normalize(distance_show, iteration-1);
+					vectorize_imshow("Distance", distance_show);
+					vectorize_waitKey(global_params.interactive-1);
 
-				//show skeleton
-				skeleton_show = skeleton.clone();
-				normalize(skeleton_show, iteration-1);
-				vectorize_imshow("Skeleton", skeleton_show);
-				//vectorize_waitKey(0);
-
-			case 3:
+					//show skeleton
+					skeleton_show = skeleton.clone();
+					threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
+					vectorize_imshow("Skeleton", skeleton_show);
+					if (global_params.interactive == 2)
+						createTrackbar("Skeletonization", "Skeleton", &global_params.step2.type, 3, step2_changed);
+					vectorize_waitKey(global_params.interactive-1);
+				}
+				if (global_params.interactive == 2)
+					state++;
+				else
+					state+=2;
+				break;
+			case 6:
 				used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				tracing_timer.start();
 					step3_tracing(orig, skeleton, distance, used_pixels, vect, global_params.step3);
 				tracing_timer.stop();
 				fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
-			case 0:
-				global_params.last_changed_param_step = 0;
-				int key = vectorize_waitKey(0);
-				vectorizer_debug("Key: %i\n", key);
-				break_ = interactive(key);
+				if (global_params.interactive == 2)
+					state++;
+				else
+					state+=2;
+				break;
+			case 8:
+				state = 0;
+				break;
+			default:
+				int key = vectorize_waitKey(1);
+				if (key >= 0)
+					vectorizer_debug("Key: %i\n", key);
+				state = interactive(state, key);
 		}
-	} while ((global_params.interactive == 2) && (break_ == 0));
+	}
 
 	vectorizer_debug("end of vectorization\n");
 

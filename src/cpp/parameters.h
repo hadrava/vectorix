@@ -12,8 +12,10 @@ typedef struct {
 } input_params;
 
 typedef struct {
+	int invert_input = 1;
 	int threshold = 127;
 	int threshold_type = 0; // 0=otsu, 1 fixed
+	int adaptive_threshold_size = 7;
 	std::string save_threshold_name = "";
 } step1_params;
 
@@ -54,7 +56,6 @@ typedef struct {
 	output_params output;
 	int save_parameters_append = 0;
 	std::string save_parameters_name = "";
-	int last_changed_param_step = 1;
 } params;
 
 extern params global_params;

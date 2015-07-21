@@ -4,6 +4,7 @@
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "export_svg.h"
+#include "export_ps.h"
 #include "vectorizer.h"
 #include "potrace_handler.h"
 #include "custom_vectorizer.h"
@@ -79,8 +80,9 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	if (!global_params.output.pnm_output_name.empty())
 		pnm_output = fopen(global_params.output.pnm_output_name.c_str(), "w");
 	if (svg_output) {
-		export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		//export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
 		//export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		export_ps::write(svg_output, vector);
 		if (svg_output != stdout)
 			fclose(svg_output);
 	}

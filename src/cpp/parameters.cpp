@@ -47,6 +47,10 @@ void save_var(FILE *fd, const char *name, const std::string &data) {
 
 params default_params() {
 	params par;
+	par.step1.invert_input = 1;
+	par.step1.threshold_type = 0;
+	par.step1.threshold = 127;
+	par.step1.adaptive_threshold_size = 7;
 	par.step2.type = 0;
 	par.step2.show_window = 1;
 	par.step2.save_peeled_name = "out/skeletonization_%03d.png";
@@ -98,8 +102,10 @@ int load_params(FILE *fd) {
 		int loaded = 0;
 		loaded += load_var(name, value, "file_pnm_input", global_params.input.pnm_input_name);
 		loaded += load_var(name, value, "vectorization_method", global_params.vectorization_method);
+		loaded += load_var(name, value, "invert_colors", global_params.step1.invert_input);
 		loaded += load_var(name, value, "threshold_type", global_params.step1.threshold_type);
 		loaded += load_var(name, value, "threshold", global_params.step1.threshold);
+		loaded += load_var(name, value, "adaptive_threshold_size", global_params.step1.adaptive_threshold_size);
 		loaded += load_var(name, value, "file_threshold_output", global_params.step1.save_threshold_name);
 		loaded += load_var(name, value, "type", global_params.step2.type);
 		loaded += load_var(name, value, "show_window_steps", global_params.step2.show_window);
@@ -135,10 +141,14 @@ int save_params(FILE *fd){
 	fprintf(fd, "# Vectorization method: 0: Custom, 1: Potrace, 2: Stupid\n");
 	save_var(fd, "vectorization_method", global_params.vectorization_method);
 	fprintf(fd, "# Phase 1: Thresholding\n");
+	fprintf(fd, "# Invert colors: 0: white lines, 1: black lines\n");
+	save_var(fd, "invert_colors", global_params.step1.invert_input);
 	fprintf(fd, "# Threshold type: 0: Otsu's algorithm, 1: Fixed value\n");
 	save_var(fd, "threshold_type", global_params.step1.threshold_type);
 	fprintf(fd, "# Threshold vale: 0-255\n");
 	save_var(fd, "threshold", global_params.step1.threshold);
+	fprintf(fd, "# Adaptive threshold size: 3, 5, 7, ...\n");
+	save_var(fd, "adaptive_threshold_size", global_params.step1.adaptive_threshold_size);
 	fprintf(fd, "# Save thresholded image to file: empty: no output\n");
 	save_var(fd, "file_threshold_output", global_params.step1.save_threshold_name);
 	fprintf(fd, "# Phase 2: Skeletonization");
