@@ -19,9 +19,13 @@ using namespace pnm;
 using namespace tmea;
 
 int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
-	if (argc == 1)
+	global_params = default_params();
+	if (argc == 1) {
+		fprintf(stderr, "Reading parameters from standard input...\n");
 		load_params(stdin);
+	}
 	else {
+		fprintf(stderr, "Reading parameters from file...\n");
 		FILE *input = fopen(argv[1], "r");
 		load_params(input);
 		fclose(input);
@@ -30,18 +34,15 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	FILE *svg_output = stdout;
 	FILE *pnm_output = NULL;
 	pnm_image input_image;
-	if (global_params.input.pnm_input_name.empty())
-		input_image.read(stdin);
+	if (global_params.input.pnm_input_name.empty()) {
+		fprintf(stderr, "No input file speficied.\n");
+		return 1;
+	}
 	else {
 		FILE *input = fopen(global_params.input.pnm_input_name.c_str(), "r");
 		input_image.read(input); // Read from file.
 		fclose(input);
 	}
-	if (!global_params.output.svg_output_name.empty())
-		svg_output = fopen(global_params.output.svg_output_name.c_str(), "w");
-	if (!global_params.output.pnm_output_name.empty())
-		pnm_output = fopen(global_params.output.pnm_output_name.c_str(), "w");
-
 
 	input_image.convert(PNM_BINARY_PPM);
 	v_image vector;
@@ -60,6 +61,7 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
+
 	//show output
 	if (global_params.output.show_opencv_rendered_window || !global_params.output.save_opencv_rendered_name.empty()) {
 		cv::Mat output = cv::Mat::zeros(vector.height, vector.width, CV_8UC(3));
@@ -72,6 +74,10 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 			imwrite(global_params.output.save_opencv_rendered_name, output);
 	}
 
+	if (!global_params.output.svg_output_name.empty())
+		svg_output = fopen(global_params.output.svg_output_name.c_str(), "w");
+	if (!global_params.output.pnm_output_name.empty())
+		pnm_output = fopen(global_params.output.pnm_output_name.c_str(), "w");
 	if (svg_output) {
 		export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
 		//export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
@@ -86,6 +92,11 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 		fprintf(stderr, "Render time: %fs\n", render_timer.read()/1e6);
 		input_image.write(pnm_output); // Write rendered image to file specified by third parameter.
 		fclose(pnm_output);
+	}
+	if (!global_params.save_parameters_name.empty()) {
+		FILE *config = fopen(global_params.save_parameters_name.c_str(), (global_params.save_parameters_append != 0) ? "a" : "w");
+		save_params(config);
+		fclose(config);
 	}
 	return 0;
 }

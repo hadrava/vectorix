@@ -52,11 +52,14 @@ typedef struct {
 	step3_params step3;
 	opencv_render_params opencv_render;
 	output_params output;
+	int save_parameters_append = 0;
+	std::string save_parameters_name = "";
 	int last_changed_param_step = 1;
 } params;
 
 extern params global_params;
 
+params default_params();
 int load_params(FILE *fd);
 int save_params(FILE *fd);
 

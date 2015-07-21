@@ -19,9 +19,9 @@ public:
 	static uchar &safeat(const cv::Mat &image, int i, int j);
 private:
 	static const int step = 2;
-	static void vectorize_imshow(const cv::string& winname, cv::InputArray mat);
+	static void vectorize_imshow(const std::string& winname, cv::InputArray mat);
 	static int vectorize_waitKey(int delay = 0);
-	static void vectorize_destroyWindow(const cv::string& winname);
+	static void vectorize_destroyWindow(const std::string& winname);
 	static void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration);
 	static void normalize(cv::Mat &out, int max);
 public:

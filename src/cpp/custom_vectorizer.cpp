@@ -24,23 +24,23 @@ uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image da
 }
 
 #ifdef VECTORIZER_HIGHGUI
-void custom::vectorize_imshow(const string& winname, InputArray mat) { // Display image in highgui named window.
+void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Display image in highgui named window.
 	return imshow(winname, mat);
 }
 int custom::vectorize_waitKey(int delay) { // Wait for key press in any window.
 	return waitKey(delay);
 }
-void custom::vectorize_destroyWindow(const string& winname) {
+void custom::vectorize_destroyWindow(const std::string& winname) {
 	return destroyWindow(winname);
 }
 #else
-void custom::vectorize_imshow(const string& winname, InputArray mat) { // Highgui disabled, do nothing.
+void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Highgui disabled, do nothing.
 	return;
 }
 int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'.
 	return -1;
 }
-void custom::vectorize_destroyWindow(const string& winname) {
+void custom::vectorize_destroyWindow(const std::string& winname) {
 	return;
 }
 #endif

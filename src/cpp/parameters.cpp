@@ -7,22 +7,28 @@ namespace vect {
 
 params global_params;
 
-void load_var(char *name, char *value, const char *my_name, int &data) {
+int load_var(char *name, char *value, const char *my_name, int &data) {
 	if (!strcmp(name, my_name)) {
 		sscanf(value, "%d", &data);
+		return 1;
 	}
+	return 0;
 }
 
-void load_var(char *name, char *value, const char *my_name, p &data) {
+int load_var(char *name, char *value, const char *my_name, p &data) {
 	if (!strcmp(name, my_name)) {
 		sscanf(value, p_scanf, &data);
+		return 1;
 	}
+	return 0;
 }
 
-void load_var(char *name, char *value, const char *my_name, std::string &data) {
+int load_var(char *name, char *value, const char *my_name, std::string &data) {
 	if (!strcmp(name, my_name)) {
 		data = value;
+		return 1;
 	}
+	return 0;
 }
 
 void save_var(FILE *fd, const char *name, int data) {
@@ -54,14 +60,18 @@ params default_params() {
 	par.output.svg_output_name = "";
 	par.output.pnm_output_name = "";
 	par.interactive = 2;
+	par.save_parameters_append = 0;
+	par.save_parameters_name = ".vector.params";
 	return par;
 }
 
 int load_params(FILE *fd) {
 	char *line;
 	int count = 0;
+	int linenumber = 0;
 
-	while (fscanf(fd, "%ms", &line) >= 0) {
+	while (fscanf(fd, "%m[^\n]\n", &line) >= 0) {
+		linenumber++;
 		if (!line)
 			continue;
 		if (line[0] == '#')
@@ -69,7 +79,7 @@ int load_params(FILE *fd) {
 
 		char *name;
 		char *value;
-		sscanf(line, "%ms%ms", &name, &value);
+		sscanf(line, "%m[^ ] %m[^\n]", &name, &value);
 		if ((!name) && (!value)) {
 			free(line);
 			continue;
@@ -85,24 +95,31 @@ int load_params(FILE *fd) {
 			continue;
 		}
 
-		load_var(name, value, "pnm_input", global_params.input.pnm_input_name);
-		load_var(name, value, "vectorization_method", global_params.vectorization_method);
-		load_var(name, value, "threshold_type", global_params.step1.threshold_type);
-		load_var(name, value, "threshold", global_params.step1.threshold);
-		load_var(name, value, "file_threshold", global_params.step1.save_threshold_name);
-		load_var(name, value, "type", global_params.step2.type);
-		load_var(name, value, "show_window", global_params.step2.show_window);
-		load_var(name, value, "file_peeled_template", global_params.step2.save_peeled_name);
-		load_var(name, value, "file_skeleton", global_params.step2.save_skeleton_name);
-		load_var(name, value, "file_distance", global_params.step2.save_distance_name);
-		load_var(name, value, "file_skeleton_norm", global_params.step2.save_skeleton_normalized_name);
-		load_var(name, value, "file_distance_norm", global_params.step2.save_distance_normalized_name);
-		load_var(name, value, "depth_auto_choose", global_params.step3.depth_auto_choose);
-		load_var(name, value, "max_dfs_depth", global_params.step3.max_dfs_depth);
-		load_var(name, value, "render_max_distance", global_params.opencv_render.render_max_distance);
-		load_var(name, value, "svg_output", global_params.output.svg_output_name);
-		load_var(name, value, "pnm_output", global_params.output.pnm_output_name);
-		load_var(name, value, "interactive", global_params.interactive);
+		int loaded = 0;
+		loaded += load_var(name, value, "file_pnm_input", global_params.input.pnm_input_name);
+		loaded += load_var(name, value, "vectorization_method", global_params.vectorization_method);
+		loaded += load_var(name, value, "threshold_type", global_params.step1.threshold_type);
+		loaded += load_var(name, value, "threshold", global_params.step1.threshold);
+		loaded += load_var(name, value, "file_threshold_output", global_params.step1.save_threshold_name);
+		loaded += load_var(name, value, "type", global_params.step2.type);
+		loaded += load_var(name, value, "show_window_steps", global_params.step2.show_window);
+		loaded += load_var(name, value, "files_steps_output", global_params.step2.save_peeled_name);
+		loaded += load_var(name, value, "file_skeleton", global_params.step2.save_skeleton_name);
+		loaded += load_var(name, value, "file_distance", global_params.step2.save_distance_name);
+		loaded += load_var(name, value, "file_skeleton_norm", global_params.step2.save_skeleton_normalized_name);
+		loaded += load_var(name, value, "file_distance_norm", global_params.step2.save_distance_normalized_name);
+		loaded += load_var(name, value, "depth_auto_choose", global_params.step3.depth_auto_choose);
+		loaded += load_var(name, value, "max_dfs_depth", global_params.step3.max_dfs_depth);
+		loaded += load_var(name, value, "render_max_distance", global_params.opencv_render.render_max_distance);
+		loaded += load_var(name, value, "file_svg_output", global_params.output.svg_output_name);
+		loaded += load_var(name, value, "file_pnm_output", global_params.output.pnm_output_name);
+		loaded += load_var(name, value, "file_opencv_output", global_params.output.pnm_output_name);
+		loaded += load_var(name, value, "interactive", global_params.interactive);
+		loaded += load_var(name, value, "parameters_append", global_params.save_parameters_append);
+		loaded += load_var(name, value, "file_parameters", global_params.save_parameters_name);
+		if (loaded != 1) {
+			fprintf(stderr, "Error parsing config file on line %d: \"%s\"\n", linenumber, line);
+		}
 
 		free(name);
 		free(value);
@@ -112,6 +129,7 @@ int load_params(FILE *fd) {
 }
 
 int save_params(FILE *fd){
+	fprintf(fd, "###########################################################\n");
 	fprintf(fd, "# General input pnm file\n");
 	save_var(fd, "file_pnm_input", global_params.input.pnm_input_name);
 	fprintf(fd, "# Vectorization method: 0: Custom, 1: Potrace, 2: Stupid\n");
@@ -128,7 +146,7 @@ int save_params(FILE *fd){
 	save_var(fd, "type", global_params.step2.type);
 	fprintf(fd, "# Show steps in separate window\n");
 	save_var(fd, "show_window_steps", global_params.step2.show_window);
-	fprintf(fd, "# Save steps to files, \%03d will be replaced with iteration number\n");
+	fprintf(fd, "# Save steps to files, %%03d will be replaced with iteration number\n");
 	save_var(fd, "files_steps_output", global_params.step2.save_peeled_name);
 	fprintf(fd, "# Save skeleton/distance with/without normalization\n");
 	save_var(fd, "file_skeleton", global_params.step2.save_skeleton_name);
@@ -147,8 +165,12 @@ int save_params(FILE *fd){
 	save_var(fd, "file_svg_output", global_params.output.svg_output_name);
 	save_var(fd, "file_pnm_output", global_params.output.pnm_output_name);
 	save_var(fd, "file_opencv_output", global_params.output.pnm_output_name);
-	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars");
+	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars\n");
 	save_var(fd, "interactive", global_params.interactive);
+	fprintf(fd, "# Save parameters to file on exit: 0: overwrite, 1: append\n");
+	save_var(fd, "parameters_append", global_params.save_parameters_append);
+	save_var(fd, "file_parameters", global_params.save_parameters_name);
+	fprintf(fd, "###########################################################\n");
 	return 0;
 }
 
