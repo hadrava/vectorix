@@ -218,7 +218,7 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		line.reverse();
 		threshold(used_pixels, used_pixels, 254, 255, THRESH_BINARY);
 		if (line.empty()) {
-			vectorizer_error("Vectorizer error: No new point found!\n");
+			vectorizer_error("Vectorizer warning: No new point found!\n");
 			spix(used_pixels, max_pos, 255);
 		}
 		else
@@ -226,6 +226,9 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
 		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save firsst point
 
+		//TODO only for debuging
+		line.auto_smooth();
+		//ODOT
 		vectorization_output.add_line(line);
 		count++;
 

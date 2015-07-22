@@ -4,6 +4,7 @@
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
+#include "parameters.h"
 
 using namespace pnm;
 
@@ -32,7 +33,7 @@ v_image stupid::vectorize(const pnm_image &image) {
 	auto line = v_line(0, 0, image.width/2, image.height/2, image.width, image.height/2, image.width, image.height);
 	line.add_point(v_pt(image.width, image.height/2*3), v_pt(-image.width/2, -image.height/2), v_pt(0,0), v_co(255, 0, 0), 20);
 	out.add_line(line);
-	line.convert_to_outline(2);
+	line.convert_to_outline(global_params.output.max_contour_error);
 	out.add_line(line);
 
 	line = v_line();
@@ -43,7 +44,7 @@ v_image stupid::vectorize(const pnm_image &image) {
 	line.add_point(v_pt(80, 40), v_co(255, 0, 0), 2);
 	line.add_point(v_pt(110, 70), v_co(255, 0, 0), 30);
 	out.add_line(line);
-	line.convert_to_outline(4);
+	line.convert_to_outline(global_params.output.max_contour_error);
 	out.add_line(line);
 	return out;
 }

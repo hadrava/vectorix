@@ -242,28 +242,31 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 }
 
 p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) {
-	v_pt u,c,l;
 	fprintf(stderr, "calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
 	//u.x = lc.control_next.x - uc.control_prev.x
 	//u.y = lc.control_next.y - uc.control_prev.y
-	c.x = cc.control_next.x - cc.control_prev.x;
-	c.y = cc.control_next.y - cc.control_prev.y;
+	v_pt c = cc.control_next - cc.control_prev;
 	p len = std::sqrt(c.x*c.x + c.y*c.y);
-	c.x *= cc.width/2 / len;
-	c.y *= cc.width/2 / len;
+	c /= len;
 	rot(c, 1);
 	//l.x = lc.control_next.x - lc.control_prev.x
 	//l.y = lc.control_next.y - lc.control_prev.y
-	u.x = cc.main.x + c.x;
-	u.y = cc.main.y + c.y;
-	l.x = cc.main.x - c.x;
-	l.y = cc.main.y - c.y;
+	//up = c
+	//low = -c
+	v_pt u = uc.main - cc.main;
+	v_pt l = lc.main - cc.main;
+	p error_u = c.x*u.x + c.y*u.y - cc.width/2;
+	p error_l = c.x*l.x + c.y*l.y + cc.width/2;
+	error_u *= error_u;
+	error_l *= error_l;
 	fprintf(stderr, "calculate_error: u: %f, %f; cc: %f, %f; l: %f, %f\n", u.x, u.y, cc.main.x, cc.main.y, l.x, l.y);
-	fprintf(stderr, "calculate_error: distance %f, %f\n", distance(uc.main, u), distance(lc.main, l));
-	return distance(uc.main, u) + distance(lc.main, l);
+	fprintf(stderr, "calculate_error: distance %f, %f\n", error_u, error_l);
+	return error_u + error_l;
 }
 
 void v_line::convert_to_outline(p max_error) {
+	if (get_type() == fill)
+		return;
 	v_line upper;
 	v_line lower;
 	auto two = segment.begin();
@@ -374,6 +377,31 @@ void v_image::convert_to_variable_width(int type, output_params &par) {
 				c->convert_to_outline(par.max_contour_error);
 				break;
 		}
+	}
+}
+
+void v_line::auto_smooth() {
+	for (auto pt = segment.begin(); pt != segment.end(); pt++) {
+		auto prev = pt;
+		if (prev == segment.begin())
+			continue;
+		prev--;
+		auto next = pt;
+		next++;
+		if (next == segment.end())
+			continue;
+		v_pt vecp = prev->main - pt->main;
+		v_pt vecn = next->main - pt->main;
+		p pl = std::sqrt(vecp.x*vecp.x + vecp.y*vecp.y);
+		p nl = std::sqrt(vecn.x*vecn.x + vecn.y*vecn.y);
+		if ((pl <= epsilon) || (nl <= epsilon))
+			continue;
+		vecp /= pl;
+		vecn /= nl;
+		v_pt control = vecn - vecp;
+		p cl = std::sqrt(control.x*control.x + control.y*control.y);
+		pt->control_prev = pt->main - ((control/cl) * pl/3);
+		pt->control_next = pt->main + ((control/cl) * nl/3);
 	}
 }
 

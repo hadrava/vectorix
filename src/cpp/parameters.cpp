@@ -65,7 +65,7 @@ params default_params() {
 	par.opencv_render.render_max_distance = 1;
 	par.output.export_type = 3;
 	par.output.output_engine = 0;
-	par.output.max_contour_error = 4;
+	par.output.max_contour_error = 0.5;
 	par.output.auto_contour_variance = 5;
 	par.output.vector_output_name = "";
 	par.output.pnm_output_name = "";

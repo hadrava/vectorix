@@ -12,6 +12,38 @@ public:
 	v_pt(p _x = 0, p _y = 0): x(_x), y(_y) {};
 	p x;
 	p y;
+	v_pt &operator+=(const v_pt &other) { // Simple operators (in header for inlining).
+		x += other.x;
+		y += other.y;
+	};
+	friend v_pt operator+(v_pt first, const v_pt &other) {
+		first += other;
+		return first;
+	};
+	v_pt &operator-=(const v_pt &other) { // Simple operators (in header for inlining).
+		x -= other.x;
+		y -= other.y;
+	};
+	friend v_pt operator-(v_pt first, const v_pt &other) {
+		first -= other;
+		return first;
+	};
+	v_pt &operator*=(p mul) { // Simple operators (in header for inlining).
+		x *= mul;
+		y *= mul;
+	};
+	friend v_pt operator*(v_pt first, p mul) {
+		first *= mul;
+		return first;
+	};
+	v_pt &operator/=(p div) { // Simple operators (in header for inlining).
+		x /= div;
+		y /= div;
+	};
+	friend v_pt operator/(v_pt first, p div) {
+		first /= div;
+		return first;
+	};
 };
 
 class v_co {
@@ -77,6 +109,7 @@ public:
 	bool empty() const { return segment.empty(); };
 	void set_group(v_line_group group) { group_ = group; };
 	void convert_to_outline(p max_error = 1);
+	void auto_smooth();
 	v_line_group get_group() const { return group_; };
 	std::list<v_point> segment;
 private:
