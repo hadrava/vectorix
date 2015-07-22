@@ -1,4 +1,5 @@
 #include "v_image.h"
+#include "parameters.h"
 #include <list>
 #include <cmath>
 #include <cstdio>
@@ -93,6 +94,36 @@ void chop_line(v_line &line, p max_distance) {
 		one=two;
 		two++;
 	}
+}
+
+void group_line(std::list<v_line> &list, const v_line &line) {
+	auto two = line.segment.begin();
+	auto one = two;
+	if ((two != line.segment.end()) && (line.get_type() == stroke))
+		++two;
+	else {
+		list.push_back(line);
+		return;
+	}
+	int segment_count = 0;
+	while (two != line.segment.end()) {
+		v_line new_line;
+		new_line.segment.push_back(*one);
+		new_line.segment.push_back(*two);
+		new_line.set_type(stroke);
+		new_line.set_group(group_continue);
+		list.push_back(new_line);
+
+		one=two;
+		two++;
+		segment_count++;
+	}
+	if (segment_count >= 2) {
+		list.front().set_group(group_first);
+		list.back().set_group(group_last);
+	}
+	else
+		list.front().set_group(group_normal);
 }
 
 void rot(v_pt &pt, int sign) {
@@ -302,6 +333,48 @@ void v_line::convert_to_outline(p max_error) {
 	lower.segment.push_back(lower.segment.front());
 	std::swap(lower.segment, segment);
 	set_type(fill);
+}
+
+void v_image::convert_to_variable_width(int type, output_params &par) {
+	for (auto c = line.begin(); c != line.end(); c++) {
+		std::list<v_line> new_list;
+		int new_type = type;
+		if (type == 3) {
+			p mean = 0;
+			p count = 0;
+			for (auto a: c->segment) {
+				mean += a.width;
+				count++;
+			}
+			if (count == 0)
+				new_type = 0;
+			else {
+				mean /= count;
+				p variance = 0;
+				for (auto a: c->segment) {
+					variance += (a.width - mean) * (a.width - mean);
+				}
+				variance /= count;
+				if (variance > par.auto_contour_variance)
+					new_type = 2;
+				else
+					new_type = 0;
+			}
+		}
+		switch (new_type) {
+			case 0:
+				break;
+			case 1:
+				group_line(new_list, *c);
+				line.splice(c, new_list);
+				line.erase(c);
+				c--;
+				break;
+			case 2:
+				c->convert_to_outline(par.max_contour_error);
+				break;
+		}
+	}
 }
 
 }; // namespace

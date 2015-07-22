@@ -75,14 +75,19 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 			imwrite(global_params.output.save_opencv_rendered_name, output);
 	}
 
-	if (!global_params.output.svg_output_name.empty())
-		svg_output = fopen(global_params.output.svg_output_name.c_str(), "w");
+	if (!global_params.output.vector_output_name.empty())
+		svg_output = fopen(global_params.output.vector_output_name.c_str(), "w");
 	if (!global_params.output.pnm_output_name.empty())
 		pnm_output = fopen(global_params.output.pnm_output_name.c_str(), "w");
 	if (svg_output) {
-		//export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
-		//export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
-		export_ps::write(svg_output, vector);
+		vector.convert_to_variable_width(global_params.output.export_type, global_params.output);
+		if (global_params.output.output_engine == 0) {
+			export_svg<editable>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+			//export_svg<grouped>::write(svg_output, vector); // Write output to stdout / file specified by second parameter.
+		}
+		else {
+			export_ps::write(svg_output, vector);
+		}
 		if (svg_output != stdout)
 			fclose(svg_output);
 	}

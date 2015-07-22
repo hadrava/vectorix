@@ -39,7 +39,11 @@ typedef struct {
 } opencv_render_params;
 
 typedef struct {
-	std::string svg_output_name = "";
+	int export_type = 0;
+	int output_engine = 0;
+	p max_contour_error = 4;
+	p auto_contour_variance = 1;
+	std::string vector_output_name = "";
 	std::string pnm_output_name = "";
 	std::string save_opencv_rendered_name = "";
 	int show_opencv_rendered_window = 0;

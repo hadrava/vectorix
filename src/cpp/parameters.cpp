@@ -61,7 +61,11 @@ params default_params() {
 	par.step3.depth_auto_choose = 1; // error allowed (optimization)
 	par.step3.max_dfs_depth = 1; // take first, no dfs allowed
 	par.opencv_render.render_max_distance = 1;
-	par.output.svg_output_name = "";
+	par.output.export_type = 3;
+	par.output.output_engine = 0;
+	par.output.max_contour_error = 4;
+	par.output.auto_contour_variance = 5;
+	par.output.vector_output_name = "";
 	par.output.pnm_output_name = "";
 	par.interactive = 2;
 	par.save_parameters_append = 0;
@@ -117,7 +121,11 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "depth_auto_choose", global_params.step3.depth_auto_choose);
 		loaded += load_var(name, value, "max_dfs_depth", global_params.step3.max_dfs_depth);
 		loaded += load_var(name, value, "render_max_distance", global_params.opencv_render.render_max_distance);
-		loaded += load_var(name, value, "file_svg_output", global_params.output.svg_output_name);
+		loaded += load_var(name, value, "export_type", global_params.output.export_type);
+		loaded += load_var(name, value, "max_contour_error", global_params.output.max_contour_error);
+		loaded += load_var(name, value, "auto_contour_variance", global_params.output.auto_contour_variance);
+		loaded += load_var(name, value, "output_engine", global_params.output.output_engine);
+		loaded += load_var(name, value, "file_vector_output", global_params.output.vector_output_name);
 		loaded += load_var(name, value, "file_pnm_output", global_params.output.pnm_output_name);
 		loaded += load_var(name, value, "file_opencv_output", global_params.output.pnm_output_name);
 		loaded += load_var(name, value, "interactive", global_params.interactive);
@@ -172,7 +180,15 @@ int save_params(FILE *fd){
 	fprintf(fd, "# Maximal allowed error in OpenCV rendering in pixels\n");
 	save_var(fd, "render_max_distance", global_params.opencv_render.render_max_distance);
 	fprintf(fd, "# Save output to files\n");
-	save_var(fd, "file_svg_output", global_params.output.svg_output_name);
+	fprintf(fd, "# Variable-width export: 0: mean, 1: grouped, 2: contour, 3: auto-detect\n");
+	save_var(fd, "export_type", global_params.output.export_type);
+	fprintf(fd, "# Precision of contour output (maximal allowed error in pixels):\n");
+	save_var(fd, "max_contour_error", global_params.output.max_contour_error);
+	fprintf(fd, "# How often draw as contour: higher values: less often, lower: more often, negative: always use contours\n");
+	save_var(fd, "auto_contour_variance", global_params.output.auto_contour_variance);
+	fprintf(fd, "# Output file format: 0: svg, 1: ps\n");
+	save_var(fd, "output_engine", global_params.output.output_engine);
+	save_var(fd, "file_vector_output", global_params.output.vector_output_name);
 	save_var(fd, "file_pnm_output", global_params.output.pnm_output_name);
 	save_var(fd, "file_opencv_output", global_params.output.pnm_output_name);
 	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars\n");

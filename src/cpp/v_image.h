@@ -3,6 +3,7 @@
 
 #include <list>
 #include "config.h"
+#include "parameters.h"
 
 namespace vect {
 
@@ -89,6 +90,7 @@ public:
 	v_image(): width(0), height(0) {};
 	void clean();
 	void add_line(v_line _line);
+	void convert_to_variable_width(int type, output_params &par);
 	p width;
 	p height;
 	std::list<v_line> line;
@@ -98,6 +100,8 @@ p distance(const v_pt &a, const v_pt &b);
 p distance(const v_point &a, const v_point &b);
 void chop_in_half(v_point &one, v_point &two, v_point &newpoint);
 void chop_line(v_line &line, p max_distance = 1);
+void group_line(std::list<v_line> &list, const v_line &line);
+
 
 
 }; // namespace
