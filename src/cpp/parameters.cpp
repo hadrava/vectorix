@@ -47,6 +47,8 @@ void save_var(FILE *fd, const char *name, const std::string &data) {
 
 params default_params() {
 	params par;
+	par.input.pnm_input_name = "";
+	par.input.custom_input_name = "";
 	par.step1.invert_input = 1;
 	par.step1.threshold_type = 0;
 	par.step1.threshold = 127;
@@ -68,6 +70,7 @@ params default_params() {
 	par.output.vector_output_name = "";
 	par.output.pnm_output_name = "";
 	par.interactive = 2;
+	par.zoom_level = 0;
 	par.save_parameters_append = 0;
 	par.save_parameters_name = ".vector.params";
 	return par;
@@ -105,6 +108,7 @@ int load_params(FILE *fd) {
 
 		int loaded = 0;
 		loaded += load_var(name, value, "file_pnm_input", global_params.input.pnm_input_name);
+		loaded += load_var(name, value, "file_input", global_params.input.custom_input_name);
 		loaded += load_var(name, value, "vectorization_method", global_params.vectorization_method);
 		loaded += load_var(name, value, "invert_colors", global_params.step1.invert_input);
 		loaded += load_var(name, value, "threshold_type", global_params.step1.threshold_type);
@@ -129,6 +133,7 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "file_pnm_output", global_params.output.pnm_output_name);
 		loaded += load_var(name, value, "file_opencv_output", global_params.output.pnm_output_name);
 		loaded += load_var(name, value, "interactive", global_params.interactive);
+		loaded += load_var(name, value, "zoom_level", global_params.zoom_level);
 		loaded += load_var(name, value, "parameters_append", global_params.save_parameters_append);
 		loaded += load_var(name, value, "file_parameters", global_params.save_parameters_name);
 		if (loaded != 1) {
@@ -146,6 +151,8 @@ int save_params(FILE *fd){
 	fprintf(fd, "###########################################################\n");
 	fprintf(fd, "# General input pnm file\n");
 	save_var(fd, "file_pnm_input", global_params.input.pnm_input_name);
+	fprintf(fd, "# Input from any file format supported by OpenCV (only with Custom vectorization method, this option overrides pnm_input):\n");
+	save_var(fd, "file_input", global_params.input.custom_input_name);
 	fprintf(fd, "# Vectorization method: 0: Custom, 1: Potrace, 2: Stupid\n");
 	save_var(fd, "vectorization_method", global_params.vectorization_method);
 	fprintf(fd, "# Phase 1: Thresholding\n");
@@ -193,6 +200,8 @@ int save_params(FILE *fd){
 	save_var(fd, "file_opencv_output", global_params.output.pnm_output_name);
 	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars\n");
 	save_var(fd, "interactive", global_params.interactive);
+	fprintf(fd, "# Scale images before viewing in window: 0: No scaling, 100: Small pictures\n");
+	save_var(fd, "zoom_level", global_params.zoom_level);
 	fprintf(fd, "# Save parameters to file on exit: 0: overwrite, 1: append\n");
 	save_var(fd, "parameters_append", global_params.save_parameters_append);
 	save_var(fd, "file_parameters", global_params.save_parameters_name);

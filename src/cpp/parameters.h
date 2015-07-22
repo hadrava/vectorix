@@ -9,6 +9,7 @@ namespace vect {
 
 typedef struct {
 	std::string pnm_input_name = "";
+	std::string custom_input_name = "";
 } input_params;
 
 typedef struct {
@@ -60,6 +61,7 @@ typedef struct {
 	output_params output;
 	int save_parameters_append = 0;
 	std::string save_parameters_name = "";
+	int zoom_level = 0;
 } params;
 
 extern params global_params;

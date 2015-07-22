@@ -35,8 +35,11 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	FILE *svg_output = stdout;
 	FILE *pnm_output = NULL;
 	pnm_image input_image;
-	if (global_params.input.pnm_input_name.empty()) {
-		fprintf(stderr, "No input file speficied.\n");
+	if ((global_params.vectorization_method == 0) && (!global_params.input.custom_input_name.empty())) {
+		fprintf(stderr, "File will be loaded by OpenCV.\n");
+	}
+	else if (global_params.input.pnm_input_name.empty() && (global_params.vectorization_method != 0)) {
+		fprintf(stderr, "No PNM input file speficied.\n");
 		return 1;
 	}
 	else {

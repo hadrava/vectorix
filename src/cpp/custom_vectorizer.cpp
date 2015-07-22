@@ -6,6 +6,7 @@
 #include "time_measurement.h"
 #include "parameters.h"
 #include <string>
+#include <cmath>
 
 using namespace cv;
 using namespace pnm;
@@ -25,7 +26,15 @@ uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image da
 
 #ifdef VECTORIZER_HIGHGUI
 void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Display image in highgui named window.
-	return imshow(winname, mat);
+	if (global_params.zoom_level) {
+		Mat scaled_mat;
+		int w = mat.cols() / (log10(global_params.zoom_level+10));
+		int h = mat.rows() / (log10(global_params.zoom_level+10));
+		resize(mat, scaled_mat, Size(w, h));
+		return imshow(winname, scaled_mat);
+	}
+	else
+		return imshow(winname, mat);
 }
 int custom::vectorize_waitKey(int delay) { // Wait for key press in any window.
 	return waitKey(delay);
@@ -416,12 +425,17 @@ void step2_changed(int, void*) {
 
 v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color).
 	Mat orig (original.height, original.width, CV_8UC(3));
-	for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures.
-		for (int i = 0; i<original.width; i++) {
-			orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
-			orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
-			orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
+	if (global_params.input.custom_input_name.empty()) {
+		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures.
+			for (int i = 0; i<original.width; i++) {
+				orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
+				orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
+				orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
+			}
 		}
+	}
+	else {
+		orig = imread(global_params.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
 	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255));
@@ -442,12 +456,14 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 	tmea::timer tracing_timer;
 
 	state = 2;
-	int max_image_size = (original.height+original.width)*2;
+	int max_image_size = (orig.cols+orig.rows)*2;
 	while (state) {
 		switch (state) {
 			case 2:
 				if (global_params.interactive) {
 					vectorize_imshow("Original", orig); // Show original color image.
+					if (global_params.interactive == 2)
+						createTrackbar("Zoom out", "Original", &global_params.zoom_level, 10000, step1_changed);
 					vectorize_waitKey(global_params.interactive-1);
 				}
 				cvtColor(orig, grayscale, CV_RGB2GRAY);
