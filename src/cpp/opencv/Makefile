@@ -1,9 +1,7 @@
 all:
 	@echo "Specify OpenCV version:"
-	@echo "make v-2.4.11"
-	@echo "make v-3.0.0"
-
-v-%: lib-% include-% opencv-%.zip
+	@echo "make opencv-3.0.0.zip include-3.0.0 lib-3.0.0"
+	@echo "make opencv-2.4.11.zip include-2.4.11 lib-2.4.11"
 
 include-%: opencv-%
 	cp -r $</include $@
@@ -28,4 +26,4 @@ opencv-%.zip:
 clean:
 	rm -rf lib-* include* build-* opencv-*/
 
-.PHONY: all clean v-3.0.0 v-2.4.11
+.PHONY: all clean
