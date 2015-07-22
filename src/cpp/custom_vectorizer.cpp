@@ -272,13 +272,19 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 		sum += inc_pix_to(skeleton, current_depth, new_point.main, used_pixels);
 	}
 	else {
+		line.segment.back().control_next = new_point.control_next;
 		v_point op = line.segment.back();
 		v_point np = new_point;
 		v_line new_segment;
 		new_segment.segment.push_back(op);
 		new_segment.segment.push_back(np);
-		chop_line(new_segment, 0.2);
+		chop_line(new_segment, 0.1);
+		v_pt last = op.main;
+		last.x++;
 		for (v_point point: new_segment.segment) {
+			if (point.main == last)
+				continue;
+			last = point.main;
 			for (int i = -1; i<=1; i++) {
 				for (int j = -1; j<=1; j++) {
 					v_pt a = point.main;

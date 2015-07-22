@@ -44,6 +44,9 @@ public:
 		first /= div;
 		return first;
 	};
+	bool operator==(const v_pt &other) {
+		return ((x == other.x) && (y == other.y));
+	};
 };
 
 class v_co {
