@@ -33,6 +33,12 @@ typedef struct {
 typedef struct {
 	float depth_auto_choose = 0;
 	int max_dfs_depth = 1;
+	p nearby_limit = 10; //TODO zanést
+	int nearby_limit_gauss = 2; //TODO zanést
+	float distance_coef = 2; //TODO zanést
+	float gauss_precision = 0.001;
+	int angle_steps = 20;
+	float angular_precision = 0.001;
 } step3_params;
 
 typedef struct {

@@ -2,6 +2,7 @@
 #define _VECTOR_LINES_H
 
 #include <list>
+#include <cmath>
 #include "config.h"
 #include "parameters.h"
 
@@ -47,6 +48,9 @@ public:
 	bool operator==(const v_pt &other) {
 		return ((x == other.x) && (y == other.y));
 	};
+	p len() const {
+		return std::sqrt(x*x + y*y);
+	}
 };
 
 class v_co {
@@ -58,10 +62,23 @@ public:
 		val[1] += other.val[1];
 		val[2] += other.val[2];
 	};
+	friend v_co operator+(v_co first, v_co second) {
+		first += second;
+		return first;
+	};
 	v_co &operator/=(int other) {
 		val[0] /= other;
 		val[1] /= other;
 		val[2] /= other;
+	};
+	v_co &operator*=(p mul) {
+		val[0] *= mul;
+		val[1] *= mul;
+		val[2] *= mul;
+	};
+	friend v_co operator*(v_co first, p mul) {
+		first *= mul;
+		return first;
 	};
 	int val[3];
 };
@@ -134,6 +151,9 @@ public:
 
 p distance(const v_pt &a, const v_pt &b);
 p distance(const v_point &a, const v_point &b);
+inline p v_pt_distance(const v_pt &a, const v_pt &b) {
+	distance(a, b);
+}
 void chop_in_half(v_point &one, v_point &two, v_point &newpoint);
 void chop_line(v_line &line, p max_distance = 1);
 void group_line(std::list<v_line> &list, const v_line &line);

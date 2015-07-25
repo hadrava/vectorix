@@ -7,6 +7,7 @@
 #include "parameters.h"
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 using namespace cv;
 using namespace pnm;
@@ -14,6 +15,46 @@ using namespace pnm;
 namespace vect {
 
 uchar custom::nullpixel; // Virtual pixel for safe access to image matrix.
+
+uchar &safeat(const Mat &image, int i, int j) {
+	return custom::safeat(image, i, j);
+}
+
+float apxat(const Mat &image, v_pt pt) {
+	int x = pt.x;
+	int y = pt.y;
+	pt.x-=x;
+	pt.y-=y;
+	float out = safeat(image, y,   x  ) * (pt.x     * pt.y) + \
+		    safeat(image, y,   x+1) * ((1-pt.x) * pt.y) + \
+		    safeat(image, y+1, x  ) * (pt.x     * (1-pt.y)) + \
+		    safeat(image, y+1, x+1) * ((1-pt.x) * (1-pt.y));
+	float sum = (pt.x     * pt.y) + \
+		    ((1-pt.x) * pt.y) + \
+		    (pt.x     * (1-pt.y)) + \
+		    ((1-pt.x) * (1-pt.y));
+	return out;
+}
+
+v_co safeat_co(const Mat &image, int i, int j) { // Safely acces image data.
+	if (i>=0 && i<image.rows && j>=0 && j<image.step)
+		return v_co(image.data[i*image.step + j*3 + 2], image.data[i*image.step + j*3 + 1], image.data[i*image.step + j*3]);
+	else {
+		return v_co(0, 0, 0);
+	}
+}
+
+v_co apxat_co(const Mat &image, v_pt pt) {
+	int x = pt.x;
+	int y = pt.y;
+	pt.x-=x;
+	pt.y-=y;
+	v_co out = safeat_co(image, y,   x  ) * (pt.x     * pt.y) + \
+		   safeat_co(image, y,   x+1) * ((1-pt.x) * pt.y) + \
+		   safeat_co(image, y+1, x  ) * (pt.x     * (1-pt.y)) + \
+		   safeat_co(image, y+1, x+1) * ((1-pt.x) * (1-pt.y));
+	return out;
+}
 
 uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image data.
 	if (i>=0 && i<image.rows && j>=0 && j<image.step)
@@ -227,7 +268,7 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save firsst point
 
 		//TODO only for debuging
-		line.auto_smooth();
+		//line.auto_smooth();
 		//ODOT
 		vectorization_output.add_line(line);
 		count++;
@@ -279,12 +320,7 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 		new_segment.segment.push_back(op);
 		new_segment.segment.push_back(np);
 		chop_line(new_segment, 0.1);
-		v_pt last = op.main;
-		last.x++;
 		for (v_point point: new_segment.segment) {
-			if (point.main == last)
-				continue;
-			last = point.main;
 			for (int i = -1; i<=1; i++) {
 				for (int j = -1; j<=1; j++) {
 					v_pt a = point.main;
@@ -300,7 +336,224 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 	return sum;
 }
 
+float calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par) {
+	int limit = par.nearby_limit_gauss;
+	float res = 0;
+	for (int y = -limit; y<=limit; y++) {
+		for (int x = -limit; x<=limit; x++) {
+			int j = center.x + x;
+			int i = center.y + y;
+			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) {
+				v_pt pixel(j+0.5f, i+0.5f);
+				pixel -= center;
+				res += std::exp(-(pixel.x*pixel.x + pixel.y*pixel.y)/par.distance_coef) * safeat(distance, i, j);
+			}
+		}
+	}
+	return res;
+}
+
+v_pt find_best_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par, float size = 1) {
+	if (size < par.gauss_precision)
+		return center;
+	float a[3][3];
+	for (int y = -1; y<=1; y++) {
+		for (int x = -1; x<=1; x++) {
+			v_pt offset(x, y);
+			offset *= size;
+			offset += center;
+			a[x+1][y+1] = calculate_gaussian(skeleton, distance, used_pixels, offset, par);
+		}
+	}
+	float i = a[0][0] + a[0][1] + a[1][0] + a[1][1];
+	float j = a[1][0] + a[1][1] + a[2][0] + a[2][1];
+	float k = a[0][1] + a[0][2] + a[1][1] + a[1][2];
+	float l = a[1][1] + a[1][2] + a[2][1] + a[2][2];
+	float m = max(max(i,j),max(k,l));
+	size /= 2;
+	if (m == i) {
+		center += v_pt(-size, -size);
+	}
+	else if (m == j) {
+		center += v_pt(size, -size);
+	}
+	else if (m == k) {
+		center += v_pt(-size, size);
+	}
+	else {
+		center += v_pt(size, size);
+	}
+	return find_best_gaussian(skeleton, distance, used_pixels, center, par, size);
+}
+
+float calculate_line_fitness(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, v_pt end, step3_params &par) {
+	Point corner1(center.x - par.nearby_limit, center.y - par.nearby_limit);
+	Point corner2(center.x + par.nearby_limit + 1, center.y + par.nearby_limit + 1);
+	float res = 0;
+	for (int i = corner1.y; i < corner2.y; i++) {
+		for (int j = corner1.x; j < corner2.x; j++) {
+			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) {
+				v_pt pixel(j+0.5f, i+0.5f);
+				if (v_pt_distance(center, pixel) > par.nearby_limit)
+					continue;
+				pixel -= center;
+				v_pt en = end - center;
+				en /= en.len();
+				float base = pixel.x*en.x + pixel.y*en.y;
+				if (base < 0)
+					continue;
+				en *= base;
+				en -= pixel;
+				res += std::exp(-(en.x*en.x + en.y*en.y)/par.distance_coef) * safeat(distance, i, j);
+			}
+		}
+	}
+	return res;
+}
+
+v_pt try_line_point(v_pt center, float angle, step3_params &par) {
+	v_pt distpoint(cos(angle), sin(angle));
+	distpoint *= par.nearby_limit;
+	distpoint += center;
+	return distpoint;
+}
+
+float find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float angle, step3_params &par, float size) {
+	if (size < par.angular_precision)
+		return angle;
+	size /= 2;
+	v_pt a = try_line_point(center, angle - size, par);
+	v_pt b = try_line_point(center, angle + size, par);
+	float af = calculate_line_fitness(skeleton, distance, used_pixels, center, a, par);
+	float bf = calculate_line_fitness(skeleton, distance, used_pixels, center, b, par);
+	if (af>bf)
+		return find_best_line(skeleton, distance, used_pixels, center, angle - size, par, size);
+	else
+		return find_best_line(skeleton, distance, used_pixels, center, angle + size, par, size);
+}
+
+float find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1);
+	if (variant == 1) {
+		if (v_pt_distance(best, last) < epsilon)
+			return 0;
+		else
+			best = last;
+	}
+	match = v_point(best, apxat_co(color_input, best), apxat(distance, best)*2);
+	return 1;
+}
+
+float find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+	// predict smooth line
+	v_point pred;
+	v_pt prediction = line.segment.back().main;
+	auto hist = line.segment.end();
+	hist--;
+	if (hist == line.segment.begin())
+		return 0;
+	hist--;
+	if (v_pt_distance(hist->main, prediction) > epsilon)
+		prediction = hist->main;
+	if (v_pt_distance(line.segment.back().main, line.segment.back().control_prev) > epsilon)
+		prediction = line.segment.back().control_prev;
+
+	prediction -= line.segment.back().main;
+	prediction *= -1;
+	prediction /= prediction.len();
+	pred.control_next = line.segment.back().main + prediction*(par.nearby_limit/4);
+	pred.control_prev = line.segment.back().main + prediction*(par.nearby_limit*3/4);
+	pred.main         = line.segment.back().main + prediction*par.nearby_limit;
+	
+	if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
+		if (variant==0) {
+			match = pred;
+			return 1;
+		}
+		else {
+			variant--;
+			return 0;
+		}
+	}
+	return 0;
+}
+
+float find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+	// leave corner (or first point) with straight continuation
+	int size = par.nearby_limit;
+	float *fit = new float[par.angle_steps+2];
+	fit++;
+	for (int dir = 0; dir < par.angle_steps; dir++) {
+		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI/par.angle_steps*dir, par);
+		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par);
+	}
+	fit[-1] = fit[par.angle_steps-1];
+	fit[par.angle_steps] = fit[0];
+
+	float *sortedfit = new float[par.angle_steps];
+	int sortedfiti = 0;
+	for (int dir = 0; dir < par.angle_steps; dir++) {
+		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) {
+			sortedfit[sortedfiti++] = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, 2*M_PI/par.angle_steps*dir, par, 2*M_PI/par.angle_steps);
+		}
+	}
+	fit--;
+	delete []fit;
+
+	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool {
+			v_pt da = try_line_point(line.segment.back().main, a, par);
+			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, par);
+			v_pt db = try_line_point(line.segment.back().main, b, par);
+			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, par);
+			return fa > fb;
+			});
+	/*
+	for (int dir = 0; dir < sortedfiti; dir++) {
+		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
+		float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par);
+		fprintf(stderr, "Sorted variants: %f: %f\n", sortedfit[dir], my);
+	}
+	fprintf(stderr, "count of variants: %i\n", sortedfiti);
+	*/
+	if (variant >= sortedfiti) {
+		variant -= sortedfiti;
+		return 0;
+	}
+	v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[variant], par);
+	match = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2);
+	match.control_next = match.main - line.segment.back().main;
+	match.control_next /= 3;
+	match.control_prev = match.main - match.control_next;
+	match.control_next += line.segment.back().main;
+	return 1;
+}
+
 float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int variant, v_point &match, step3_params &par) {
+	if (line.segment.empty()) { // place first point
+		return find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
+	}
+
+	float cnt = find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
+	if (cnt > 0)
+		return cnt;
+
+	cnt = find_best_variant_straight(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
+	if (cnt > 0)
+		return cnt;
+
+	return 0;
+
+
+	//
+	// try straight
+	//auto history = get_history();
+	//if ((history.straight()) && history.constant_width()) {
+		//proj = project_forward(history);
+		//proj.calculate_
+	//}
+
+	
+
 	//TODO
 		// TODO
 		// do prediction:
@@ -361,14 +614,14 @@ float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const c
 
 void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par) {
 	v_pt last_placed;
-	last_placed.x = startpoint.x;
-	last_placed.y = startpoint.y;
+	last_placed.x = startpoint.x + 0.5f;
+	last_placed.y = startpoint.y + 0.5f;
 	int sum = 0;
 	int first_point = 1;
 	for (;;) {
 		v_point new_point;
 		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO);
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
 		if (depth_found > 0) {
 			if (first_point == 1) {
 				sum += place_next_point_at(skeleton, new_point, 254, line, used_pixels);
