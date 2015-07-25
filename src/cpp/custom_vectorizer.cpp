@@ -8,6 +8,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <tuple>
+#include <vector>
 
 using namespace cv;
 using namespace pnm;
@@ -432,26 +434,22 @@ float find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_p
 		return find_best_line(skeleton, distance, used_pixels, center, angle + size, par, size);
 }
 
-float find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+void find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
 	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1);
-	if (variant == 1) {
-		if (v_pt_distance(best, last) < epsilon)
-			return 0;
-		else
-			best = last;
+	match.emplace_back(std::tuple<v_point, float>(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2), 1)); //TODO koeficient
+	if (v_pt_distance(best, last) > epsilon) {
+		match.emplace_back(std::tuple<v_point, float>(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2), 1)); //TODO koeficient
 	}
-	match = v_point(best, apxat_co(color_input, best), apxat(distance, best)*2);
-	return 1;
 }
 
-float find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
 	// predict smooth line
 	v_point pred;
 	v_pt prediction = line.segment.back().main;
 	auto hist = line.segment.end();
 	hist--;
 	if (hist == line.segment.begin())
-		return 0;
+		return;
 	hist--;
 	if (v_pt_distance(hist->main, prediction) > epsilon)
 		prediction = hist->main;
@@ -466,19 +464,11 @@ float find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, cons
 	pred.main         = line.segment.back().main + prediction*par.nearby_limit;
 	
 	if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
-		if (variant==0) {
-			match = pred;
-			return 1;
-		}
-		else {
-			variant--;
-			return 0;
-		}
+		match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient
 	}
-	return 0;
 }
 
-float find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int &variant, v_point &match, step3_params &par) {
+void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
 	// leave corner (or first point) with straight continuation
 	int size = par.nearby_limit;
 	float *fit = new float[par.angle_steps+2];
@@ -507,41 +497,33 @@ float find_best_variant_straight(const Mat &color_input, const Mat &skeleton, co
 			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, par);
 			return fa > fb;
 			});
-	/*
+
+	//fprintf(stderr, "count of variants: %i\n", sortedfiti);
 	for (int dir = 0; dir < sortedfiti; dir++) {
+		//v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
+		//float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par);
+		//fprintf(stderr, "Sorted variants: %f: %f\n", sortedfit[dir], my);
+
 		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
-		float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par);
-		fprintf(stderr, "Sorted variants: %f: %f\n", sortedfit[dir], my);
+		v_point out = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2);
+		out.control_next = out.main - line.segment.back().main;
+		out.control_next /= 3;
+		out.control_prev = out.main - out.control_next;
+		out.control_next += line.segment.back().main;
+		match.push_back(std::tuple<v_point,float>(out, 1)); //TODO koeficient
 	}
-	fprintf(stderr, "count of variants: %i\n", sortedfiti);
-	*/
-	if (variant >= sortedfiti) {
-		variant -= sortedfiti;
-		return 0;
-	}
-	v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[variant], par);
-	match = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2);
-	match.control_next = match.main - line.segment.back().main;
-	match.control_next /= 3;
-	match.control_prev = match.main - match.control_next;
-	match.control_next += line.segment.back().main;
-	return 1;
 }
 
-float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, int variant, v_point &match, step3_params &par) {
+void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
 	if (line.segment.empty()) { // place first point
-		return find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
+		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last, line, match, par);
+		return;
 	}
 
-	float cnt = find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
-	if (cnt > 0)
-		return cnt;
+	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last, line, match, par);
+	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last, line, match, par);
 
-	cnt = find_best_variant_straight(color_input, skeleton, distance, used_pixels, last, line, variant, match, par);
-	if (cnt > 0)
-		return cnt;
-
-	return 0;
+	return;
 
 
 	//
@@ -566,6 +548,8 @@ float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &
 		//  4) konec (1), a jsi si jistý - přidej 2.
 		//
 		//  if nejde najít return 0;
+		//
+		/*
 	Point pos;
 	pos.x = last.x;
 	pos.y = last.y;
@@ -579,6 +563,7 @@ float find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &
 		return 1;
 	}
 	return 0;
+	*/
 }
 
 float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_pt last_placed, int allowed_depth, v_line &line, v_point &new_point, step3_params &par) {
@@ -587,12 +572,16 @@ float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const c
 	}
 	v_point best_match;
 	float best_depth = -1;
-	float last_depth = 1;
 
-	for (int variant = 0; last_depth > 0; variant++) {
+	std::vector<std::tuple<v_point, float>> all_matches;
+	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches, par);
+	for (int variant = 0; variant <= all_matches.size(); variant++) {
 		v_point last_match;
-
-		last_depth = find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, variant, last_match, par);
+		float last_depth = 0;
+		if (variant < all_matches.size()) {
+			last_match = std::get<0>(all_matches[variant]);
+			last_depth = std::get<1>(all_matches[variant]);
+		}
 		if (last_depth > 0) {
 			int sum = place_next_point_at(skeleton, last_match, allowed_depth, line, used_pixels);
 			last_depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match.main, allowed_depth - 1, line, new_point, par);
