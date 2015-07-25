@@ -8,7 +8,8 @@
 namespace vect {
 
 class generic_vectorizer {
-protected:
+//protected:
+public:
 	static void vectorizer_error(const char *format, ...);
 	static void vectorizer_debug(const char *format, ...);
 };

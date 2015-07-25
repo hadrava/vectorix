@@ -192,6 +192,28 @@ void chop_in_half(v_point &one, v_point &two, v_point &newpoint);
 void chop_line(v_line &line, p max_distance = 1);
 void group_line(std::list<v_line> &list, const v_line &line);
 
+v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d) {
+	/*
+	c -= a;
+	p dt = d.y/d.x;
+	p t = c.y - dt*c.x;
+	t /= b.y - dt*b.x;
+	b *= t;
+	a += b;
+	return a;
+	*/
+	c -= a;
+	v_pt c_proj = b*(c.x*b.x + c.y*b.y);
+	v_pt d_proj = b*(d.x*b.x + d.y*b.y);
+	p cl = distance(c_proj, c);
+	p dl = distance(d_proj, d);
+	d *= cl/dl;
+	v_pt control = d + c;
+	v_pt proj = b*(control.x*b.x + control.y*b.y);
+	if (distance(proj, control) > epsilon) // TODO opravit
+		d *= -1;
+	return d+c+a;
+}
 
 
 }; // namespace

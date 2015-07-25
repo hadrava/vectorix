@@ -341,7 +341,7 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 		}
 	}
 	line.segment.push_back(new_point);
-	fprintf(stderr, "place_next_point_at: %f %f, %i = %i\n", new_point.main.x, new_point.main.y, current_depth, sum);
+	generic_vectorizer::vectorizer_debug("place_next_point_at: %f %f, %i = %i\n", new_point.main.x, new_point.main.y, current_depth, sum);
 	return sum;
 }
 
@@ -469,16 +469,40 @@ void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const
 	pred.control_next = line.segment.back().main + prediction*(par.nearby_limit/3);
 
 	step3_params pp = par;
-	pp.nearby_limit = par.nearby_limit + 3;
-	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), par, 0.8, par.nearby_limit - 3);
+	pp.nearby_limit = par.nearby_limit + par.size_nearby_smooth;
+	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), par, par.max_angle_search_smooth, par.nearby_limit - par.size_nearby_smooth);
 	pred.main = line.segment.back().main + v_pt(std::cos(angle), std::sin(angle))*par.nearby_limit;
 
-	pp.nearby_limit = 5;
-	float angle2 = find_best_line(skeleton, distance, used_pixels, pred.main, angle, pp, 0.8, -3);
+	pp.nearby_limit = par.nearby_control_smooth;
+	float angle2 = find_best_line(skeleton, distance, used_pixels, pred.main, angle, pp, par.max_angle_search_smooth, -par.size_nearby_smooth);
 	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(par.nearby_limit/3);
 
+	p smoothness = fabs(angle2 - prediction.angle());
 	if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
-		match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient
+		if (smoothness < par.smoothness) {
+			pred.color = apxat_co(color_input, pred.main);
+			pred.width = apxat(distance, pred.main)*2;
+			match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient)
+		}
+		else {
+			generic_vectorizer::vectorizer_debug("Corner detected\n");
+			pred.main = intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main);
+			float len = (pred.main - line.segment.back().main).len();
+			pred.control_next = line.segment.back().main + prediction*(len/3);
+			pred.control_prev = line.segment.back().main + prediction*(len*2/3);
+
+			if (v_pt_distance(line.segment.back().main - prediction*len, pred.main) > len) {
+				if (apxat(skeleton, pred.main)) {
+					pred.color = apxat_co(color_input, pred.main);
+					pred.width = apxat(distance, pred.main)*2;
+					match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient
+				}
+				else
+					generic_vectorizer::vectorizer_debug("Corner is not in skeleton, refusing to add\n");
+			}
+			else
+				generic_vectorizer::vectorizer_debug("Sorry, we already missed it, try it with other detector\n");
+		}
 	}
 }
 
@@ -489,7 +513,7 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 	fit++;
 	for (int dir = 0; dir < par.angle_steps; dir++) {
 		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI/par.angle_steps*dir, par);
-		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, 0, par.nearby_limit, par);
+		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par.min_nearby_straight, par.nearby_limit, par);
 	}
 	fit[-1] = fit[par.angle_steps-1];
 	fit[par.angle_steps] = fit[0];
@@ -506,17 +530,17 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 
 	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool {
 			v_pt da = try_line_point(line.segment.back().main, a, par);
-			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, 0, par.nearby_limit, par);
+			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, par.min_nearby_straight, par.nearby_limit, par);
 			v_pt db = try_line_point(line.segment.back().main, b, par);
-			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, 0, par.nearby_limit, par);
+			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, par.min_nearby_straight, par.nearby_limit, par);
 			return fa > fb;
 			});
 
-	//fprintf(stderr, "count of variants: %i\n", sortedfiti);
+	//vectorizer_debug("count of variants: %i\n", sortedfiti);
 	for (int dir = 0; dir < sortedfiti; dir++) {
 		//v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
 		//float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, 0, par.nearby_limit, par);
-		//fprintf(stderr, "Sorted variants: %f: %f\n", sortedfit[dir], my);
+		//vectorizer_debug("Sorted variants: %f: %f\n", sortedfit[dir], my);
 
 		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
 		v_point out = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2);
@@ -524,6 +548,8 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 		out.control_next /= 3;
 		out.control_prev = out.main - out.control_next;
 		out.control_next += line.segment.back().main;
+		out.color = apxat_co(color_input, out.main);
+		out.width = apxat(distance, out.main)*2;
 		match.push_back(std::tuple<v_point,float>(out, 1)); //TODO koeficient
 	}
 }
@@ -531,14 +557,14 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
 	if (line.segment.empty()) { // place first point
 		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last, line, match, par);
-		fprintf(stderr, "find fst var: %i\n", match.size());
+		generic_vectorizer::vectorizer_debug("find fst var: %i\n", match.size());
 		return;
 	}
 
 	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last, line, match, par);
-	fprintf(stderr, "find smooth: %i\n", match.size());
+	generic_vectorizer::vectorizer_debug("find smooth: %i\n", match.size());
 	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last, line, match, par);
-	fprintf(stderr, "find var: %i\n", match.size());
+	generic_vectorizer::vectorizer_debug("find var: %i\n", match.size());
 
 	return;
 

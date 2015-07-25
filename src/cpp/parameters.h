@@ -34,6 +34,11 @@ typedef struct {
 	float depth_auto_choose = 0;
 	int max_dfs_depth = 1;
 	p nearby_limit = 10;
+	p min_nearby_straight = 0; //TODO
+	p size_nearby_smooth = 3; //TODO
+	p nearby_control_smooth = 5; //TODO
+	p max_angle_search_smooth = 0.8; //TODO
+	p smoothness = 0.5; //TODO
 	int nearby_limit_gauss = 2;
 	float distance_coef = 2;
 	float gauss_precision = 0.001;
