@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <locale>
 #include "v_image.h"
+#include "parameters.h"
 
 
 namespace vect {
@@ -48,12 +49,21 @@ private:
 		fprintf(fd, "<svg\n");
 		fprintf(fd, "   xmlns:svg=\"http://www.w3.org/2000/svg\"\n");
 		fprintf(fd, "   xmlns=\"http://www.w3.org/2000/svg\"\n");
+		if (!global_params.output.svg_underlay_image.empty())
+			fprintf(fd, "   xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n");
 		fprintf(fd, "   version=\"1.1\"\n");
 		fprintf(fd, "   width=\"%f\"\n", image.width);
 		fprintf(fd, "   height=\"%f\"\n", image.height);
 		fprintf(fd, "   id=\"svg\">\n");
 		fprintf(fd, "  <g\n");
 		fprintf(fd, "     id=\"layer1\">\n");
+		if (!global_params.output.svg_underlay_image.empty()) {
+			fprintf(fd, "    <image\n");
+			fprintf(fd, "       y=\"0\" x=\"0\"\n");
+			fprintf(fd, "       xlink:href=\"file://%s\"\n", global_params.output.svg_underlay_image.c_str());
+			fprintf(fd, "       width=\"%f\"\n", image.width);
+			fprintf(fd, "       height=\"%f\" />\n", image.height);
+		}
 	};
 
 	static void svg_write_footer(FILE *fd, const v_image &image) {

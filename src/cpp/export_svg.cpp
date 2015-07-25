@@ -23,15 +23,25 @@ void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' 
 	v_pt cn = segment->control_next;
 	int count = 1;
 	p width = segment->width;
+	if (global_params.output.svg_force_width)
+		width = global_params.output.svg_force_width;
 	p opacity = segment->opacity;
+	if (global_params.output.svg_force_opacity)
+		opacity = global_params.output.svg_force_opacity;
 	v_co color = segment->color;
 	segment++;
 	while (segment != line.segment.cend()) {
 		fprintf(fd, " C %f %f %f %f %f %f", cn.x, cn.y, segment->control_prev.x, segment->control_prev.y, segment->main.x, segment->main.y);
 		cn = segment->control_next;
 		count ++;
-		width += segment->width;
-		opacity += segment->opacity;
+		if (global_params.output.svg_force_width)
+			width += global_params.output.svg_force_width;
+		else
+			width += segment->width;
+		if (global_params.output.svg_force_opacity)
+			opacity += global_params.output.svg_force_opacity;
+		else
+			opacity += segment->opacity;
 		color += segment->color;
 		segment++;
 	}

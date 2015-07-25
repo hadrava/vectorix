@@ -62,6 +62,13 @@ params default_params() {
 	par.step2.save_distance_normalized_name = "out/distance_norm.png";
 	par.step3.depth_auto_choose = 1; // error allowed (optimization)
 	par.step3.max_dfs_depth = 1; // take first, no dfs allowed
+	par.step3.nearby_limit = 10;
+	par.step3.nearby_limit_gauss = 2;
+	par.step3.distance_coef = 2;
+	par.step3.gauss_precision = 0.001;
+	par.step3.angle_steps = 20;
+	par.step3.angular_precision = 0.001;
+	//par.step3. = ;
 	par.opencv_render.render_max_distance = 1;
 	par.output.export_type = 3;
 	par.output.output_engine = 0;
@@ -69,6 +76,11 @@ params default_params() {
 	par.output.auto_contour_variance = 5;
 	par.output.vector_output_name = "";
 	par.output.pnm_output_name = "";
+	par.output.save_opencv_rendered_name = "";
+	par.output.svg_underlay_image = "";
+	par.output.svg_force_opacity = 0;
+	par.output.svg_force_width = 0;
+	//par.output. = "";
 	par.interactive = 2;
 	par.zoom_level = 0;
 	par.save_parameters_append = 0;
@@ -124,6 +136,13 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "file_distance_norm", global_params.step2.save_distance_normalized_name);
 		loaded += load_var(name, value, "depth_auto_choose", global_params.step3.depth_auto_choose);
 		loaded += load_var(name, value, "max_dfs_depth", global_params.step3.max_dfs_depth);
+		loaded += load_var(name, value, "nearby_limit", global_params.step3.nearby_limit);
+		loaded += load_var(name, value, "nearby_limit_gauss", global_params.step3.nearby_limit_gauss);
+		loaded += load_var(name, value, "distance_coef", global_params.step3.distance_coef);
+		loaded += load_var(name, value, "gauss_precision", global_params.step3.gauss_precision);
+		loaded += load_var(name, value, "angle_steps", global_params.step3.angle_steps);
+		loaded += load_var(name, value, "angular_precision", global_params.step3.angular_precision);
+		//loaded += load_var(name, value, "", global_params.step3.);
 		loaded += load_var(name, value, "render_max_distance", global_params.opencv_render.render_max_distance);
 		loaded += load_var(name, value, "export_type", global_params.output.export_type);
 		loaded += load_var(name, value, "max_contour_error", global_params.output.max_contour_error);
@@ -131,7 +150,11 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "output_engine", global_params.output.output_engine);
 		loaded += load_var(name, value, "file_vector_output", global_params.output.vector_output_name);
 		loaded += load_var(name, value, "file_pnm_output", global_params.output.pnm_output_name);
-		loaded += load_var(name, value, "file_opencv_output", global_params.output.pnm_output_name);
+		loaded += load_var(name, value, "file_opencv_output", global_params.output.save_opencv_rendered_name);
+		loaded += load_var(name, value, "svg_underlay_image", global_params.output.svg_underlay_image);
+		loaded += load_var(name, value, "svg_force_opacity", global_params.output.svg_force_opacity);
+		loaded += load_var(name, value, "svg_force_width", global_params.output.svg_force_width);
+		//loaded += load_var(name, value, "", global_params.output.);
 		loaded += load_var(name, value, "interactive", global_params.interactive);
 		loaded += load_var(name, value, "zoom_level", global_params.zoom_level);
 		loaded += load_var(name, value, "parameters_append", global_params.save_parameters_append);
@@ -183,6 +206,16 @@ int save_params(FILE *fd){
 	save_var(fd, "depth_auto_choose", global_params.step3.depth_auto_choose);
 	fprintf(fd, "# Maximal prediction depth\n");
 	save_var(fd, "max_dfs_depth", global_params.step3.max_dfs_depth);
+	fprintf(fd, "# Maximal neighbourhood in pixel\n");
+	save_var(fd, "nearby_limit", global_params.step3.nearby_limit);
+	fprintf(fd, "# Maximal neighbourhood for calculating gaussian error in pixel\n");
+	save_var(fd, "nearby_limit_gauss", global_params.step3.nearby_limit_gauss);
+	fprintf(fd, "# Coeficient for gaussian error\n");
+	save_var(fd, "distance_coef", global_params.step3.distance_coef);
+	save_var(fd, "gauss_precision", global_params.step3.gauss_precision);
+	save_var(fd, "angle_steps", global_params.step3.angle_steps);
+	save_var(fd, "angular_precision", global_params.step3.angular_precision);
+	//save_var(fd, "", global_params.step3.);
 	fprintf(fd, "# Phase 5: Export\n");
 	fprintf(fd, "# Maximal allowed error in OpenCV rendering in pixels\n");
 	save_var(fd, "render_max_distance", global_params.opencv_render.render_max_distance);
@@ -197,7 +230,11 @@ int save_params(FILE *fd){
 	save_var(fd, "output_engine", global_params.output.output_engine);
 	save_var(fd, "file_vector_output", global_params.output.vector_output_name);
 	save_var(fd, "file_pnm_output", global_params.output.pnm_output_name);
-	save_var(fd, "file_opencv_output", global_params.output.pnm_output_name);
+	save_var(fd, "file_opencv_output", global_params.output.save_opencv_rendered_name);
+	save_var(fd, "svg_underlay_image", global_params.output.svg_underlay_image);
+	save_var(fd, "svg_force_opacity", global_params.output.svg_force_opacity);
+	save_var(fd, "svg_force_width", global_params.output.svg_force_width);
+	//save_var(fd, "", global_params.output.);
 	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars\n");
 	save_var(fd, "interactive", global_params.interactive);
 	fprintf(fd, "# Scale images before viewing in window: 0: No scaling, 100: Small pictures\n");

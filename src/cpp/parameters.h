@@ -33,9 +33,9 @@ typedef struct {
 typedef struct {
 	float depth_auto_choose = 0;
 	int max_dfs_depth = 1;
-	p nearby_limit = 10; //TODO zanést
-	int nearby_limit_gauss = 2; //TODO zanést
-	float distance_coef = 2; //TODO zanést
+	p nearby_limit = 10;
+	int nearby_limit_gauss = 2;
+	float distance_coef = 2;
 	float gauss_precision = 0.001;
 	int angle_steps = 20;
 	float angular_precision = 0.001;
@@ -53,6 +53,9 @@ typedef struct {
 	std::string vector_output_name = "";
 	std::string pnm_output_name = "";
 	std::string save_opencv_rendered_name = "";
+	std::string svg_underlay_image = "";
+	p svg_force_opacity = 0.7;
+	p svg_force_width = 0.9;
 	int show_opencv_rendered_window = 0;
 } output_params;
 

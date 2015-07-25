@@ -51,6 +51,14 @@ public:
 	p len() const {
 		return std::sqrt(x*x + y*y);
 	}
+	p angle() const {
+		float ret = std::atan(y/x);
+		if (x<0)
+			ret += M_PI;
+		if (ret<0)
+			ret += 2*M_PI;
+		return ret;
+	}
 };
 
 class v_co {
@@ -94,7 +102,7 @@ public:
 	v_point(v_pt _pt, v_co _color, p _width):
 		main(_pt), control_prev(_pt), control_next(_pt),
 		opacity(1), width(_width), color(_color) {};
-	v_point() {};
+	v_point(): opacity(1) {};
 	v_pt main;
 	v_pt control_prev;
 	v_pt control_next;
