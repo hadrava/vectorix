@@ -54,8 +54,9 @@ typedef struct {
 	std::string pnm_output_name = "";
 	std::string save_opencv_rendered_name = "";
 	std::string svg_underlay_image = "";
-	p svg_force_opacity = 0.7;
-	p svg_force_width = 0.9;
+	p svg_force_opacity = 0;
+	p svg_force_width = 0;
+	p false_colors = 0;
 	int show_opencv_rendered_window = 0;
 } output_params;
 

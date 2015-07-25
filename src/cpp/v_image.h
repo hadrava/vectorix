@@ -88,6 +88,30 @@ public:
 		first *= mul;
 		return first;
 	};
+private:
+	static p from_hue(p hue) {
+		if (hue < 60)
+			return hue/60*255;
+		else if (hue < 180)
+			return 255;
+		else if (hue < 240)
+			return (240 - hue)/60*255;
+		else
+			return 0;
+	}
+public:
+	static v_co from_color(p hue) {
+		v_co ret;
+		hue = fmodf(hue, 360);
+		ret.val[1] = from_hue(hue);
+		hue += 120;
+		hue = fmodf(hue, 360);
+		ret.val[0] = from_hue(hue);
+		hue += 120;
+		hue = fmodf(hue, 360);
+		ret.val[2] = from_hue(hue);
+		return ret;
+	}
 	int val[3];
 };
 
@@ -138,6 +162,7 @@ public:
 	void set_group(v_line_group group) { group_ = group; };
 	void convert_to_outline(p max_error = 1);
 	void auto_smooth();
+	void set_color(v_co color);
 	v_line_group get_group() const { return group_; };
 	std::list<v_point> segment;
 private:
@@ -152,6 +177,7 @@ public:
 	void clean();
 	void add_line(v_line _line);
 	void convert_to_variable_width(int type, output_params &par);
+	void false_colors(p hue_step);
 	p width;
 	p height;
 	std::list<v_line> line;

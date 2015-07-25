@@ -65,6 +65,8 @@ int main(int argc, char **argv) { // main [input.pnm [output.svg [output.pnm]]]
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
+	if (global_params.output.false_colors)
+		vector.false_colors(global_params.output.false_colors);
 
 	//show output
 	if (global_params.output.show_opencv_rendered_window || !global_params.output.save_opencv_rendered_name.empty()) {

@@ -380,6 +380,22 @@ void v_image::convert_to_variable_width(int type, output_params &par) {
 	}
 }
 
+void v_line::set_color(v_co color) {
+	for (auto pt = segment.begin(); pt != segment.end(); pt++) {
+		pt->color = color;
+	}
+}
+
+void v_image::false_colors(p hue_step) {
+	p hue = 0;
+	for (auto l = line.begin(); l != line.end(); l++) {
+		v_co col = v_co::from_color(hue);
+		l->set_color(col);
+		hue += hue_step;
+		hue = fmodf (hue, 360);
+	}
+}
+
 void v_line::auto_smooth() {
 	for (auto pt = segment.begin(); pt != segment.end(); pt++) {
 		auto prev = pt;

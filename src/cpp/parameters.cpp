@@ -80,6 +80,7 @@ params default_params() {
 	par.output.svg_underlay_image = "";
 	par.output.svg_force_opacity = 0;
 	par.output.svg_force_width = 0;
+	par.output.false_colors = 0;
 	//par.output. = "";
 	par.interactive = 2;
 	par.zoom_level = 0;
@@ -154,6 +155,7 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "svg_underlay_image", global_params.output.svg_underlay_image);
 		loaded += load_var(name, value, "svg_force_opacity", global_params.output.svg_force_opacity);
 		loaded += load_var(name, value, "svg_force_width", global_params.output.svg_force_width);
+		loaded += load_var(name, value, "false_colors", global_params.output.false_colors);
 		//loaded += load_var(name, value, "", global_params.output.);
 		loaded += load_var(name, value, "interactive", global_params.interactive);
 		loaded += load_var(name, value, "zoom_level", global_params.zoom_level);
@@ -234,6 +236,7 @@ int save_params(FILE *fd){
 	save_var(fd, "svg_underlay_image", global_params.output.svg_underlay_image);
 	save_var(fd, "svg_force_opacity", global_params.output.svg_force_opacity);
 	save_var(fd, "svg_force_width", global_params.output.svg_force_width);
+	save_var(fd, "false_colors", global_params.output.false_colors);
 	//save_var(fd, "", global_params.output.);
 	fprintf(fd, "# Interactive mode: 0: disable, 1: show windows, 2: show trackbars\n");
 	save_var(fd, "interactive", global_params.interactive);
