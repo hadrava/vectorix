@@ -16,6 +16,30 @@ using namespace pnm;
 
 namespace vect {
 
+changed_pix_roi step3_changed; // value < 254
+changed_pix_roi step3_changed_start; // value == 254
+
+void step3_roi_clear(changed_pix_roi &roi, int x, int y) {
+	roi.min_x = x;
+	roi.min_y = y;
+	roi.max_x = -1;
+	roi.max_y = -1;
+}
+
+Rect step3_roi_get(const changed_pix_roi &roi) {
+	if ((roi.min_x <= roi.max_x) && (roi.min_y <= roi.max_y))
+		return Rect(roi.min_x, roi.min_y, roi.max_x-roi.min_x + 1, roi.max_y-roi.min_y + 1);
+	else
+		return Rect(0, 0, 0, 0);
+}
+
+void step3_roi_update(changed_pix_roi &roi, int x, int y) {
+	roi.min_x = min(roi.min_x, x);
+	roi.min_y = min(roi.min_y, y);
+	roi.max_x = max(roi.max_x, x);
+	roi.max_y = max(roi.max_y, y);
+}
+
 uchar custom::nullpixel; // Virtual pixel for safe access to image matrix.
 
 uchar &safeat(const Mat &image, int i, int j) {
@@ -248,6 +272,10 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
 	Mat starting_points = skeleton.clone();
 	used_pixels = Scalar(0);
+#ifdef VECTORIZER_USE_ROI
+	step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
+	step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
+#endif
 
 	double max;
 	Point max_pos;
@@ -259,7 +287,14 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		v_line line;
 		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
 		line.reverse();
+#ifdef VECTORIZER_USE_ROI
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 254, 255, THRESH_BINARY);
+		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 254, 255, THRESH_BINARY);
+		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
+		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
+#else
 		threshold(used_pixels, used_pixels, 254, 255, THRESH_BINARY);
+#endif
 		if (line.empty()) {
 			vectorizer_error("Vectorizer warning: No new point found!\n");
 			spix(used_pixels, max_pos, 255);
@@ -267,7 +302,14 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		else
 			line.segment.pop_back();
 		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
+#ifdef VECTORIZER_USE_ROI
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_BINARY); // save firsst point
+		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 253, 255, THRESH_BINARY); // save firsst point
+		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
+		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
+#else
 		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save firsst point
+#endif
 
 		//TODO only for debuging
 		//line.auto_smooth();
@@ -303,6 +345,14 @@ void spix(const Mat &img, const Point &point, int value) {
 int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) {
 	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
 		spix(used_pixels, point, value);
+#ifdef VECTORIZER_USE_ROI
+		if (value < 254) {
+			step3_roi_update(step3_changed, point.x, point.y);
+		}
+		if (value == 254) {
+			step3_roi_update(step3_changed_start, point.x, point.y);
+		}
+#endif
 		return 1;
 	}
 	else
@@ -638,7 +688,11 @@ float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const c
 		if (allowed_depth - best_depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ...
 			break;
 		}
+#ifdef VECTORIZER_USE_ROI
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), allowed_depth, 0, THRESH_TOZERO); //TODO stack with used pixels
+#else
 		threshold(used_pixels, used_pixels, allowed_depth, 0, THRESH_TOZERO);
+#endif
 	}
 	new_point = best_match;
 	return best_depth;
@@ -653,7 +707,12 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 	for (;;) {
 		v_point new_point;
 		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
+#ifdef VECTORIZER_USE_ROI
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
+		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
+#else
 		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
+#endif
 		if (depth_found > 0) {
 			if (first_point) {
 				sum += place_next_point_at(skeleton, new_point, 254, line, used_pixels);

@@ -10,6 +10,13 @@
 
 namespace vect {
 
+typedef struct {
+	int min_x;
+	int min_y;
+	int max_x;
+	int max_y;
+} changed_pix_roi;
+
 class custom : generic_vectorizer {
 public:
 	static vect::v_image vectorize(const pnm::pnm_image &image);
