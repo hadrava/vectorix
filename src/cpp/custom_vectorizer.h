@@ -17,6 +17,11 @@ typedef struct {
 	int max_y;
 } changed_pix_roi;
 
+typedef struct {
+	cv::Point pt;
+	int val;
+} start_point;
+
 class custom : generic_vectorizer {
 public:
 	static vect::v_image vectorize(const pnm::pnm_image &image);

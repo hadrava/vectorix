@@ -269,17 +269,54 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 	}
 }
 
+void prepare_starting_points(const cv::Mat &skeleton, std::vector<start_point> &starting_points) {
+	for (int i = 0; i < skeleton.rows; i++) {
+		for (int j = 0; j < skeleton.cols; j++) {
+			if (skeleton.data[i*skeleton.step + j]) {
+				start_point pt;
+				pt.val = skeleton.data[i*skeleton.step + j];
+				pt.pt = Point(j, i);
+				starting_points.push_back(pt);
+			}
+		}
+	}
+	std::sort(starting_points.begin(), starting_points.end(), [&](start_point a, start_point b)->bool {
+			return a.val < b.val;
+			});
+}
+
+void find_max_starting_point(std::vector<start_point> &starting_points, const cv::Mat &used_pixels, int &max, cv::Point &max_pos) {
+	max = 0;
+	while ((max == 0) && !starting_points.empty()) {
+		start_point pt = starting_points.back();
+		starting_points.pop_back();
+		if (!used_pixels.data[pt.pt.y*used_pixels.step + pt.pt.x]) {
+			max = pt.val;
+			max_pos = pt.pt;
+		}
+	}
+	generic_vectorizer::vectorizer_debug("New start point value: %i\n", max);
+}
+
 void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
-	Mat starting_points = skeleton.clone();
 	used_pixels = Scalar(0);
 #ifdef VECTORIZER_USE_ROI
 	step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 	step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
 #endif
 
+#ifdef VECTORIZER_STARTING_POINTS
+	std::vector<start_point> starting_points;
+	int max;
+	Point max_pos;
+	prepare_starting_points(skeleton, starting_points);
+	find_max_starting_point(starting_points, used_pixels, max, max_pos);
+#else
+	Mat starting_points = skeleton.clone();
 	double max;
 	Point max_pos;
 	minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
+#endif
 
 	int count = 0;
 	while (max !=0) { // While we have unused pixel.
@@ -317,9 +354,12 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		vectorization_output.add_line(line);
 		count++;
 
+#ifdef VECTORIZER_STARTING_POINTS
+		find_max_starting_point(starting_points, used_pixels, max, max_pos);
+#else
 		bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), starting_points, used_pixels);
-
 		minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
+#endif
 	}
 	vectorizer_debug("lines found: %i\n", count);
 }
