@@ -22,6 +22,21 @@ typedef struct {
 	int val;
 } start_point;
 
+enum variant_type {
+	unset,
+	start,
+	end
+};
+
+class match_variant {
+public:
+	v_point pt;
+	variant_type type;
+	float depth;
+	match_variant(): depth(0), type(unset) { pt = v_point(); };
+	match_variant(v_point p): depth(1), type(unset), pt(p) {};
+};
+
 class custom : generic_vectorizer {
 public:
 	static vect::v_image vectorize(const pnm::pnm_image &image);

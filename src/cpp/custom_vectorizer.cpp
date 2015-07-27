@@ -47,18 +47,14 @@ uchar &safeat(const Mat &image, int i, int j) {
 }
 
 float apxat(const Mat &image, v_pt pt) {
-	int x = pt.x;
-	int y = pt.y;
-	pt.x-=x;
-	pt.y-=y;
-	float out = safeat(image, y,   x  ) * (pt.x     * pt.y) + \
-		    safeat(image, y,   x+1) * ((1-pt.x) * pt.y) + \
-		    safeat(image, y+1, x  ) * (pt.x     * (1-pt.y)) + \
-		    safeat(image, y+1, x+1) * ((1-pt.x) * (1-pt.y));
-	float sum = (pt.x     * pt.y) + \
-		    ((1-pt.x) * pt.y) + \
-		    (pt.x     * (1-pt.y)) + \
-		    ((1-pt.x) * (1-pt.y));
+	int x = pt.x - 0.5f;
+	int y = pt.y - 0.5f;
+	pt.x-=x+0.5f;
+	pt.y-=y+0.5f;
+	float out = safeat(image, y,   x  ) * ((1-pt.x) * (1-pt.y)) + \
+		    safeat(image, y,   x+1) * (pt.x     * (1-pt.y)) + \
+		    safeat(image, y+1, x  ) * ((1-pt.x) * pt.y    ) + \
+		    safeat(image, y+1, x+1) * (pt.x     * pt.y    );
 	return out;
 }
 
@@ -71,14 +67,14 @@ v_co safeat_co(const Mat &image, int i, int j) { // Safely acces image data.
 }
 
 v_co apxat_co(const Mat &image, v_pt pt) {
-	int x = pt.x;
-	int y = pt.y;
-	pt.x-=x;
-	pt.y-=y;
-	v_co out = safeat_co(image, y,   x  ) * (pt.x     * pt.y) + \
-		   safeat_co(image, y,   x+1) * ((1-pt.x) * pt.y) + \
-		   safeat_co(image, y+1, x  ) * (pt.x     * (1-pt.y)) + \
-		   safeat_co(image, y+1, x+1) * ((1-pt.x) * (1-pt.y));
+	int x = pt.x - 0.5f;
+	int y = pt.y - 0.5f;
+	pt.x-=x+0.5f;
+	pt.y-=y+0.5f;
+	v_co out = safeat_co(image, y,   x  ) * ((1-pt.x) * (1-pt.y)) + \
+		   safeat_co(image, y,   x+1) * (pt.x     * (1-pt.y)) + \
+		   safeat_co(image, y+1, x  ) * ((1-pt.x) * pt.y    ) + \
+		   safeat_co(image, y+1, x+1) * (pt.x     * pt.y    );
 	return out;
 }
 
@@ -531,15 +527,15 @@ float find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_p
 		return find_best_line(skeleton, distance, used_pixels, center, angle + size, par, size, min_dist);
 }
 
-void find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
+void find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
 	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1);
-	match.emplace_back(std::tuple<v_point, float>(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2), 1)); //TODO koeficient
+	match.emplace_back(match_variant(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2)));
 	if (v_pt_distance(best, last) > epsilon) {
-		match.emplace_back(std::tuple<v_point, float>(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2), 1)); //TODO koeficient
+		match.emplace_back(match_variant(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2))); //TODO koeficient
 	}
 }
 
-void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
+void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
 	// predict smooth line
 	v_point pred;
 	v_pt prediction = line.segment.back().main;
@@ -572,7 +568,7 @@ void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const
 		if (smoothness < par.smoothness) {
 			pred.color = apxat_co(color_input, pred.main);
 			pred.width = apxat(distance, pred.main)*2;
-			match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient)
+			match.push_back(match_variant(pred)); //TODO koeficient)
 		}
 		else {
 			generic_vectorizer::vectorizer_debug("Corner detected\n");
@@ -585,7 +581,7 @@ void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const
 				if (apxat(skeleton, pred.main)) {
 					pred.color = apxat_co(color_input, pred.main);
 					pred.width = apxat(distance, pred.main)*2;
-					match.push_back(std::tuple<v_point, float>(pred, 1)); //TODO koeficient
+					match.push_back(match_variant(pred)); //TODO koeficient
 				}
 				else
 					generic_vectorizer::vectorizer_debug("Corner is not in skeleton, refusing to add\n");
@@ -596,7 +592,7 @@ void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const
 	}
 }
 
-void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
+void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
 	// leave corner (or first point) with straight continuation
 	int size = par.nearby_limit;
 	float *fit = new float[par.angle_steps+2];
@@ -640,21 +636,63 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 		out.control_next += line.segment.back().main;
 		out.color = apxat_co(color_input, out.main);
 		out.width = apxat(distance, out.main)*2;
-		match.push_back(std::tuple<v_point,float>(out, 1)); //TODO koeficient
+		match.push_back(match_variant(out)); //TODO koeficient
 	}
 }
 
-void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<std::tuple<v_point, float>> &match, step3_params &par) {
+int count = 100;
+
+void filter_best_variant_end(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
+	//for (auto var = match.begin(); var != match.end(); var++) {
+	if (match.empty())
+		return;
+	//if (count) {
+		//count--;
+	auto var = match.begin();
+		v_point op = line.segment.back();
+		v_point np = var->pt;
+		op.control_next = np.control_next;
+		v_line new_segment;
+		new_segment.segment.push_back(op);
+		new_segment.segment.push_back(np);
+		chop_line(new_segment, 0.1);
+		v_pt good = op.main;
+		for (v_point point: new_segment.segment) {
+			if (!apxat(skeleton, point.main)) {
+				generic_vectorizer::vectorizer_debug("I don't like it. %f %f -> %f %f\n", np.main.x, np.main.y, point.main.x, point.main.y);
+				if ((good - op.main).len() < 3) {
+					var->depth = 0;
+				}
+				else {
+					var->pt.main = good;
+					var->type = end;
+					generic_vectorizer::vectorizer_debug("Setting type to end\n");
+				}
+				break;
+			}
+			good = point.main;
+		}
+	//}
+}
+
+void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
 	if (line.segment.empty()) { // place first point
-		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last, line, match, par);
-		generic_vectorizer::vectorizer_debug("find fst var: %i\n", match.size());
+		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+		generic_vectorizer::vectorizer_debug("find var first: %i\n", match.size());
 		return;
 	}
+	generic_vectorizer::vectorizer_debug("last type is %i\n", last.type);
 
-	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last, line, match, par);
-	generic_vectorizer::vectorizer_debug("find smooth: %i\n", match.size());
-	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last, line, match, par);
-	generic_vectorizer::vectorizer_debug("find var: %i\n", match.size());
+	if (last.type == end)
+		return;
+
+	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+	generic_vectorizer::vectorizer_debug("find var smooth: %i\n", match.size());
+	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+	generic_vectorizer::vectorizer_debug("find var straight: %i\n", match.size());
+
+	filter_best_variant_end(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // work as filter on existing variants
+	generic_vectorizer::vectorizer_debug("find var end: %i\n", match.size());
 
 	return;
 
@@ -699,33 +737,30 @@ void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &d
 	*/
 }
 
-float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_pt last_placed, int allowed_depth, v_line &line, v_point &new_point, step3_params &par) {
+float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point, step3_params &par) {
 	if (allowed_depth <= 0) {
 		return 0;
 	}
-	v_point best_match;
-	float best_depth = -1;
+	match_variant best_match;
+	best_match.depth = -1;
 
-	std::vector<std::tuple<v_point, float>> all_matches;
+	std::vector<match_variant> all_matches;
 	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches, par);
 	for (int variant = 0; variant <= all_matches.size(); variant++) {
-		v_point last_match;
-		float last_depth = 0;
+		match_variant last_match;
 		if (variant < all_matches.size()) {
-			last_match = std::get<0>(all_matches[variant]);
-			last_depth = std::get<1>(all_matches[variant]);
+			last_match = all_matches[variant];
 		}
-		if (last_depth > 0) {
-			int sum = place_next_point_at(skeleton, last_match, allowed_depth, line, used_pixels);
-			last_depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match.main, allowed_depth - 1, line, new_point, par);
+		if (last_match.depth > 0) {
+			int sum = place_next_point_at(skeleton, last_match.pt, allowed_depth, line, used_pixels);
+			last_match.depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match, allowed_depth - 1, line, new_point, par);
 			line.segment.pop_back();
 		}
 
-		if (last_depth > best_depth) {
+		if (last_match.depth > best_match.depth) {
 			best_match = last_match;
-			best_depth = last_depth;
 		}
-		if (allowed_depth - best_depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ...
+		if (allowed_depth - best_match.depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ...
 			break;
 		}
 #ifdef VECTORIZER_USE_ROI
@@ -735,17 +770,18 @@ float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const c
 #endif
 	}
 	new_point = best_match;
-	return best_depth;
+	return best_match.depth;
 }
 
 void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par) {
-	v_pt last_placed;
-	last_placed.x = startpoint.x + 0.5f;
-	last_placed.y = startpoint.y + 0.5f;
+	match_variant last_placed;
+	last_placed.pt.main.x = startpoint.x + 0.5f;
+	last_placed.pt.main.y = startpoint.y + 0.5f;
+	last_placed.type = start;
 	int sum = 0;
 	int first_point = 2;
 	for (;;) {
-		v_point new_point;
+		match_variant new_point;
 		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
 #ifdef VECTORIZER_USE_ROI
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
@@ -755,20 +791,20 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 #endif
 		if (depth_found > 0) {
 			if (first_point) {
-				sum += place_next_point_at(skeleton, new_point, 254, line, used_pixels);
+				sum += place_next_point_at(skeleton, new_point.pt, 254, line, used_pixels);
 				first_point--;
 				if (!first_point) {
 					v_line empty;
-					place_next_point_at(skeleton, new_point, 255, empty, used_pixels);
+					place_next_point_at(skeleton, new_point.pt, 255, empty, used_pixels);
 				}
 			}
 			else
-				sum += place_next_point_at(skeleton, new_point, 255, line, used_pixels);
+				sum += place_next_point_at(skeleton, new_point.pt, 255, line, used_pixels);
 		}
 		else {
 			break;
 		}
-		last_placed = new_point.main;
+		last_placed = new_point;
 	}
 	if (sum == 0) {
 		vectorizer_debug("trace_part: no new pixel used, program is doomed\n");//TODO
