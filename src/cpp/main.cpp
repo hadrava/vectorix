@@ -26,12 +26,12 @@ int main(int argc, char **argv) { // ./main [configuration]
 	global_params = default_params(); // Set default parameters
 	if (argc == 1) {
 		fprintf(stderr, "Reading parameters from standard input...\n");
-		load_params(stdin);
+		load_params(stdin, global_params);
 	}
 	else {
 		fprintf(stderr, "Reading parameters from file...\n");
 		FILE *input = fopen(argv[1], "r");
-		load_params(input);
+		load_params(input, global_params);
 		fclose(input);
 	}
 
@@ -63,13 +63,13 @@ int main(int argc, char **argv) { // ./main [configuration]
 	vectorization_timer.start();
 		switch (global_params.vectorization_method) {
 			case 0: // Custom center-line based vectorizer
-				vector = vectorizer<custom>::run(input_image);
+				vector = vectorizer<custom>::run(input_image, global_params);
 				break;
 			case 1: // Use potracelib
-				vector = vectorizer<potrace>::run(input_image);
+				vector = vectorizer<potrace>::run(input_image, global_params);
 				break;
 			case 2: // Stupid - just output simple line; frankly, it ignores input image
-				vector = vectorizer<stupid>::run(input_image);
+				vector = vectorizer<stupid>::run(input_image, global_params);
 		}
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
@@ -82,7 +82,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 */
 	if (global_params.output.show_opencv_rendered_window || !global_params.output.save_opencv_rendered_name.empty()) {
 		cv::Mat output = cv::Mat::zeros(vector.height, vector.width, CV_8UC(3));
-		opencv_render(vector, output); // Render whole image
+		opencv_render(vector, output, global_params); // Render whole image
 		if (global_params.output.show_opencv_rendered_window) {
 			cv::imshow("Opencv render", output); // Display output
 			cv::waitKey();
@@ -113,7 +113,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if (svg_output) {
 		vector.convert_to_variable_width(global_params.output.export_type, global_params.output); // Convert image before writing
 		if (global_params.output.output_engine == 0) {
-			export_svg<editable>::write(svg_output, vector); // Write svg
+			export_svg<editable>::write(svg_output, vector, global_params); // Write svg
 		}
 		else {
 			export_ps::write(svg_output, vector); // Write postscript
@@ -126,7 +126,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 */
 	if (!global_params.save_parameters_name.empty()) {
 		FILE *config = fopen(global_params.save_parameters_name.c_str(), (global_params.save_parameters_append != 0) ? "a" : "w");
-		save_params(config);
+		save_params(config, global_params);
 		fclose(config);
 	}
 	return 0;

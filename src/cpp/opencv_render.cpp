@@ -10,13 +10,13 @@ using namespace cv;
 
 namespace vect {
 
-void opencv_render(const v_image &vector, Mat &output) { // Render whole vector image
+void opencv_render(const v_image &vector, Mat &output, const params &parameters) { // Render whole vector image
 	output = Scalar(255, 255, 255); // Fill with white color
 	Mat lout(output.rows, output.cols, CV_8UC(3)); // Temporary
 	lout = Scalar(255, 255, 255);
 	for (v_line line: vector.line) { // For every line in image...
 		v_line l = line; // Copy line
-		chop_line(l, global_params.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
+		chop_line(l, parameters.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
 
 		if (l.get_type() == stroke) { // Normal lines
 			auto two = l.segment.cbegin();

@@ -13,7 +13,7 @@ using namespace pnm;
 
 namespace vect {
 
-v_image potrace::vectorize(const pnm_image &original) { // Vectorize using potrace library
+v_image potrace::vectorize(const pnm_image &original, const params &parameters) { // Vectorize using potrace library
 	pnm_image image = original;
 	image.convert(PNM_BINARY_PBM); // Potrace uses binary images, packed in word -- almost similar to binary PBM
 

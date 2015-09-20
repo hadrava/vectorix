@@ -8,7 +8,7 @@
 
 namespace vect {
 
-void opencv_render(const v_image &vector, cv::Mat &output);
+void opencv_render(const v_image &vector, cv::Mat &output, const params &parameters);
 
 }; // namespace
 

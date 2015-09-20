@@ -30,12 +30,12 @@ void generic_vectorizer::vectorizer_debug(const char *format, ...) { // Prints v
 void generic_vectorizer::vectorizer_debug(const char *format, ...) {}; // Does nothing
 #endif
 
-v_image stupid::vectorize(const pnm_image &image) { // This is *not* a vectorizer. It just produce fixed vector image with same size as input
+v_image stupid::vectorize(const pnm_image &image, const params &parameters) { // This is *not* a vectorizer. It just produce fixed vector image with same size as input
 	auto out = v_image(image.width, image.height);
 	auto line = v_line(0, 0, image.width/2, image.height/2, image.width, image.height/2, image.width, image.height);
 	line.add_point(v_pt(image.width, image.height/2*3), v_pt(-image.width/2, -image.height/2), v_pt(0,0), v_co(255, 0, 0), 20);
 	out.add_line(line);
-	line.convert_to_outline(global_params.output.max_contour_error); // Convert from stroke to fill
+	line.convert_to_outline(parameters.output.max_contour_error); // Convert from stroke to fill
 	out.add_line(line); // Add same line in the other type as well
 
 	line = v_line();
@@ -46,7 +46,7 @@ v_image stupid::vectorize(const pnm_image &image) { // This is *not* a vectorize
 	line.add_point(v_pt(80, 40), v_co(255, 0, 0), 2);
 	line.add_point(v_pt(110, 70), v_co(255, 0, 0), 30); // This line has variable width
 	out.add_line(line);
-	line.convert_to_outline(global_params.output.max_contour_error); // Convert from stroke to fill
+	line.convert_to_outline(parameters.output.max_contour_error); // Convert from stroke to fill
 	out.add_line(line); // Add same line in the other type as well
 	return out;
 }

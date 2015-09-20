@@ -18,14 +18,14 @@ public:
 
 class stupid : generic_vectorizer {
 public:
-	static vect::v_image vectorize(const pnm::pnm_image &image);
+	static vect::v_image vectorize(const pnm::pnm_image &image, const params &parameters);
 };
 
 template <class Vectorizer = stupid>
 class vectorizer {
 public:
-	static vect::v_image run(const pnm::pnm_image &image) {
-		return Vectorizer::vectorize(image);
+	static vect::v_image run(const pnm::pnm_image &image, params &parameters) {
+		return Vectorizer::vectorize(image, parameters);
 	};
 };
 

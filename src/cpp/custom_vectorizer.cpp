@@ -93,11 +93,11 @@ uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image da
 }
 
 #ifdef VECTORIZER_HIGHGUI
-void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Display image in highgui named window.
-	if (global_params.zoom_level) { // (Down)scale image before displaying
+void custom::vectorize_imshow(const std::string& winname, InputArray mat, const params &parameters) { // Display image in highgui named window.
+	if (parameters.zoom_level) { // (Down)scale image before displaying
 		Mat scaled_mat;
-		int w = mat.cols() / (log10(global_params.zoom_level+10)); // TODO lepší zoom
-		int h = mat.rows() / (log10(global_params.zoom_level+10));
+		int w = mat.cols() / (log10(parameters.zoom_level+10)); // TODO lepší zoom
+		int h = mat.rows() / (log10(parameters.zoom_level+10));
 		resize(mat, scaled_mat, Size(w, h));
 		return imshow(winname, scaled_mat);
 	}
@@ -111,7 +111,7 @@ void custom::vectorize_destroyWindow(const std::string& winname) { // Close wind
 	return destroyWindow(winname);
 }
 #else
-void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Highgui disabled, do nothing
+void custom::vectorize_imshow(const std::string& winname, InputArray mat, const params &parameters) { // Highgui disabled, do nothing
 	return;
 }
 int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'
@@ -200,7 +200,7 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 			imwrite(filename, peeled);
 		}
 		if (par.show_window == 1) { // Show every step of skeletonization
-			vectorize_imshow("Boundary peeling", peeled);
+			vectorize_imshow("Boundary peeling", peeled, global_params);
 			vectorize_waitKey(0);
 		}
 		int size = iteration * 2 + 1;
@@ -815,21 +815,28 @@ int interactive(int state, int key) { // Process key press and decide what to do
 
 volatile int state; // State of vectorizer, remembers in which step we are
 
-void step1_changed(int, void*) { // Parameter in step 1 changed, rerun
-	global_params.step1.adaptive_threshold_size |= 1;
-	if (global_params.step1.adaptive_threshold_size < 3)
-		global_params.step1.adaptive_threshold_size = 3;
-	state = 2; // first step
+typedef struct {
+	volatile int *state;
+	int *adaptive_threshold_size;
+} trackbar_refs;
+
+void step1_changed(int, void *ptr) { // Parameter in step 1 changed, rerun
+	trackbar_refs *data = static_cast<trackbar_refs *> (ptr);
+	*data->adaptive_threshold_size |= 1;
+	if (*data->adaptive_threshold_size < 3)
+		*data->adaptive_threshold_size = 3;
+	*data->state = 2; // first step
 }
 
-void step2_changed(int, void*) { // Parameter in step 2 changed, rerun from this state
-	if (state >= 4)
-		state = 4; // second step
+void step2_changed(int, void *ptr) { // Parameter in step 2 changed, rerun from this state
+	trackbar_refs *data = static_cast<trackbar_refs *> (ptr);
+	if (*data->state >= 4)
+		*data->state = 4; // second step
 }
 
-v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color)
+v_image custom::vectorize(const pnm_image &original, params &parameters) { // Original should be PPM image (color)
 	Mat orig (original.height, original.width, CV_8UC(3));
-	if (global_params.input.custom_input_name.empty()) {
+	if (parameters.input.custom_input_name.empty()) {
 		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures
 			for (int i = 0; i<original.width; i++) {
 				orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
@@ -840,7 +847,7 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 	}
 	else {
 		// Configuration tell us to read image from file directly by OpenCV
-		orig = imread(global_params.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
+		orig = imread(parameters.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
 	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255)); //TODO delete
@@ -862,39 +869,42 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 
 	state = 2;
 	int max_image_size = (orig.cols+orig.rows)*2;
+	trackbar_refs callback_data;
+	callback_data.state = &state;
+	callback_data.adaptive_threshold_size = &(parameters.step1.adaptive_threshold_size);
 	while (state) { // state 0 = end
 		switch (state) {
 			case 2: // First step
-				if (global_params.interactive) {
-					vectorize_imshow("Original", orig); // Show original color image
-					if (global_params.interactive == 2)
-						createTrackbar("Zoom out", "Original", &global_params.zoom_level, 10000, step1_changed);
-					vectorize_waitKey(global_params.interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
+				if (parameters.interactive) {
+					vectorize_imshow("Original", orig, parameters); // Show original color image
+					if (parameters.interactive == 2)
+						createTrackbar("Zoom out", "Original", &parameters.zoom_level, 10000, step1_changed, &callback_data);
+					vectorize_waitKey(parameters.interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 				}
 				cvtColor(orig, grayscale, CV_RGB2GRAY);
-				if (global_params.step1.invert_input)
+				if (parameters.step1.invert_input)
 					subtract(Scalar(255,255,255), grayscale, grayscale); // Invert input
-				if (global_params.interactive) {
-					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image
-					if (global_params.interactive == 2)
-						createTrackbar("Invert input", "Grayscale", &global_params.step1.invert_input, 1, step1_changed);
-					vectorize_waitKey(global_params.interactive-1);
+				if (parameters.interactive) {
+					vectorize_imshow("Grayscale", grayscale, parameters); // Show grayscale input image
+					if (parameters.interactive == 2)
+						createTrackbar("Invert input", "Grayscale", &parameters.step1.invert_input, 1, step1_changed, &callback_data);
+					vectorize_waitKey(parameters.interactive-1);
 				}
 				binary = grayscale.clone();
 				threshold_timer.start();
-					step1_threshold(binary, global_params.step1); // First step -- thresholding
+					step1_threshold(binary, parameters.step1); // First step -- thresholding
 				threshold_timer.stop();
-				if (global_params.interactive) {
-					vectorize_imshow("Threshold", binary); // Show after thresholding
-					if (global_params.interactive == 2) {
-						createTrackbar("Threshold type", "Threshold", &global_params.step1.threshold_type, 3, step1_changed);
-						createTrackbar("Threshold", "Threshold", &global_params.step1.threshold, 255, step1_changed);
-						createTrackbar("Adaptive threshold", "Threshold", &global_params.step1.adaptive_threshold_size, max_image_size, step1_changed);
+				if (parameters.interactive) {
+					vectorize_imshow("Threshold", binary, parameters); // Show after thresholding
+					if (parameters.interactive == 2) {
+						createTrackbar("Threshold type", "Threshold", &parameters.step1.threshold_type, 3, step1_changed, &callback_data);
+						createTrackbar("Threshold", "Threshold", &parameters.step1.threshold, 255, step1_changed, &callback_data);
+						createTrackbar("Adaptive threshold", "Threshold", &parameters.step1.adaptive_threshold_size, max_image_size, step1_changed, &callback_data);
 					}
-					vectorize_waitKey(global_params.interactive-1);
+					vectorize_waitKey(parameters.interactive-1);
 				}
 				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
-				if (global_params.interactive == 2)
+				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // ... continue with next step
@@ -903,26 +913,26 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(binary, skeleton, distance, iteration, global_params.step2); // Second step -- skeletonization
+					step2_skeletonization(binary, skeleton, distance, iteration, parameters.step2); // Second step -- skeletonization
 				skeletonization_timer.stop();
 				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
-				if (global_params.interactive) {
+				if (parameters.interactive) {
 					//show distance
 					distance_show = distance.clone();
 					normalize(distance_show, iteration-1); // Normalize image before displaying
-					vectorize_imshow("Distance", distance_show);
-					vectorize_waitKey(global_params.interactive-1);
+					vectorize_imshow("Distance", distance_show, parameters);
+					vectorize_waitKey(parameters.interactive-1);
 
 					//show skeleton
 					skeleton_show = skeleton.clone();
 					threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
-					vectorize_imshow("Skeleton", skeleton_show);
-					if (global_params.interactive == 2)
-						createTrackbar("Skeletonization", "Skeleton", &global_params.step2.type, 3, step2_changed);
-					vectorize_waitKey(global_params.interactive-1);
+					vectorize_imshow("Skeleton", skeleton_show, parameters);
+					if (parameters.interactive == 2)
+						createTrackbar("Skeletonization", "Skeleton", &parameters.step2.type, 3, step2_changed, &callback_data);
+					vectorize_waitKey(parameters.interactive-1);
 				}
-				if (global_params.interactive == 2)
+				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // ... continue with next step
@@ -930,10 +940,10 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 			case 6:
 				used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				tracing_timer.start();
-					step3_tracing(orig, skeleton, distance, used_pixels, vect, global_params.step3); // Third step -- tracing
+					step3_tracing(orig, skeleton, distance, used_pixels, vect, parameters.step3); // Third step -- tracing
 				tracing_timer.stop();
 				fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
-				if (global_params.interactive == 2)
+				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // .. and quit

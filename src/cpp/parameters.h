@@ -84,8 +84,8 @@ typedef struct { // All parameters
 extern params global_params; //TODO should be deleted and moved to main only
 
 params default_params(); // Default parameters
-int load_params(FILE *fd); // Read from filedescriptor
-int save_params(FILE *fd); // Write to filedescriptor
+int load_params(FILE *fd, params &parameters); // Read from filedescriptor
+int save_params(FILE *fd, const params &parameters); // Write to filedescriptor
 
 }; // namespace
 
