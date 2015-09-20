@@ -1,4 +1,5 @@
-#include <cstdio> #include "v_image.h"
+#include <cstdio>
+#include "v_image.h"
 #include "export_svg.h"
 
 // SVG export

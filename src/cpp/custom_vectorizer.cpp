@@ -140,29 +140,6 @@ void custom::normalize(Mat &out, int max) { // Normalize grayscale image for dis
 	}
 }
 
-// TODO používá se?
-Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for tracing in square neighbourhood defined by step constant
-	int max = 0;
-	int max_x = -1;
-	int max_y = -1;
-	for (int y = -step; y<=step; y++) {
-		for (int x = -step; x<=step; x++) { // For every pixel in neighborhood
-			int i = pos.y + y;
-			int j = pos.x + x;
-			if (max < (unsigned char)safeat(out, i, j)) { // Point should be in center of traced line
-				max = (unsigned char)safeat(out, i, j);
-				max_x = j;
-				max_y = i;
-				//vectorizer_debug("find_adj: %i %i %i\n", i, j, safeat(out, i, j));
-			}
-		}
-	}
-	Point ret;
-	ret.x = max_x;
-	ret.y = max_y;
-	return ret;
-}
-
 void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm //TODO move/smazat
 	if (par.threshold_type == 0) { // Binary threshold guessed value
@@ -717,19 +694,6 @@ void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &d
 
 	return;
 
-
-	// TODO smazat:
-	//
-	// try straight
-	//auto history = get_history();
-	//if ((history.straight()) && history.constant_width()) {
-		//proj = project_forward(history);
-		//proj.calculate_
-	//}
-
-	
-
-	//TODO
 		// TODO
 		// do prediction:
 		// odhadne směr, kterým hledat
@@ -742,21 +706,6 @@ void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &d
 		//
 		//  if nejde najít return 0;
 		//
-		/*
-	Point pos;
-	pos.x = last.x;
-	pos.y = last.y;
-	Mat out = skeleton.clone();
-	bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), out, used_pixels);
-
-	pos = custom::find_adj(out, pos);
-	p width = custom::safeat(out, pos.y, pos.x) * 2; // Compute `width' from distance of a skeleton pixel to boundary in the original image.
-	if (pos.x >= 0) {
-		match = v_point(v_pt(pos.x, pos.y), v_co(custom::safeat(color_input, pos.y, pos.x*3 + 2), custom::safeat(color_input, pos.y, pos.x*3 + 1), custom::safeat(color_input, pos.y, pos.x*3 + 0)), width);
-		return 1;
-	}
-	return 0;
-	*/
 }
 
 float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point, step3_params &par) {

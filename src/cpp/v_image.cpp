@@ -48,13 +48,13 @@ void v_image::add_line(v_line _line) { // Add bezier curve to image
 	line.push_back(_line);
 }
 
-p distance(const v_pt &a, const v_pt &b) { // Calculate distance betseen two points
+p distance(const v_pt &a, const v_pt &b) { // Calculate distance between two points
 	p x = (a.x - b.x);
 	p y = (a.y - b.y);
 	return std::sqrt(x*x + y*y);
 }
 
-p distance(const v_point &a, const v_point &b) { // Calculate maximal length of given segment TODO rename
+p maximal_bezier_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
 
@@ -85,7 +85,7 @@ void chop_line(v_line &line, p max_distance) { // Chop whole line, so the maxima
 	if (two != line.segment.end())
 		++two;
 	while (two != line.segment.end()) {
-		while (distance(*one, *two) > max_distance) {
+		while (maximal_bezier_length(*one, *two) > max_distance) {
 			v_point newpoint;
 			chop_in_half(*one, *two, newpoint);
 			line.segment.insert(two, newpoint);

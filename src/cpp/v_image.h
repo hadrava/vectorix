@@ -193,7 +193,7 @@ public:
 };
 
 p distance(const v_pt &a, const v_pt &b); // Distance of two points
-p distance(const v_point &a, const v_point &b); // Maximal length of given segment
+p maximal_bezier_length(const v_point &a, const v_point &b); // Maximal length of given segment
 inline p v_pt_distance(const v_pt &a, const v_pt &b) {
 	distance(a, b);
 }

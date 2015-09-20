@@ -47,14 +47,11 @@ private:
 public:
 	static uchar &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
 private:
-	static const int step = 2; //TODO toto tu už nemá být, proč není v konfiguraci
 	static void vectorize_imshow(const std::string& winname, cv::InputArray mat); // Display image in window iff graphics (highgui) is enabled
 	static int vectorize_waitKey(int delay = 0); // wait for key iff graphics (highgui) is enabled
 	static void vectorize_destroyWindow(const std::string& winname); // Destroy named window
 	static void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration); // Add pixels from `bw' to `out'. Something like image `or', but with more information
 	static void normalize(cv::Mat &out, int max); // Normalize grayscale image for displaying (0-255)
-public:
-	static cv::Point find_adj(const cv::Mat &out, cv::Point pos); // Find adjacent point
 private:
 	static void step1_threshold(cv::Mat &to_threshold, step1_params &par); // Threshold images
 	static void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration, step2_params &par); // Find skeleton
