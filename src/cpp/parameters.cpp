@@ -96,10 +96,12 @@ int load_params(FILE *fd, params &parameters) { // Load parameters from file
 
 	while (fscanf(fd, "%m[^\n]\n", &line) >= 0) {
 		linenumber++;
-		if (!line) // skip empty line
+		if (!line) // Skip empty line
 			continue;
-		if (line[0] == '#') // skip commented line
-			continue; //TODO free line
+		if (line[0] == '#') { // Skip commented line
+			free(line);
+			continue;
+		}
 
 		char *name;
 		char *value;
