@@ -23,16 +23,16 @@ int main(int argc, char **argv) { // ./main [configuration]
 	/*
 	 * Load parameters
 	 */
-	global_params = default_params(); // Set default parameters
+	params parameters = default_params(); // Set default parameters
 	if (argc == 1) {
 		fprintf(stderr, "Reading parameters from standard input...\n");
-		load_params(stdin, global_params);
+		load_params(stdin, parameters);
 	}
 	else {
 		fprintf(stderr, "Reading parameters from file...\n");
-		FILE *input = fopen(argv[1], "r");
-		load_params(input, global_params);
-		fclose(input);
+		//FILE *input = fopen(argv[1], "r");
+		load_params(argv[1], parameters);
+		//fclose(input);
 	}
 
 	/*
@@ -41,15 +41,15 @@ int main(int argc, char **argv) { // ./main [configuration]
 	FILE *svg_output = stdout;
 	FILE *pnm_output = NULL;
 	pnm_image input_image;
-	if ((global_params.vectorization_method == 0) && (!global_params.input.custom_input_name.empty())) { // Load input by OpenCV
+	if ((parameters.vectorization_method == 0) && (!parameters.input.custom_input_name.empty())) { // Load input by OpenCV
 		fprintf(stderr, "File will be loaded by OpenCV.\n");
 	}
-	else if (global_params.input.pnm_input_name.empty() && (global_params.vectorization_method != 0)) {
+	else if (parameters.input.pnm_input_name.empty() && (parameters.vectorization_method != 0)) {
 		fprintf(stderr, "No PNM input file speficied.\n");
 		return 1; // No input file, halting
 	}
 	else {
-		FILE *input = fopen(global_params.input.pnm_input_name.c_str(), "r"); // Load input from PNM image
+		FILE *input = fopen(parameters.input.pnm_input_name.c_str(), "r"); // Load input from PNM image
 		input_image.read(input); // Read from file.
 		fclose(input);
 	}
@@ -61,40 +61,40 @@ int main(int argc, char **argv) { // ./main [configuration]
 	v_image vector;
 	timer vectorization_timer(0); // Measure time (if compiled with TIMER_MEASURE), 0 -- without cpu preheating
 	vectorization_timer.start();
-		switch (global_params.vectorization_method) {
+		switch (parameters.vectorization_method) {
 			case 0: // Custom center-line based vectorizer
-				vector = vectorizer<custom>::run(input_image, global_params);
+				vector = vectorizer<custom>::run(input_image, parameters);
 				break;
 			case 1: // Use potracelib
-				vector = vectorizer<potrace>::run(input_image, global_params);
+				vector = vectorizer<potrace>::run(input_image, parameters);
 				break;
 			case 2: // Stupid - just output simple line; frankly, it ignores input image
-				vector = vectorizer<stupid>::run(input_image, global_params);
+				vector = vectorizer<stupid>::run(input_image, parameters);
 		}
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
 
-	if (global_params.output.false_colors)
-		vector.false_colors(global_params.output.false_colors);
+	if (parameters.output.false_colors)
+		vector.false_colors(parameters.output.false_colors);
 
 	/*
 	 * Show and save output using OpenCV
 	 */
-	if (global_params.output.show_opencv_rendered_window || !global_params.output.save_opencv_rendered_name.empty()) {
+	if (parameters.output.show_opencv_rendered_window || !parameters.output.save_opencv_rendered_name.empty()) {
 		cv::Mat output = cv::Mat::zeros(vector.height, vector.width, CV_8UC(3));
-		opencv_render(vector, output, global_params); // Render whole image
-		if (global_params.output.show_opencv_rendered_window) {
+		opencv_render(vector, output, parameters); // Render whole image
+		if (parameters.output.show_opencv_rendered_window) {
 			cv::imshow("Opencv render", output); // Display output
 			cv::waitKey();
 		}
-		if (!global_params.output.save_opencv_rendered_name.empty())
-			imwrite(global_params.output.save_opencv_rendered_name, output); // Save image to file
+		if (!parameters.output.save_opencv_rendered_name.empty())
+			imwrite(parameters.output.save_opencv_rendered_name, output); // Save image to file
 	}
 	/*
 	 * Save output to PNM
 	 */
-	if (!global_params.output.pnm_output_name.empty())
-		pnm_output = fopen(global_params.output.pnm_output_name.c_str(), "w");
+	if (!parameters.output.pnm_output_name.empty())
+		pnm_output = fopen(parameters.output.pnm_output_name.c_str(), "w");
 	if (pnm_output) {
 		timer render_timer(0);
 		render_timer.start();
@@ -108,12 +108,12 @@ int main(int argc, char **argv) { // ./main [configuration]
 	/*
 	 * Save vector output to stdout / file specified in configfile
 	 */
-	if (!global_params.output.vector_output_name.empty())
-		svg_output = fopen(global_params.output.vector_output_name.c_str(), "w");
+	if (!parameters.output.vector_output_name.empty())
+		svg_output = fopen(parameters.output.vector_output_name.c_str(), "w");
 	if (svg_output) {
-		vector.convert_to_variable_width(global_params.output.export_type, global_params.output); // Convert image before writing
-		if (global_params.output.output_engine == 0) {
-			export_svg<editable>::write(svg_output, vector, global_params); // Write svg
+		vector.convert_to_variable_width(parameters.output.export_type, parameters.output); // Convert image before writing
+		if (parameters.output.output_engine == 0) {
+			export_svg<editable>::write(svg_output, vector, parameters); // Write svg
 		}
 		else {
 			export_ps::write(svg_output, vector); // Write postscript
@@ -124,10 +124,8 @@ int main(int argc, char **argv) { // ./main [configuration]
 	/*
 	 * Save parameters
 	 */
-	if (!global_params.save_parameters_name.empty()) {
-		FILE *config = fopen(global_params.save_parameters_name.c_str(), (global_params.save_parameters_append != 0) ? "a" : "w");
-		save_params(config, global_params);
-		fclose(config);
+	if (!parameters.save_parameters_name.empty()) {
+		save_params(parameters.save_parameters_name, parameters);
 	}
 	return 0;
 }

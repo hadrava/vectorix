@@ -7,8 +7,6 @@
 
 namespace vect {
 
-params global_params; //TODO delete
-
 int load_var(char *name, char *value, const char *my_name, int &data) { // Load integer
 	if (!strcmp(name, my_name)) {
 		sscanf(value, "%d", &data);
@@ -253,7 +251,7 @@ int save_params(FILE *fd, const params &parameters){ // Write parameters (with s
 	return 0;
 }
 
-int load_params(const std::string filename, params &parameters) { // Load parameters from file given by name //TODO do headeru
+int load_params(const std::string filename, params &parameters) { // Load parameters from file given by name
 	FILE *fd;
 	if ((fd = fopen(filename.c_str(), "r")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for reading.\n");
@@ -266,7 +264,7 @@ int load_params(const std::string filename, params &parameters) { // Load parame
 
 int save_params(const std::string filename, params &parameters) { // Save parameters to file given by name
 	FILE *fd;
-	if ((fd = fopen(filename.c_str(), "w")) == NULL) {
+	if ((fd = fopen(filename.c_str(), (parameters.save_parameters_append != 0) ? "a" : "w")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for writing.\n");
 		return 1;
 	}

@@ -81,11 +81,11 @@ typedef struct { // All parameters
 	int zoom_level = 0;
 } params;
 
-extern params global_params; //TODO should be deleted and moved to main only
-
 params default_params(); // Default parameters
 int load_params(FILE *fd, params &parameters); // Read from filedescriptor
 int save_params(FILE *fd, const params &parameters); // Write to filedescriptor
+int load_params(const std::string filename, params &parameters); // Load parameters from file given by name
+int save_params(const std::string filename, params &parameters); // Save parameters to file given by name
 
 }; // namespace
 

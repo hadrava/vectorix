@@ -177,7 +177,8 @@ void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 	}
 }
 
-void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration, step2_params &par) {
+void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration, params &parameters) {
+	step2_params &par = parameters.step2;
 	Mat bw     (binary_input.rows, binary_input.cols, CV_8UC(1));
 	Mat source = binary_input.clone();
 	Mat peeled = binary_input.clone(); // Objects in this image are peeled in every step by 1 px
@@ -200,7 +201,7 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 			imwrite(filename, peeled);
 		}
 		if (par.show_window == 1) { // Show every step of skeletonization
-			vectorize_imshow("Boundary peeling", peeled, global_params);
+			vectorize_imshow("Boundary peeling", peeled, parameters);
 			vectorize_waitKey(0);
 		}
 		int size = iteration * 2 + 1;
@@ -913,7 +914,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(binary, skeleton, distance, iteration, parameters.step2); // Second step -- skeletonization
+					step2_skeletonization(binary, skeleton, distance, iteration, parameters); // Second step -- skeletonization
 				skeletonization_timer.stop();
 				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 

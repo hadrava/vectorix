@@ -54,7 +54,7 @@ private:
 	static void normalize(cv::Mat &out, int max); // Normalize grayscale image for displaying (0-255)
 private:
 	static void step1_threshold(cv::Mat &to_threshold, step1_params &par); // Threshold images
-	static void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration, step2_params &par); // Find skeleton
+	static void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration, params &par); // Find skeleton
 	static void step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par); // Trace skeleton
 	static void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par); // Trace one line
 };
