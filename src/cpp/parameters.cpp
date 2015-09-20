@@ -3,11 +3,13 @@
 #include <cstdlib>
 #include <cstring>
 
+// Program parameters
+
 namespace vect {
 
 params global_params;
 
-int load_var(char *name, char *value, const char *my_name, int &data) {
+int load_var(char *name, char *value, const char *my_name, int &data) { // Load integer
 	if (!strcmp(name, my_name)) {
 		sscanf(value, "%d", &data);
 		return 1;
@@ -15,7 +17,7 @@ int load_var(char *name, char *value, const char *my_name, int &data) {
 	return 0;
 }
 
-int load_var(char *name, char *value, const char *my_name, p &data) {
+int load_var(char *name, char *value, const char *my_name, p &data) { // Load p type (float)
 	if (!strcmp(name, my_name)) {
 		sscanf(value, p_scanf, &data);
 		return 1;
@@ -23,7 +25,7 @@ int load_var(char *name, char *value, const char *my_name, p &data) {
 	return 0;
 }
 
-int load_var(char *name, char *value, const char *my_name, std::string &data) {
+int load_var(char *name, char *value, const char *my_name, std::string &data) { // Load string
 	if (!strcmp(name, my_name)) {
 		data = value;
 		return 1;
@@ -31,21 +33,21 @@ int load_var(char *name, char *value, const char *my_name, std::string &data) {
 	return 0;
 }
 
-void save_var(FILE *fd, const char *name, int data) {
+void save_var(FILE *fd, const char *name, int data) { // Save integer
 	fprintf(fd, "%s %d\n", name, data);
 }
 
-void save_var(FILE *fd, const char *name, p data) {
+void save_var(FILE *fd, const char *name, p data) { // Save p type (float)
 	fprintf(fd, "%s ", name);
 	fprintf(fd, p_printf, data);
 	fprintf(fd, "\n");
 }
 
-void save_var(FILE *fd, const char *name, const std::string &data) {
+void save_var(FILE *fd, const char *name, const std::string &data) { // Save string
 	fprintf(fd, "%s %s\n", name, data.c_str());
 }
 
-params default_params() {
+params default_params() { // Default parameters
 	params par;
 	par.input.pnm_input_name = "";
 	par.input.custom_input_name = "";
@@ -89,21 +91,21 @@ params default_params() {
 	return par;
 }
 
-int load_params(FILE *fd) {
+int load_params(FILE *fd) { // Load parameters from file
 	char *line;
 	int count = 0;
 	int linenumber = 0;
 
 	while (fscanf(fd, "%m[^\n]\n", &line) >= 0) {
 		linenumber++;
-		if (!line)
+		if (!line) // skip empty line
 			continue;
-		if (line[0] == '#')
-			continue;
+		if (line[0] == '#') // skip commented line
+			continue; //TODO free line
 
 		char *name;
 		char *value;
-		sscanf(line, "%m[^ ] %m[^\n]", &name, &value);
+		sscanf(line, "%m[^ ] %m[^\n]", &name, &value); // Split by first space
 		if ((!name) && (!value)) {
 			free(line);
 			continue;
@@ -118,8 +120,10 @@ int load_params(FILE *fd) {
 			free(line);
 			continue;
 		}
+		// Everything is ok
 
 		int loaded = 0;
+		// Try to load every known parameter
 		loaded += load_var(name, value, "file_pnm_input", global_params.input.pnm_input_name);
 		loaded += load_var(name, value, "file_input", global_params.input.custom_input_name);
 		loaded += load_var(name, value, "vectorization_method", global_params.vectorization_method);
@@ -161,7 +165,7 @@ int load_params(FILE *fd) {
 		loaded += load_var(name, value, "zoom_level", global_params.zoom_level);
 		loaded += load_var(name, value, "parameters_append", global_params.save_parameters_append);
 		loaded += load_var(name, value, "file_parameters", global_params.save_parameters_name);
-		if (loaded != 1) {
+		if (loaded != 1) { // Detecting was unsuccesfull, warn user
 			fprintf(stderr, "Error parsing config file on line %d: \"%s\"\n", linenumber, line);
 		}
 
@@ -172,7 +176,7 @@ int load_params(FILE *fd) {
 	return count;
 }
 
-int save_params(FILE *fd){
+int save_params(FILE *fd){ // Write parameters (with simple help) to opened filedescriptor
 	fprintf(fd, "###########################################################\n");
 	fprintf(fd, "# General input pnm file\n");
 	save_var(fd, "file_pnm_input", global_params.input.pnm_input_name);
@@ -249,7 +253,7 @@ int save_params(FILE *fd){
 	return 0;
 }
 
-int load_params(const std::string filename) {
+int load_params(const std::string filename) { // Load parameters from file given by name //TODO do headeru
 	FILE *fd;
 	if ((fd = fopen(filename.c_str(), "r")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for reading.\n");
@@ -260,7 +264,7 @@ int load_params(const std::string filename) {
 	return loaded;
 }
 
-int save_params(const std::string filename) {
+int save_params(const std::string filename) { // Save parameters to file given by name
 	FILE *fd;
 	if ((fd = fopen(filename.c_str(), "w")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for writing.\n");

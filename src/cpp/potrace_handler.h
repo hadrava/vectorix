@@ -1,6 +1,8 @@
 #ifndef _POTRACE_HANDLER_H
 #define _POTRACE_HANDLER_H
 
+// Vectorize using potracelib
+
 #include "pnm_handler.h"
 #include "v_image.h"
 #include "vectorizer.h"

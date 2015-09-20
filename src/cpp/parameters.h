@@ -1,18 +1,20 @@
 #ifndef _PARAMETERS_H
 #define _PARAMETERS_H
 
+// Program parameters
+
 #include <string>
 #include <cstdio>
 #include "config.h"
 
 namespace vect {
 
-typedef struct {
+typedef struct { // Input reading
 	std::string pnm_input_name = "";
 	std::string custom_input_name = "";
 } input_params;
 
-typedef struct {
+typedef struct { // Custom vectorizer thresholding params
 	int invert_input = 1;
 	int threshold = 127;
 	int threshold_type = 0; // 0=otsu, 1 fixed
@@ -20,7 +22,7 @@ typedef struct {
 	std::string save_threshold_name = "";
 } step1_params;
 
-typedef struct {
+typedef struct { // Custom vectorizer skeleronization params
 	int type = 0; // 0=fast diamod-square, 1=square, 2=diamond, 3=circle
 	int show_window = 0; // 0 - no, 1 - yes
 	std::string save_peeled_name = ""; // "out/boundary_%03d.png"
@@ -30,7 +32,7 @@ typedef struct {
 	std::string save_distance_normalized_name = "";
 } step2_params;
 
-typedef struct {
+typedef struct { // Custom vectorizer tracing params
 	float depth_auto_choose = 0;
 	int max_dfs_depth = 1;
 	p nearby_limit = 10;
@@ -46,11 +48,11 @@ typedef struct {
 	float angular_precision = 0.001;
 } step3_params;
 
-typedef struct {
+typedef struct { // Renderer params
 	p render_max_distance = 1;
 } opencv_render_params;
 
-typedef struct {
+typedef struct { // Exporting params
 	int export_type = 0;
 	int output_engine = 0;
 	p max_contour_error = 4;
@@ -65,7 +67,7 @@ typedef struct {
 	int show_opencv_rendered_window = 0;
 } output_params;
 
-typedef struct {
+typedef struct { // All parameters
 	input_params input;
 	int vectorization_method = 0; // 0-custom, 1-potrace, 2-stupid
 	int interactive = 1; // 0-no, 1-window, 2-infinity
@@ -79,11 +81,11 @@ typedef struct {
 	int zoom_level = 0;
 } params;
 
-extern params global_params;
+extern params global_params; //TODO should be deleted and moved to main only
 
-params default_params();
-int load_params(FILE *fd);
-int save_params(FILE *fd);
+params default_params(); // Default parameters
+int load_params(FILE *fd); // Read from filedescriptor
+int save_params(FILE *fd); // Write to filedescriptor
 
 }; // namespace
 

@@ -1,6 +1,8 @@
 #ifndef _VECTOR_LINES_H
 #define _VECTOR_LINES_H
 
+// Basic vector data structures and transformations
+
 #include <list>
 #include <cmath>
 #include "config.h"
@@ -8,7 +10,7 @@
 
 namespace vect {
 
-class v_pt {
+class v_pt { // Point/vector in 2D
 public:
 	v_pt(p _x = 0, p _y = 0): x(_x), y(_y) {};
 	p x;
@@ -48,10 +50,10 @@ public:
 	bool operator==(const v_pt &other) {
 		return ((x == other.x) && (y == other.y));
 	};
-	p len() const {
+	p len() const { // get length of vector = distance from pt (0, 0)
 		return std::sqrt(x*x + y*y);
 	}
-	p angle() const {
+	p angle() const { // calculate direction of vector
 		float ret = std::atan(y/x);
 		if (x<0)
 			ret += M_PI;
@@ -61,7 +63,7 @@ public:
 	}
 };
 
-class v_co {
+class v_co { // Color (3D vector)
 public:
 	v_co(int _r, int _g, int _b) { val[0] = _r; val[1] = _g; val[2] = _b; };
 	v_co() { val[0] = 0; val[1] = 0; val[2] = 0; };
@@ -89,7 +91,7 @@ public:
 		return first;
 	};
 private:
-	static p from_hue(p hue) {
+	static p from_hue(p hue) { // Helper function for from_color()
 		if (hue < 60)
 			return hue/60*255;
 		else if (hue < 180)
@@ -100,7 +102,7 @@ private:
 			return 0;
 	}
 public:
-	static v_co from_color(p hue) {
+	static v_co from_color(p hue) { // Set color based on given hue
 		v_co ret;
 		hue = fmodf(hue, 360);
 		ret.val[1] = from_hue(hue);
@@ -115,7 +117,7 @@ public:
 	int val[3];
 };
 
-class v_point {
+class v_point { // Control point of Bezier curve
 public:
 	v_point(v_pt _control_prev, v_pt _main, v_pt _control_next):
 		main(_main), control_prev(_control_prev), control_next(_control_next),
@@ -127,27 +129,28 @@ public:
 		main(_pt), control_prev(_pt), control_next(_pt),
 		opacity(1), width(_width), color(_color) {};
 	v_point(): opacity(1) {};
-	v_pt main;
-	v_pt control_prev;
+	v_pt main; // One main point
+	v_pt control_prev; // Two control points
 	v_pt control_next;
-	p opacity;
-	p width;
-	v_co color;
+	p opacity; // Opacity of line in given point
+	p width; // Line width in given point
+	v_co color; // Line color in given point
 };
 
-enum v_line_type {
+enum v_line_type { // Line with given width / outline of area
 	stroke,
 	fill
 };
 
-enum v_line_group {
-	group_normal,
-	group_first,
-	group_continue,
-	group_last
+enum v_line_group { // How are lines grouped
+	// with v_line_type stroke similar to svg group
+	group_normal, // Just one line per object (no group)
+	group_first, // First line in an object - it has positive sign (black color)
+	group_continue, // Other lines in the same object - negative sign (white color - transparent)
+	group_last // Last line - negative sign (white color - transparent)
 };
 
-class v_line {
+class v_line { // One line or area
 public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
 	v_line(): type_(stroke) {};
@@ -155,44 +158,50 @@ public:
 	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co _color, p _width = 1);
 	void add_point(v_pt &&_main);
 	void add_point(v_pt &&_main, v_co _color, p _width = 1);
-	void set_type(v_line_type type) { type_ = type; };
+	void set_type(v_line_type type) { type_ = type; }; // Change line type (stroke/fill)
 	v_line_type get_type() const { return type_; };
-	void reverse();
+	void reverse(); // Reverse line
 	bool empty() const { return segment.empty(); };
 	void set_group(v_line_group group) { group_ = group; };
-	void convert_to_outline(p max_error = 1);
-	void auto_smooth();
+	void convert_to_outline(p max_error = 1); // Convert from stroke to fill (calculate line outline)
+	void auto_smooth(); // Make line auto-smooth (drop all control points and calculate them from begining
 	void set_color(v_co color);
 	v_line_group get_group() const { return group_; };
-	std::list<v_point> segment;
+	std::list<v_point> segment; // Line data
 private:
-	v_line_type type_;
+	v_line_type type_; // Line type
 	v_line_group group_ = group_normal;
 };
 
-class v_image {
+class v_image { // Vector image
 public:
 	v_image(p _w, p _h): width(_w), height(_h) {};
 	v_image(): width(0), height(0) {};
-	void clean();
-	void add_line(v_line _line);
-	void convert_to_variable_width(int type, output_params &par);
-	void false_colors(p hue_step);
-	p width;
+	void clean(); // Drop all lines
+	void add_line(v_line _line); // Add given line to image
+	void convert_to_variable_width(int type, output_params &par); // Convert variable-width lines:
+	// type == 0: do nothing
+	// type == 1: chop segments to separate lines and group them
+	// type == 2: convert to outline
+	//            precision of conversion is given by parameter par.max_contour_error
+	// type == 3: calculate variance of width and guess, whether line should be converted to outline
+	//            max allowed variance is given by parameter par.auto_contour_variance
+	void false_colors(p hue_step); // Color each line with different color
+	p width; // Image dimensions
 	p height;
-	std::list<v_line> line;
+	std::list<v_line> line; // Image data
 };
 
-p distance(const v_pt &a, const v_pt &b);
-p distance(const v_point &a, const v_point &b);
+p distance(const v_pt &a, const v_pt &b); // Distance of two points
+p distance(const v_point &a, const v_point &b); // Maximal length of given segment
 inline p v_pt_distance(const v_pt &a, const v_pt &b) {
 	distance(a, b);
 }
-void chop_in_half(v_point &one, v_point &two, v_point &newpoint);
-void chop_line(v_line &line, p max_distance = 1);
-void group_line(std::list<v_line> &list, const v_line &line);
+void chop_in_half(v_point &one, v_point &two, v_point &newpoint); // Chop line segment in half, warning: has to change control points of one and two
+void chop_line(v_line &line, p max_distance = 1); // Chop line segments, so the maximal length of one segment is max_distance
+void group_line(std::list<v_line> &list, const v_line &line); // Split line to group of separate one-segment lines
 
-v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d);
+v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d); // Calculate intersection between line A-B and C-D; points A and C are absolute, B is relative to A and D to C
 
 
 }; // namespace

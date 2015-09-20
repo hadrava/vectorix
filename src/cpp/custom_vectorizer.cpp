@@ -11,46 +11,50 @@
 #include <tuple>
 #include <vector>
 
+// Vectorizer
+
 using namespace cv;
 using namespace pnm;
 
 namespace vect {
 
-changed_pix_roi step3_changed; // value < 254
-changed_pix_roi step3_changed_start; // value == 254
+// TODO schovat do třídy
+changed_pix_roi step3_changed; // Roi with pixels (value < 254)
+changed_pix_roi step3_changed_start; // Roi with pixels (value == 254)
 
-void step3_roi_clear(changed_pix_roi &roi, int x, int y) {
+void step3_roi_clear(changed_pix_roi &roi, int x, int y) { // remove all pixels from roi
 	roi.min_x = x;
 	roi.min_y = y;
 	roi.max_x = -1;
 	roi.max_y = -1;
 }
 
-Rect step3_roi_get(const changed_pix_roi &roi) {
+Rect step3_roi_get(const changed_pix_roi &roi) { // Return OpenCV roi
 	if ((roi.min_x <= roi.max_x) && (roi.min_y <= roi.max_y))
 		return Rect(roi.min_x, roi.min_y, roi.max_x-roi.min_x + 1, roi.max_y-roi.min_y + 1);
 	else
-		return Rect(0, 0, 0, 0);
+		return Rect(0, 0, 0, 0); // Empty roi
 }
 
-void step3_roi_update(changed_pix_roi &roi, int x, int y) {
+void step3_roi_update(changed_pix_roi &roi, int x, int y) { // Add pixel (x,y) to roi
 	roi.min_x = min(roi.min_x, x);
 	roi.min_y = min(roi.min_y, y);
 	roi.max_x = max(roi.max_x, x);
 	roi.max_y = max(roi.max_y, y);
 }
 
-uchar custom::nullpixel; // Virtual pixel for safe access to image matrix.
+uchar custom::nullpixel; // Virtual null pixel for safe access to image matrix
 
-uchar &safeat(const Mat &image, int i, int j) {
+uchar &safeat(const Mat &image, int i, int j) { //TODO odmazat
 	return custom::safeat(image, i, j);
 }
 
-float apxat(const Mat &image, v_pt pt) {
+float apxat(const Mat &image, v_pt pt) { // Get value at non-integer position (aproximate from neighbors)
 	int x = pt.x - 0.5f;
 	int y = pt.y - 0.5f;
 	pt.x-=x+0.5f;
 	pt.y-=y+0.5f;
+	// Weight is equal to area covered by rectangle 1px x 1px
 	float out = safeat(image, y,   x  ) * ((1-pt.x) * (1-pt.y)) + \
 		    safeat(image, y,   x+1) * (pt.x     * (1-pt.y)) + \
 		    safeat(image, y+1, x  ) * ((1-pt.x) * pt.y    ) + \
@@ -58,19 +62,20 @@ float apxat(const Mat &image, v_pt pt) {
 	return out;
 }
 
-v_co safeat_co(const Mat &image, int i, int j) { // Safely acces image data.
+v_co safeat_co(const Mat &image, int i, int j) { // Safely access rgb image data
 	if (i>=0 && i<image.rows && j>=0 && j<image.step)
 		return v_co(image.data[i*image.step + j*3 + 2], image.data[i*image.step + j*3 + 1], image.data[i*image.step + j*3]);
 	else {
-		return v_co(0, 0, 0);
+		return v_co(0, 0, 0); // Pixel is outside of image
 	}
 }
 
-v_co apxat_co(const Mat &image, v_pt pt) {
+v_co apxat_co(const Mat &image, v_pt pt) { // Get rgb at non-integer position (aproximate from neighbors)
 	int x = pt.x - 0.5f;
 	int y = pt.y - 0.5f;
 	pt.x-=x+0.5f;
 	pt.y-=y+0.5f;
+	// Weight is equal to area covered by rectangle 1px x 1px
 	v_co out = safeat_co(image, y,   x  ) * ((1-pt.x) * (1-pt.y)) + \
 		   safeat_co(image, y,   x+1) * (pt.x     * (1-pt.y)) + \
 		   safeat_co(image, y+1, x  ) * ((1-pt.x) * pt.y    ) + \
@@ -78,20 +83,20 @@ v_co apxat_co(const Mat &image, v_pt pt) {
 	return out;
 }
 
-uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image data.
-	if (i>=0 && i<image.rows && j>=0 && j<image.step)
+uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image data
+	if (i>=0 && i<image.rows && j>=0 && j<image.step) // Pixel is inside of an image
 		return image.data[i*image.step + j];
-	else {
-		nullpixel = 0;
+	else { // Outside of an image
+		nullpixel = 0; // clean data in nullpixel
 		return nullpixel;
 	}
 }
 
 #ifdef VECTORIZER_HIGHGUI
 void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Display image in highgui named window.
-	if (global_params.zoom_level) {
+	if (global_params.zoom_level) { // (Down)scale image before displaying
 		Mat scaled_mat;
-		int w = mat.cols() / (log10(global_params.zoom_level+10));
+		int w = mat.cols() / (log10(global_params.zoom_level+10)); // TODO lepší zoom
 		int h = mat.rows() / (log10(global_params.zoom_level+10));
 		resize(mat, scaled_mat, Size(w, h));
 		return imshow(winname, scaled_mat);
@@ -99,35 +104,35 @@ void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // D
 	else
 		return imshow(winname, mat);
 }
-int custom::vectorize_waitKey(int delay) { // Wait for key press in any window.
+int custom::vectorize_waitKey(int delay) { // Wait for key press in any window
 	return waitKey(delay);
 }
-void custom::vectorize_destroyWindow(const std::string& winname) {
+void custom::vectorize_destroyWindow(const std::string& winname) { // Close window
 	return destroyWindow(winname);
 }
 #else
-void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Highgui disabled, do nothing.
+void custom::vectorize_imshow(const std::string& winname, InputArray mat) { // Highgui disabled, do nothing
 	return;
 }
-int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'.
+int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'
 	return -1;
 }
-void custom::vectorize_destroyWindow(const std::string& winname) {
+void custom::vectorize_destroyWindow(const std::string& winname) { // Nothing to destroy
 	return;
 }
 #endif
 
-void custom::add_to_skeleton(Mat &out, Mat &bw, int iteration) { // Add pixels from `bw' to `out'. Something like image `or', but with more information.
+void custom::add_to_skeleton(Mat &out, Mat &bw, int iteration) { // Add pixels from `bw' to `out'. Something like image `or', but with more information
 	for (int i = 0; i < out.rows; i++) {
 		for (int j = 0; j < out.cols; j++) {
-			if (!out.data[i*out.step + j]) {
+			if (!out.data[i*out.step + j]) { // Non-zero pixel
 				out.data[i*out.step + j] = (!!bw.data[i*bw.step + j]) * iteration;
 			}
 		}
 	}
 }
 
-void custom::normalize(Mat &out, int max) { // Normalize grayscale image for displaying (0-255).
+void custom::normalize(Mat &out, int max) { // Normalize grayscale image for displaying (0-255)
 	for (int i = 0; i < out.rows; i++) {
 		for (int j = 0; j < out.cols; j++) {
 			out.data[i*out.step + j] *= 255/max;
@@ -135,15 +140,16 @@ void custom::normalize(Mat &out, int max) { // Normalize grayscale image for dis
 	}
 }
 
-Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for tracing in square neighbourhood defined by step constant.
+// TODO používá se?
+Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for tracing in square neighbourhood defined by step constant
 	int max = 0;
 	int max_x = -1;
 	int max_y = -1;
 	for (int y = -step; y<=step; y++) {
-		for (int x = -step; x<=step; x++) {
+		for (int x = -step; x<=step; x++) { // For every pixel in neighborhood
 			int i = pos.y + y;
 			int j = pos.x + x;
-			if (max < (unsigned char)safeat(out, i, j)) { // Point should be in center of traced line.
+			if (max < (unsigned char)safeat(out, i, j)) { // Point should be in center of traced line
 				max = (unsigned char)safeat(out, i, j);
 				max_x = j;
 				max_y = i;
@@ -158,27 +164,27 @@ Point custom::find_adj(const Mat &out, Point pos) { // Find adjacent point for t
 }
 
 void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
-	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm.
-	if (par.threshold_type == 0) {
+	int type = THRESH_BINARY | THRESH_OTSU; // Threshold found by Otsu's algorithm //TODO move/smazat
+	if (par.threshold_type == 0) { // Binary threshold guessed value
 		vectorizer_debug("threshold: Using Otsu's algorithm\n");
 		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY | THRESH_OTSU);
 	}
-	else if (par.threshold_type == 1) {
+	else if (par.threshold_type == 1) { // Fixed binary threshold
 		vectorizer_debug("threshold: Using binary threshold %i.\n", par.threshold);
 		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY);
 	}
-	else if ((par.threshold_type >= 2) && (par.threshold_type <= 3)) {
+	else if ((par.threshold_type >= 2) && (par.threshold_type <= 3)) { // Adaptive threshold
 		vectorizer_debug("threshold: Using adaptive thresholdbinary threshold %i.\n", par.threshold);
-		par.adaptive_threshold_size |= 1;
+		par.adaptive_threshold_size |= 1; // Make threshold size odd
 		if (par.adaptive_threshold_size < 3)
 			par.adaptive_threshold_size = 3;
-		int type = ADAPTIVE_THRESH_GAUSSIAN_C;
+		int type = ADAPTIVE_THRESH_GAUSSIAN_C; // par.threshold_type==2 -> gaussian
 		if (par.threshold_type == 3)
-			type = ADAPTIVE_THRESH_MEAN_C;
+			type = ADAPTIVE_THRESH_MEAN_C; // par.threshold_type==3 -> mean
 		adaptiveThreshold(to_threshold, to_threshold, 255, type, THRESH_BINARY, par.adaptive_threshold_size, par.threshold - 128);
 	}
 
-	for (int j = 0; j < to_threshold.rows; j += to_threshold.rows-1) { // Clear borders;
+	for (int j = 0; j < to_threshold.rows; j += to_threshold.rows-1) { // Clear borders
 		for (int i = 0; i < to_threshold.cols; i++) {
 			to_threshold.data[i+j*to_threshold.step] = 0;
 		}
@@ -189,7 +195,7 @@ void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 		}
 	}
 
-	if (!par.save_threshold_name.empty()) {
+	if (!par.save_threshold_name.empty()) { // Save image after thresholding
 		imwrite(par.save_threshold_name, to_threshold);
 	}
 }
@@ -197,10 +203,10 @@ void custom::step1_threshold(Mat &to_threshold, step1_params &par) {
 void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration, step2_params &par) {
 	Mat bw     (binary_input.rows, binary_input.cols, CV_8UC(1));
 	Mat source = binary_input.clone();
-	Mat peeled = binary_input.clone();
+	Mat peeled = binary_input.clone(); // Objects in this image are peeled in every step by 1 px
 	Mat next_peeled (binary_input.rows, binary_input.cols, CV_8UC(1));
-	skeleton = Scalar(0);
-	distance = Scalar(0);
+	skeleton = Scalar(0); // Clear output
+	distance = Scalar(0); // Clear output
 
 	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // diamond
 	Mat kernel_2 = getStructuringElement(MORPH_RECT, Size(3,3)); // square
@@ -211,12 +217,12 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 		std::swap(kernel, kernel_2); // use only square
 
 	while (max !=0) {
-		if (!par.save_peeled_name.empty()) {
+		if (!par.save_peeled_name.empty()) { // Save every step of skeletonization
 			char filename [128];
 			std::snprintf(filename, sizeof(filename), par.save_peeled_name.c_str(), iteration);
 			imwrite(filename, peeled);
 		}
-		if (par.show_window == 1) {
+		if (par.show_window == 1) { // Show every step of skeletonization
 			vectorize_imshow("Boundary peeling", peeled);
 			vectorize_waitKey(0);
 		}
@@ -224,69 +230,69 @@ void custom::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &
 		// skeleton
 		morphologyEx(peeled, bw, MORPH_OPEN, kernel);
 		bitwise_not(bw, bw);
-		bitwise_and(peeled, bw, bw);
-		add_to_skeleton(skeleton, bw, iteration);
+		bitwise_and(peeled, bw, bw); // Pixels destroyed by opening
+		add_to_skeleton(skeleton, bw, iteration); // Add them to skeleton
 
 		// distance
-		if (par.type == 3) {
+		if (par.type == 3) { // Most precise peeling - with circle
 			kernel_2 = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
 			erode(source, next_peeled, kernel_2);
 		}
 		else {
-			erode(peeled, next_peeled, kernel);
+			erode(peeled, next_peeled, kernel); // Diamond / square / diamond-square
 		}
 		bitwise_not(next_peeled, bw);
-		bitwise_and(peeled, bw, bw);
-		add_to_skeleton(distance, bw, iteration++);
+		bitwise_and(peeled, bw, bw); // Pixels removed by next peeling
+		add_to_skeleton(distance, bw, iteration++); // calculate distance for all pixels
 
 		std::swap(peeled, next_peeled);
-		minMaxLoc(peeled, NULL, &max, NULL, NULL);
+		minMaxLoc(peeled, NULL, &max, NULL, NULL); // we have at least one non-zero pixel
 		if (par.type == 0)
-			std::swap(kernel, kernel_2);
+			std::swap(kernel, kernel_2); // diamond-square
 	}
 	if (par.show_window == 1) {
-		vectorize_destroyWindow("Boundary peeling");
+		vectorize_destroyWindow("Boundary peeling"); // Window is not needed anymore
 	}
-	if (!par.save_skeleton_name.empty()) {
+	if (!par.save_skeleton_name.empty()) { // Save output to file
 		imwrite(par.save_skeleton_name, skeleton);
 	}
-	if (!par.save_distance_name.empty()) {
+	if (!par.save_distance_name.empty()) { // Save output to file
 		imwrite(par.save_distance_name, distance);
 	}
-	if (!par.save_skeleton_normalized_name.empty()) {
+	if (!par.save_skeleton_normalized_name.empty()) { // Display skeletonization outcome
 		Mat skeleton_normalized = skeleton.clone();
-		normalize(skeleton_normalized, iteration-1);
+		normalize(skeleton_normalized, iteration-1); // Make image more contrast
 		imwrite(par.save_skeleton_normalized_name, skeleton_normalized);
 	}
-	if (!par.save_distance_normalized_name.empty()) {
+	if (!par.save_distance_normalized_name.empty()) { // Display skeletonization outcome
 		Mat distance_normalized = distance.clone();
-		normalize(distance_normalized, iteration-1);
+		normalize(distance_normalized, iteration-1); // Make image more contrast
 		imwrite(par.save_distance_normalized_name, distance_normalized);
 	}
 }
 
-void prepare_starting_points(const cv::Mat &skeleton, std::vector<start_point> &starting_points) {
+void prepare_starting_points(const cv::Mat &skeleton, std::vector<start_point> &starting_points) { // Find all possible startingpoints
 	for (int i = 0; i < skeleton.rows; i++) {
 		for (int j = 0; j < skeleton.cols; j++) {
-			if (skeleton.data[i*skeleton.step + j]) {
+			if (skeleton.data[i*skeleton.step + j]) { // Pixel is in skeleton
 				start_point pt;
 				pt.val = skeleton.data[i*skeleton.step + j];
 				pt.pt = Point(j, i);
-				starting_points.push_back(pt);
+				starting_points.push_back(pt); // Add it to queue (std::vector)
 			}
 		}
 	}
 	std::sort(starting_points.begin(), starting_points.end(), [&](start_point a, start_point b)->bool {
 			return a.val < b.val;
-			});
+			}); // Sort pixels by distance to object borders
 }
 
-void find_max_starting_point(std::vector<start_point> &starting_points, const cv::Mat &used_pixels, int &max, cv::Point &max_pos) {
+void find_max_starting_point(std::vector<start_point> &starting_points, const cv::Mat &used_pixels, int &max, cv::Point &max_pos) { // Find first unused starting point from queue (std::vector)
 	max = 0;
 	while ((max == 0) && !starting_points.empty()) {
 		start_point pt = starting_points.back();
 		starting_points.pop_back();
-		if (!used_pixels.data[pt.pt.y*used_pixels.step + pt.pt.x]) {
+		if (!used_pixels.data[pt.pt.y*used_pixels.step + pt.pt.x]) { // Pixel was not used
 			max = pt.val;
 			max_pos = pt.pt;
 		}
@@ -295,93 +301,101 @@ void find_max_starting_point(std::vector<start_point> &starting_points, const cv
 }
 
 void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
-	used_pixels = Scalar(0);
+	used_pixels = Scalar(0); // Pixels already used for tracing
 #ifdef VECTORIZER_USE_ROI
+	// Speedup using OpenCV region of interest
+	// This optimization should NOT change program outcome
 	step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 	step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
 #endif
 
 #ifdef VECTORIZER_STARTING_POINTS
+	// Use queue for all possible starting points
+	// This optimization CAN change program outcome by changing order
 	std::vector<start_point> starting_points;
 	int max;
 	Point max_pos;
-	prepare_starting_points(skeleton, starting_points);
-	find_max_starting_point(starting_points, used_pixels, max, max_pos);
+	prepare_starting_points(skeleton, starting_points); // Find all startingpoints
+	find_max_starting_point(starting_points, used_pixels, max, max_pos); // Get first startingpoint
 #else
+	// Find every point in input image
 	Mat starting_points = skeleton.clone();
 	double max;
 	Point max_pos;
-	minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
+	minMaxLoc(starting_points, NULL, &max, NULL, &max_pos); // Get first starting point
 #endif
 
 	int count = 0;
 	while (max !=0) { // While we have unused pixel.
 		//vectorizer_debug("start tracing from: %i %i\n", max_pos.x, max_pos.y);
 		v_line line;
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par); // Trace first part of a line
 		line.reverse();
+
+		// Drop everything (<= 254)
 #ifdef VECTORIZER_USE_ROI
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 254, 255, THRESH_BINARY);
 		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 254, 255, THRESH_BINARY);
-		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
-		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
+		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows); // There is no pixel with value < 254
+		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows); // There is no pixel with value == 254
 #else
 		threshold(used_pixels, used_pixels, 254, 255, THRESH_BINARY);
 #endif
 		if (line.empty()) {
-			vectorizer_error("Vectorizer warning: No new point found!\n");
-			spix(used_pixels, max_pos, 255);
+			vectorizer_error("Vectorizer warning: No new point found!\n"); // Vectorization started from one point, but no new line was found. This should not happen
+			spix(used_pixels, max_pos, 255); // Clear pixel to prevent infinite loop
 		}
 		else
 			line.segment.pop_back();
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par);
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par); //Trace second part of a line
 #ifdef VECTORIZER_USE_ROI
-		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_BINARY); // save firsst point
-		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 253, 255, THRESH_BINARY); // save firsst point
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_BINARY); // save first point
+		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 253, 255, THRESH_BINARY); // save first point
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
 #else
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // save firsst point
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // Save first point (value 254)
 #endif
 
 		//TODO only for debuging
 		//line.auto_smooth();
 		//ODOT
-		vectorization_output.add_line(line);
+		vectorization_output.add_line(line); // Add line to output
 		count++;
 
 #ifdef VECTORIZER_STARTING_POINTS
-		find_max_starting_point(starting_points, used_pixels, max, max_pos);
+		find_max_starting_point(starting_points, used_pixels, max, max_pos); // Get next possible starting point
 #else
 		bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), starting_points, used_pixels);
-		minMaxLoc(starting_points, NULL, &max, NULL, &max_pos);
+		minMaxLoc(starting_points, NULL, &max, NULL, &max_pos); // Find next starting point
 #endif
 	}
 	vectorizer_debug("lines found: %i\n", count);
 }
 
-int pix(const Mat &img, const v_pt &point) {
+int pix(const Mat &img, const v_pt &point) { // Get pixel
 	int x = point.x;
 	int y = point.y;
 	return img.data[y*img.step + x];
 }
 
-void spix(const Mat &img, const v_pt &point, int value) {
+void spix(const Mat &img, const v_pt &point, int value) { // Set pixel (at floating-point coordinates)
 	int x = point.x;
 	int y = point.y;
 	img.data[y*img.step + x] = value;
 }
 
-void spix(const Mat &img, const Point &point, int value) {
+void spix(const Mat &img, const Point &point, int value) { // Set pixel
 	int x = point.x;
 	int y = point.y;
 	img.data[y*img.step + x] = value;
 }
 
-int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) {
+int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) { // Increase value of pixel
 	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
-		spix(used_pixels, point, value);
+		spix(used_pixels, point, value); // Set pixel
 #ifdef VECTORIZER_USE_ROI
+		// Add pixel to corresponding roi
 		if (value < 254) {
 			step3_roi_update(step3_changed, point.x, point.y);
 		}
@@ -389,13 +403,13 @@ int inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) 
 			step3_roi_update(step3_changed_start, point.x, point.y);
 		}
 #endif
-		return 1;
+		return 1; // one pixel changed
 	}
 	else
-		return 0;
+		return 0; // no pixel changed
 }
 
-int inc_pix_to_near(const Mat &mask, int value, const v_pt &point, Mat &used_pixels, int near = 1) {
+int inc_pix_to_near(const Mat &mask, int value, const v_pt &point, Mat &used_pixels, int near = 1) { // Increase all pixels in neighborhood
 	int sum = 0;
 	for (int i = -near; i<=near; i++) {
 		for (int j = -near; j<=near; j++) {
@@ -406,13 +420,13 @@ int inc_pix_to_near(const Mat &mask, int value, const v_pt &point, Mat &used_pix
 				sum += inc_pix_to(mask, value, a, used_pixels);
 		}
 	}
-	return sum;
+	return sum; // Count of increased pixels
 }
 
-int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_depth, v_line &line, Mat &used_pixels) { // přidej do linie, označ body jako využité
+int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_depth, v_line &line, Mat &used_pixels) { // Add point to line and mark them as used
 	int sum = 0;
 	if (line.empty()) {
-		sum += inc_pix_to_near(skeleton, current_depth, new_point.main, used_pixels);
+		sum += inc_pix_to_near(skeleton, current_depth, new_point.main, used_pixels); // add First point
 	}
 	else {
 		line.segment.back().control_next = new_point.control_next;
@@ -421,7 +435,7 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 		v_line new_segment;
 		new_segment.segment.push_back(op);
 		new_segment.segment.push_back(np);
-		chop_line(new_segment, 0.1);
+		chop_line(new_segment, 0.1); // make control point in every pixel along new_segment
 		for (v_point point: new_segment.segment) {
 			sum += inc_pix_to_near(skeleton, current_depth, point.main, used_pixels);
 		}
@@ -431,11 +445,11 @@ int place_next_point_at(const Mat &skeleton, v_point &new_point, int current_dep
 	return sum;
 }
 
-float calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par) {
+float calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par) { // Get average value from neighborhood with gaussian distribution
 	int limit = par.nearby_limit_gauss;
 	float res = 0;
 	for (int y = -limit; y<=limit; y++) {
-		for (int x = -limit; x<=limit; x++) {
+		for (int x = -limit; x<=limit; x++) { // Limit to rectangular area
 			int j = center.x + x;
 			int i = center.y + y;
 			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) {
@@ -448,137 +462,140 @@ float calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &us
 	return res;
 }
 
-v_pt find_best_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par, float size = 1) {
-	if (size < par.gauss_precision)
+v_pt find_best_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par, float size = 1) { // Find best value in given area
+	if (size < par.gauss_precision) // Our area is lower than desired precision
 		return center;
 	float a[3][3];
 	for (int y = -1; y<=1; y++) {
-		for (int x = -1; x<=1; x++) {
+		for (int x = -1; x<=1; x++) { // Calculate at nine positions (3x3)
 			v_pt offset(x, y);
 			offset *= size;
 			offset += center;
 			a[x+1][y+1] = calculate_gaussian(skeleton, distance, used_pixels, offset, par);
 		}
 	}
-	float i = a[0][0] + a[0][1] + a[1][0] + a[1][1];
-	float j = a[1][0] + a[1][1] + a[2][0] + a[2][1];
-	float k = a[0][1] + a[0][2] + a[1][1] + a[1][2];
-	float l = a[1][1] + a[1][2] + a[2][1] + a[2][2];
+	float i = a[0][0] + a[0][1] + a[1][0] + a[1][1]; // Upper left
+	float j = a[1][0] + a[1][1] + a[2][0] + a[2][1]; // Upper right
+	float k = a[0][1] + a[0][2] + a[1][1] + a[1][2]; // Lower left
+	float l = a[1][1] + a[1][2] + a[2][1] + a[2][2]; // Lower right
 	float m = max(max(i,j),max(k,l));
 	size /= 2;
+	// Move center
 	if (m == i) {
-		center += v_pt(-size, -size);
+		center += v_pt(-size, -size); // up + left
 	}
 	else if (m == j) {
-		center += v_pt(size, -size);
+		center += v_pt(size, -size); // up + right
 	}
 	else if (m == k) {
-		center += v_pt(-size, size);
+		center += v_pt(-size, size); // down + left
 	}
 	else {
-		center += v_pt(size, size);
+		center += v_pt(size, size); // down + right
 	}
-	return find_best_gaussian(skeleton, distance, used_pixels, center, par, size);
+	return find_best_gaussian(skeleton, distance, used_pixels, center, par, size); // continue in one quarter
 }
 
-float calculate_line_fitness(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist, step3_params &par) {
-	Point corner1(center.x - max_dist, center.y - max_dist);
-	Point corner2(center.x + max_dist + 1, center.y + max_dist + 1);
+float calculate_line_fitness(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist, step3_params &par) { // Calculate how 'good' is given line
+	Point corner1(center.x - max_dist, center.y - max_dist); // Upper left corner
+	Point corner2(center.x + max_dist + 1, center.y + max_dist + 1); // Lower right corner
 	float res = 0;
 	for (int i = corner1.y; i < corner2.y; i++) {
-		for (int j = corner1.x; j < corner2.x; j++) {
-			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) {
+		for (int j = corner1.x; j < corner2.x; j++) { // for every pixel in rectangle
+			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) { // pixel is in skeleton and was not used
 				v_pt pixel(j+0.5f, i+0.5f);
 				if ((v_pt_distance(center, pixel) > max_dist) || (v_pt_distance(center, pixel) < std::fabs(min_dist)))
-					continue;
+					continue; // Pixel is too far from center
 				pixel -= center;
 				v_pt en = end - center;
 				en /= en.len();
-				float base = pixel.x*en.x + pixel.y*en.y;
+				float base = pixel.x*en.x + pixel.y*en.y; // distance to center squared
 				if ((base < 0) && (min_dist >= 0))
 					continue;
 				en *= base;
 				en -= pixel;
-				res += std::exp(-(en.x*en.x + en.y*en.y)/par.distance_coef) * safeat(distance, i, j);
+				res += std::exp(-(en.x*en.x + en.y*en.y)/par.distance_coef) * safeat(distance, i, j); // Weight * value
 			}
 		}
 	}
 	return res;
 }
 
-v_pt try_line_point(v_pt center, float angle, step3_params &par) {
+v_pt try_line_point(v_pt center, float angle, step3_params &par) { // Return point in distance par.nearby_limit from center in given angle
 	v_pt distpoint(cos(angle), sin(angle));
 	distpoint *= par.nearby_limit;
 	distpoint += center;
 	return distpoint;
 }
 
-float find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float angle, step3_params &par, float size, float min_dist = 0) {
-	if (size < par.angular_precision)
+float find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float angle, step3_params &par, float size, float min_dist = 0) { // Find best line continuation in given angle
+	if (size < par.angular_precision) // we found maximum with enought precision
 		return angle;
 	size /= 2;
 	v_pt a = try_line_point(center, angle - size, par);
 	v_pt b = try_line_point(center, angle + size, par);
 	float af = calculate_line_fitness(skeleton, distance, used_pixels, center, a, min_dist, par.nearby_limit, par);
 	float bf = calculate_line_fitness(skeleton, distance, used_pixels, center, b, min_dist, par.nearby_limit, par);
-	if (af>bf)
+	if (af>bf) // Go in a direction of better fitness
 		return find_best_line(skeleton, distance, used_pixels, center, angle - size, par, size, min_dist);
 	else
 		return find_best_line(skeleton, distance, used_pixels, center, angle + size, par, size, min_dist);
 }
 
-void find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
-	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1);
+void find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) { // Returns best placement of first point
+	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1); // Find best point in neighborhood of `last'
 	match.emplace_back(match_variant(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2)));
-	if (v_pt_distance(best, last) > epsilon) {
-		match.emplace_back(match_variant(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2))); //TODO koeficient
+	if (v_pt_distance(best, last) > epsilon) { // We find something else than `last'
+		match.emplace_back(match_variant(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2))); // Return also second variant with exactly `last'
 	}
 }
 
-void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
-	// predict smooth line
+void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) { // Find best variant for next point, assuming line smoothness
 	v_point pred;
 	v_pt prediction = line.segment.back().main;
 	auto hist = line.segment.end();
 	hist--;
 	if (hist == line.segment.begin())
-		return;
+		return; // We have no history, cannot use this predictor
 	hist--;
-	if (v_pt_distance(hist->main, prediction) > epsilon)
+	if (v_pt_distance(hist->main, prediction) > epsilon) // Last two points are not identical
 		prediction = hist->main;
-	if (v_pt_distance(line.segment.back().main, line.segment.back().control_prev) > epsilon)
-		prediction = line.segment.back().control_prev;
+	if (v_pt_distance(line.segment.back().main, line.segment.back().control_prev) > epsilon) // Last point has previous control point
+		prediction = line.segment.back().control_prev; // Use it for prediction
 
+	// Move prediction forward (flip around last main point)
 	prediction -= line.segment.back().main;
 	prediction *= -1;
-	prediction /= prediction.len();
-	pred.control_next = line.segment.back().main + prediction*(par.nearby_limit/3);
+	prediction /= prediction.len(); // Normalize
+	pred.control_next = line.segment.back().main + prediction*(par.nearby_limit/3); // Move by parameter
 
 	step3_params pp = par;
 	pp.nearby_limit = par.nearby_limit + par.size_nearby_smooth;
-	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), par, par.max_angle_search_smooth, par.nearby_limit - par.size_nearby_smooth);
+	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), par, par.max_angle_search_smooth, par.nearby_limit - par.size_nearby_smooth); // Find best line in given angle
 	pred.main = line.segment.back().main + v_pt(std::cos(angle), std::sin(angle))*par.nearby_limit;
 
 	pp.nearby_limit = par.nearby_control_smooth;
 	float angle2 = find_best_line(skeleton, distance, used_pixels, pred.main, angle, pp, par.max_angle_search_smooth, -par.size_nearby_smooth);
+	// find best positon for control point
 	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(par.nearby_limit/3);
 
-	p smoothness = fabs(angle2 - prediction.angle());
+	p smoothness = fabs(angle2 - prediction.angle()); // Calculate smoothness
 	if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
-		if (smoothness < par.smoothness) {
+		if (smoothness < par.smoothness) { // Line is smooth enought
 			pred.color = apxat_co(color_input, pred.main);
 			pred.width = apxat(distance, pred.main)*2;
 			match.push_back(match_variant(pred)); //TODO koeficient)
 		}
 		else {
+			// It looks more like corner
 			generic_vectorizer::vectorizer_debug("Corner detected\n");
-			pred.main = intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main);
+			pred.main = intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main); // Find best position for corner
 			float len = (pred.main - line.segment.back().main).len();
 			pred.control_next = line.segment.back().main + prediction*(len/3);
-			pred.control_prev = line.segment.back().main + prediction*(len*2/3);
+			pred.control_prev = line.segment.back().main + prediction*(len*2/3); // Recalculate control points
 
-			if (v_pt_distance(line.segment.back().main - prediction*len, pred.main) > len) {
-				if (apxat(skeleton, pred.main)) {
+			if (v_pt_distance(line.segment.back().main - prediction*len, pred.main) > len) { // Corner is between last point and new point
+				if (apxat(skeleton, pred.main)) { // Use this point
 					pred.color = apxat_co(color_input, pred.main);
 					pred.width = apxat(distance, pred.main)*2;
 					match.push_back(match_variant(pred)); //TODO koeficient
@@ -587,34 +604,35 @@ void find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const
 					generic_vectorizer::vectorizer_debug("Corner is not in skeleton, refusing to add\n");
 			}
 			else
+				// Corner is somewhere else, this predictos failed
 				generic_vectorizer::vectorizer_debug("Sorry, we already missed it, try it with other detector\n");
 		}
 	}
 }
 
 void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
-	// leave corner (or first point) with straight continuation
+	// Leave corner (or first point) with straight continuation
 	int size = par.nearby_limit;
 	float *fit = new float[par.angle_steps+2];
 	fit++;
-	for (int dir = 0; dir < par.angle_steps; dir++) {
-		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI/par.angle_steps*dir, par);
-		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par.min_nearby_straight, par.nearby_limit, par);
+	for (int dir = 0; dir < par.angle_steps; dir++) { // Try every direction
+		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI/par.angle_steps*dir, par); // Place point
+		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par.min_nearby_straight, par.nearby_limit, par); // Calculate point fitness
 	}
-	fit[-1] = fit[par.angle_steps-1];
+	fit[-1] = fit[par.angle_steps-1]; // Make "borders" to array
 	fit[par.angle_steps] = fit[0];
 
-	float *sortedfit = new float[par.angle_steps];
+	float *sortedfit = new float[par.angle_steps]; // Array of local maximas // TODO delete
 	int sortedfiti = 0;
 	for (int dir = 0; dir < par.angle_steps; dir++) {
-		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) {
-			sortedfit[sortedfiti++] = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, 2*M_PI/par.angle_steps*dir, par, 2*M_PI/par.angle_steps);
+		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) { // Look if direction is local maximum
+			sortedfit[sortedfiti++] = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, 2*M_PI/par.angle_steps*dir, par, 2*M_PI/par.angle_steps); // Move each direction a little
 		}
 	}
 	fit--;
 	delete []fit;
 
-	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool {
+	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool { // Sort by line fitness
 			v_pt da = try_line_point(line.segment.back().main, a, par);
 			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, par.min_nearby_straight, par.nearby_limit, par);
 			v_pt db = try_line_point(line.segment.back().main, b, par);
@@ -629,44 +647,46 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 		//vectorizer_debug("Sorted variants: %f: %f\n", sortedfit[dir], my);
 
 		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
-		v_point out = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2);
-		out.control_next = out.main - line.segment.back().main;
-		out.control_next /= 3;
+		v_point out = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2); // Get color and width
+		out.control_next = out.main - line.segment.back().main; // Calculate control points
+		out.control_next /= 3; // should be in one third between main points
 		out.control_prev = out.main - out.control_next;
 		out.control_next += line.segment.back().main;
 		out.color = apxat_co(color_input, out.main);
 		out.width = apxat(distance, out.main)*2;
-		match.push_back(match_variant(out)); //TODO koeficient
+		match.push_back(match_variant(out)); // Add to possible variants // TODO koeficient
 	}
 }
 
-int count = 100;
+int count = 100; // TODO proč je to sakra globální?, zbavit se toho
 
 void filter_best_variant_end(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
+	// Detect if first variant is good as ending of line
 	//for (auto var = match.begin(); var != match.end(); var++) {
 	if (match.empty())
 		return;
 	//if (count) {
 		//count--;
 	auto var = match.begin();
+		// Get last segment
 		v_point op = line.segment.back();
 		v_point np = var->pt;
 		op.control_next = np.control_next;
 		v_line new_segment;
 		new_segment.segment.push_back(op);
 		new_segment.segment.push_back(np);
-		chop_line(new_segment, 0.1);
+		chop_line(new_segment, 0.1); // Chop segment, so we can read it more precisely than with 1px step
 		v_pt good = op.main;
 		for (v_point point: new_segment.segment) {
 			if (!apxat(skeleton, point.main)) {
-				generic_vectorizer::vectorizer_debug("I don't like it. %f %f -> %f %f\n", np.main.x, np.main.y, point.main.x, point.main.y);
-				if ((good - op.main).len() < 3) {
+				generic_vectorizer::vectorizer_debug("I don't like it. %f %f -> %f %f\n", np.main.x, np.main.y, point.main.x, point.main.y); // Line is not continuing
+				if ((good - op.main).len() < 3) { // Line is too short
 					var->depth = 0;
 				}
 				else {
 					var->pt.main = good;
 					var->type = end;
-					generic_vectorizer::vectorizer_debug("Setting type to end\n");
+					generic_vectorizer::vectorizer_debug("Setting type to end\n"); // We found end of line
 				}
 				break;
 			}
@@ -676,27 +696,29 @@ void filter_best_variant_end(const Mat &color_input, const Mat &skeleton, const 
 }
 
 void find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
-	if (line.segment.empty()) { // place first point
+	// Find all posible continuations of line
+	if (line.segment.empty()) { // Place first point
 		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
 		generic_vectorizer::vectorizer_debug("find var first: %i\n", match.size());
 		return;
 	}
 	generic_vectorizer::vectorizer_debug("last type is %i\n", last.type);
 
-	if (last.type == end)
+	if (last.type == end) // Last point is marked as ending, do not predict anything
 		return;
 
-	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Try smooth continuation
 	generic_vectorizer::vectorizer_debug("find var smooth: %i\n", match.size());
-	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Make last point corner -- continue with straight line
 	generic_vectorizer::vectorizer_debug("find var straight: %i\n", match.size());
 
-	filter_best_variant_end(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // work as filter on existing variants
+	filter_best_variant_end(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Work as filter on existing variants -- if some point seems to be ending, fit its position and mark it
 	generic_vectorizer::vectorizer_debug("find var end: %i\n", match.size());
 
 	return;
 
 
+	// TODO smazat:
 	//
 	// try straight
 	//auto history = get_history();
@@ -745,90 +767,90 @@ float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const c
 	best_match.depth = -1;
 
 	std::vector<match_variant> all_matches;
-	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches, par);
-	for (int variant = 0; variant <= all_matches.size(); variant++) {
+	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches, par); // Find all possible variants for next point
+	for (int variant = 0; variant <= all_matches.size(); variant++) { // Try all variants
 		match_variant last_match;
 		if (variant < all_matches.size()) {
-			last_match = all_matches[variant];
+			last_match = all_matches[variant]; // Treat this variant as our point
 		}
-		if (last_match.depth > 0) {
-			int sum = place_next_point_at(skeleton, last_match.pt, allowed_depth, line, used_pixels);
-			last_match.depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match, allowed_depth - 1, line, new_point, par);
+		if (last_match.depth > 0) { // We allowed to do recursion
+			int sum = place_next_point_at(skeleton, last_match.pt, allowed_depth, line, used_pixels); // Mark point as used
+			last_match.depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match, allowed_depth - 1, line, new_point, par); // Do recursion with lower depth
 			line.segment.pop_back();
 		}
 
-		if (last_match.depth > best_match.depth) {
-			best_match = last_match;
+		if (last_match.depth > best_match.depth) { // We found better match
+			best_match = last_match; // best so far ...
 		}
-		if (allowed_depth - best_match.depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ...
-			break;
+		if (allowed_depth - best_match.depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ... We found something good enought
+			break; // Do not try anything else
 		}
 #ifdef VECTORIZER_USE_ROI
-		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), allowed_depth, 0, THRESH_TOZERO); //TODO stack with used pixels
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), allowed_depth, 0, THRESH_TOZERO); // Drop all markings by recursive call do_prediction()
 #else
 		threshold(used_pixels, used_pixels, allowed_depth, 0, THRESH_TOZERO);
 #endif
 	}
-	new_point = best_match;
+	new_point = best_match; // Return best match
 	return best_match.depth;
 }
 
 void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par) {
 	match_variant last_placed;
-	last_placed.pt.main.x = startpoint.x + 0.5f;
+	last_placed.pt.main.x = startpoint.x + 0.5f; // Move point to center of pixel
 	last_placed.pt.main.y = startpoint.y + 0.5f;
 	last_placed.type = start;
 	int sum = 0;
 	int first_point = 2;
 	for (;;) {
 		match_variant new_point;
-		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par);
+		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par); // Do prediction (by recursion) -- place one new point
 #ifdef VECTORIZER_USE_ROI
-		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
+		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // All changed pixels are in roi step3_changed
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 #else
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO); // TODO use stack with changed pixels
+		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO); // Threshold whole image, this is much slower for bigger images
 #endif
 		if (depth_found > 0) {
-			if (first_point) {
+			if (first_point) { // First two points are marked with value 254 (means temporary, will be deleted) (So segment between them is also marked with 254)
 				sum += place_next_point_at(skeleton, new_point.pt, 254, line, used_pixels);
 				first_point--;
-				if (!first_point) {
+				if (!first_point) { // Second point is marked with 255 (means final, will never be unmarked)
 					v_line empty;
 					place_next_point_at(skeleton, new_point.pt, 255, empty, used_pixels);
 				}
 			}
 			else
-				sum += place_next_point_at(skeleton, new_point.pt, 255, line, used_pixels);
+				sum += place_next_point_at(skeleton, new_point.pt, 255, line, used_pixels); // Third and others are marked with 255 (final)
 		}
 		else {
-			break;
+			break; // No new point, end of a line
 		}
 		last_placed = new_point;
 	}
 	if (sum == 0) {
-		vectorizer_debug("trace_part: no new pixel used, program is doomed\n");//TODO
+		vectorizer_debug("trace_part: no new pixel used, program is doomed\n"); // TODO doomed -> cursed
 	}
 }
 
-int interactive(int state, int key) {
+int interactive(int state, int key) { // Process key press and decide what to do
 	int ret = state;
 	switch (key) {
 		case 0:
 		case 0xFFFF:
 		case -1:
-			break;
+			break; // Nothing
 		case 'q':
 		case 'Q':
-		case 27:
-			ret = 0;
+		case 27: // Esc
+			ret = 0; // Quit program
 			break;
 		case 'r':
 		case 'R':
-			ret = 1;
+			ret = 1; // Rerun from step 1
 			break;
 		case '\n':
-			ret++;
+			ret++; // Next vectorization step
 			break;
 		case 'h':
 		case 'H':
@@ -836,30 +858,30 @@ int interactive(int state, int key) {
 			fprintf(stderr, "Help:\n");
 			fprintf(stderr, "\tr\tRerun vectorization from begining\n");
 			fprintf(stderr, "\tq, Esc\tQuit\n");
-			fprintf(stderr, "\th\tHelp\n");
+			fprintf(stderr, "\th\tHelp\n"); //TODO return
 			break;
 	}
 	return ret;
 }
 
-volatile int state;
+volatile int state; // State of vectorizer, remembers in which step we are
 
-void step1_changed(int, void*) {
+void step1_changed(int, void*) { // Parameter in step 1 changed, rerun
 	global_params.step1.adaptive_threshold_size |= 1;
 	if (global_params.step1.adaptive_threshold_size < 3)
 		global_params.step1.adaptive_threshold_size = 3;
-	state = 2;
+	state = 2; // first step
 }
 
-void step2_changed(int, void*) {
+void step2_changed(int, void*) { // Parameter in step 2 changed, rerun from this state
 	if (state >= 4)
-		state = 4;
+		state = 4; // second step
 }
 
-v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color).
+v_image custom::vectorize(const pnm_image &original) { // Original should be PPM image (color)
 	Mat orig (original.height, original.width, CV_8UC(3));
 	if (global_params.input.custom_input_name.empty()) {
-		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures.
+		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures
 			for (int i = 0; i<original.width; i++) {
 				orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
 				orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
@@ -868,49 +890,50 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 		}
 	}
 	else {
+		// Configuration tell us to read image from file directly by OpenCV
 		orig = imread(global_params.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
-	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255));
-	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255));
+	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255)); //TODO delete
+	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255)); // Create boarders around image, replicate pixels
 
-	Mat grayscale (orig.rows, orig.cols, CV_8UC(1));
-	Mat binary (orig.rows, orig.cols, CV_8UC(1));
+	Mat grayscale (orig.rows, orig.cols, CV_8UC(1)); // Grayscale original
+	Mat binary (orig.rows, orig.cols, CV_8UC(1)); // Thresholded image
 
 	tmea::timer threshold_timer;
-	Mat skeleton;
-	Mat distance;
-	int iteration;
+	Mat skeleton; // Skeleton calculated in first step
+	Mat distance; // Distance map calculated in first step
+	int iteration; // Count of iterations in skeletonization step
 	tmea::timer skeletonization_timer;
-	Mat distance_show;
-	Mat skeleton_show;
-	v_image vect = v_image(orig.cols, orig.rows);
-	Mat used_pixels;
+	Mat distance_show; // Images normalized for displaying
+	Mat skeleton_show; // Images normalized for displaying
+	v_image vect = v_image(orig.cols, orig.rows); // Vector output
+	Mat used_pixels; // Pixels used by tracing
 	tmea::timer tracing_timer;
 
 	state = 2;
 	int max_image_size = (orig.cols+orig.rows)*2;
-	while (state) {
+	while (state) { // state 0 = end
 		switch (state) {
-			case 2:
+			case 2: // First step
 				if (global_params.interactive) {
-					vectorize_imshow("Original", orig); // Show original color image.
+					vectorize_imshow("Original", orig); // Show original color image
 					if (global_params.interactive == 2)
 						createTrackbar("Zoom out", "Original", &global_params.zoom_level, 10000, step1_changed);
-					vectorize_waitKey(global_params.interactive-1);
+					vectorize_waitKey(global_params.interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 				}
 				cvtColor(orig, grayscale, CV_RGB2GRAY);
 				if (global_params.step1.invert_input)
-					subtract(Scalar(255,255,255), grayscale, grayscale);
+					subtract(Scalar(255,255,255), grayscale, grayscale); // Invert input
 				if (global_params.interactive) {
-					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image.
+					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image
 					if (global_params.interactive == 2)
 						createTrackbar("Invert input", "Grayscale", &global_params.step1.invert_input, 1, step1_changed);
 					vectorize_waitKey(global_params.interactive-1);
 				}
 				binary = grayscale.clone();
 				threshold_timer.start();
-					step1_threshold(binary, global_params.step1);
+					step1_threshold(binary, global_params.step1); // First step -- thresholding
 				threshold_timer.stop();
 				if (global_params.interactive) {
 					vectorize_imshow("Threshold", binary); // Show after thresholding
@@ -923,22 +946,22 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 				}
 				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
 				if (global_params.interactive == 2)
-					state++;
+					state++; // ... and wait in odd state for Enter
 				else
-					state+=2;
+					state+=2; // ... continue with next step
 				break;
 			case 4:
 				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(binary, skeleton, distance, iteration, global_params.step2);
+					step2_skeletonization(binary, skeleton, distance, iteration, global_params.step2); // Second step -- skeletonization
 				skeletonization_timer.stop();
 				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
 				if (global_params.interactive) {
 					//show distance
 					distance_show = distance.clone();
-					normalize(distance_show, iteration-1);
+					normalize(distance_show, iteration-1); // Normalize image before displaying
 					vectorize_imshow("Distance", distance_show);
 					vectorize_waitKey(global_params.interactive-1);
 
@@ -951,20 +974,20 @@ v_image custom::vectorize(const pnm_image &original) { // Original should be PPM
 					vectorize_waitKey(global_params.interactive-1);
 				}
 				if (global_params.interactive == 2)
-					state++;
+					state++; // ... and wait in odd state for Enter
 				else
-					state+=2;
+					state+=2; // ... continue with next step
 				break;
 			case 6:
 				used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				tracing_timer.start();
-					step3_tracing(orig, skeleton, distance, used_pixels, vect, global_params.step3);
+					step3_tracing(orig, skeleton, distance, used_pixels, vect, global_params.step3); // Third step -- tracing
 				tracing_timer.stop();
 				fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
 				if (global_params.interactive == 2)
-					state++;
+					state++; // ... and wait in odd state for Enter
 				else
-					state+=2;
+					state+=2; // .. and quit
 				break;
 			case 8:
 				state = 0;
