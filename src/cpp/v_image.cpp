@@ -415,6 +415,7 @@ void v_line::auto_smooth() { // Forget all control points (except unused - first
 }
 
 v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d) { // Calculate intersection of line AB with line CD. A and C are absolute coordinates. B is relative to A, D is relative to C
+	// Geometry background is described in a documentation
 	/*
 	// Alternative version with unpleasant singularity
 	c -= a;
@@ -426,16 +427,18 @@ v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d) { // Calculate intersection of li
 	return a;
 	*/
 	c -= a;
-	v_pt c_proj = b*(c.x*b.x + c.y*b.y);
-	v_pt d_proj = b*(d.x*b.x + d.y*b.y);
-	p cl = distance(c_proj, c);
-	p dl = distance(d_proj, d);
-	d *= cl/dl;
-	v_pt control = d + c;
-	v_pt proj = b*(control.x*b.x + control.y*b.y);
-	if (distance(proj, control) > epsilon) // TODO opravit
+	b /= b.len(); // Change length to 1 unit
+	v_pt c_proj = b*(c.x*b.x + c.y*b.y); // Project C to direction b
+	v_pt d_proj = b*(d.x*b.x + d.y*b.y); // Project D to direction b
+	p cl = distance(c_proj, c); // Distance of c from line AB
+	p dl = distance(d_proj, d); // Distance of d from line AB
+	d *= cl/dl; // Scale d to make it in same distance as c (from line AB)
+	v_pt intersection = d + c; // Calculate position of intersection
+	v_pt proj = b*(intersection.x*b.x + intersection.y*b.y);
+	if (distance(proj, intersection) > epsilon)
+		// Vector d is leading away from line AB. Intersection is placed at c - d
 		d *= -1;
-	return d+c+a;
+	return d+c+a; // Absolute position of intersection
 }
 
 }; // namespace
