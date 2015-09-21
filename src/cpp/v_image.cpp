@@ -126,14 +126,14 @@ void group_line(std::list<v_line> &list, const v_line &line) { // Convert one li
 		list.front().set_group(group_normal);
 }
 
-void rot(v_pt &pt, int sign) { // rotate vector by +- 90 degrees (sign == 1: rotate right; sign == -1: rotate left)
+void v_line::rot(v_pt &pt, int sign) { // rotate vector by +- 90 degrees (sign == 1: rotate right; sign == -1: rotate left)
 	p x = pt.x;
 	p y = pt.y;
 	pt.x = y * sign;
 	pt.y = -x * sign;
 }
 
-void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign) { // Calculate position of new points when shifting point to boundary. Input: context + iterator to current point on line, sign (shift up +1 / down -1); Output: list of new point(s) (one or two)
+void v_line::shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign) { // Calculate position of new points when shifting point to boundary. Input: context + iterator to current point on line, sign (shift up +1 / down -1); Output: list of new point(s) (one or two)
 	v_point pt = *pts;
 	if (distance(pt.control_prev, pt.main) < epsilon) { // Previous control point not set
 		if (pts != context.begin()) {
@@ -233,7 +233,7 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 	}
 }
 
-p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) { // Measure error between upper bound (uc), lower bound (lc) and line defined by point cc and width
+p v_line::calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) { // Measure error between upper bound (uc), lower bound (lc) and line defined by point cc and width
 	fprintf(stderr, "calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
 	//u.x = lc.control_next.x - uc.control_prev.x
 	//u.y = lc.control_next.y - uc.control_prev.y

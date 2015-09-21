@@ -171,6 +171,13 @@ public:
 private:
 	v_line_type type_; // Line type
 	v_line_group group_ = group_normal;
+
+	/*
+	 * Helper functions for convert_to_outline
+	 */
+	static void rot(v_pt &pt, int sign);
+	static void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign);
+	static p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc);
 };
 
 class v_image { // Vector image
