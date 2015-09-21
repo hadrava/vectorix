@@ -23,15 +23,15 @@ int main(int argc, char **argv) { // ./main [configuration]
 	/*
 	 * Load parameters
 	 */
-	params parameters = default_params(); // Set default parameters
+	params parameters; // Set default parameters
 	if (argc == 1) {
 		fprintf(stderr, "Reading parameters from standard input...\n");
-		load_params(stdin, parameters);
+		parameters.load_params(stdin);
 	}
 	else {
 		fprintf(stderr, "Reading parameters from file...\n");
 		//FILE *input = fopen(argv[1], "r");
-		load_params(argv[1], parameters);
+		parameters.load_params(argv[1]);
 		//fclose(input);
 	}
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	else if (parameters.input.pnm_input_name.empty()) {
 		fprintf(stderr, "No PNM input file speficied.\n");
 		if (!parameters.save_parameters_name.empty()) { // We should write config file (useful for creating empty config)
-			save_params(parameters.save_parameters_name, parameters);
+			parameters.save_params(parameters.save_parameters_name);
 		}
 		return 1; // No input file, halting
 	}
@@ -132,7 +132,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 * Save parameters
 	 */
 	if (!parameters.save_parameters_name.empty()) {
-		save_params(parameters.save_parameters_name, parameters);
+		parameters.save_params(parameters.save_parameters_name);
 	}
 	return 0;
 }

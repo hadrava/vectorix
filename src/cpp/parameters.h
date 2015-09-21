@@ -67,7 +67,8 @@ typedef struct { // Exporting params
 	int show_opencv_rendered_window;
 } output_params;
 
-typedef struct { // All parameters
+class params { // All parameters
+public:
 	input_params input;
 	int vectorization_method; // 0-custom, 1-potrace, 2-stupid
 	int interactive; // 0-no, 1-window, 2-infinity
@@ -79,13 +80,20 @@ typedef struct { // All parameters
 	int save_parameters_append;
 	std::string save_parameters_name;
 	int zoom_level;
-} params;
 
-params default_params(); // Default parameters
-int load_params(FILE *fd, params &parameters); // Read from filedescriptor
-int save_params(FILE *fd, const params &parameters); // Write to filedescriptor
-int load_params(const std::string filename, params &parameters); // Load parameters from file given by name
-int save_params(const std::string filename, params &parameters); // Save parameters to file given by name
+	params();
+	int load_params(FILE *fd); // Read from filedescriptor
+	int load_params(const std::string filename); // Load parameters from file given by name
+	int save_params(FILE *fd) const; // Write to filedescriptor
+	int save_params(const std::string filename) const; // Save parameters to file given by name
+private:
+	static int load_var(const char *name, const char *value, const char *my_name, int &data); // Load integer
+	static int load_var(const char *name, const char *value, const char *my_name, p &data); // Load p type (float)
+	static int load_var(const char *name, const char *value, const char *my_name, std::string &data); // Load string
+	static void save_var(FILE *fd, const char *name, int data); // Save integer
+	static void save_var(FILE *fd, const char *name, p data); // Save p type (float)
+	static void save_var(FILE *fd, const char *name, const std::string &data); // Save string
+};
 
 }; // namespace
 
