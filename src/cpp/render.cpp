@@ -21,10 +21,10 @@ void renderer::render_error(const char *format, ...) { // Errors are writen to s
 }
 
 void renderer::bezier_render(pnm_image &bitmap, const v_line &line) { // Render one path made of bezier curves (or straight line)
-	if (bitmap.type != PNM_BINARY_PGM) //TODO{
+	if (bitmap.type != PNM_BINARY_PGM) {
 		render_error("Error: Image type %i not supported.\n", bitmap.type);
-		//TODO return;
-	//TODO}
+		return;
+	}
 	auto two = line.segment.cbegin();
 	auto one = two;
 	if (two != line.segment.cend())
