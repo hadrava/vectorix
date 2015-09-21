@@ -44,12 +44,19 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if ((parameters.vectorization_method == 0) && (!parameters.input.custom_input_name.empty())) { // Load input by OpenCV
 		fprintf(stderr, "File will be loaded by OpenCV.\n");
 	}
-	else if (parameters.input.pnm_input_name.empty() && (parameters.vectorization_method != 0)) {
+	else if (parameters.input.pnm_input_name.empty()) {
 		fprintf(stderr, "No PNM input file speficied.\n");
+		if (!parameters.save_parameters_name.empty()) { // We should write config file (useful for creating empty config)
+			save_params(parameters.save_parameters_name, parameters);
+		}
 		return 1; // No input file, halting
 	}
 	else {
 		FILE *input = fopen(parameters.input.pnm_input_name.c_str(), "r"); // Load input from PNM image
+		if (!input) {
+			fprintf(stderr, "Failed to read input image.\n");
+			return 1;
+		}
 		input_image.read(input); // Read from file.
 		fclose(input);
 	}
