@@ -600,7 +600,7 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 	fit[-1] = fit[par.angle_steps-1]; // Make "borders" to array
 	fit[par.angle_steps] = fit[0];
 
-	float *sortedfit = new float[par.angle_steps]; // Array of local maximas // TODO delete
+	float *sortedfit = new float[par.angle_steps]; // Array of local maximas
 	int sortedfiti = 0;
 	for (int dir = 0; dir < par.angle_steps; dir++) {
 		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) { // Look if direction is local maximum
@@ -634,6 +634,7 @@ void find_best_variant_straight(const Mat &color_input, const Mat &skeleton, con
 		out.width = apxat(distance, out.main)*2;
 		match.push_back(match_variant(out)); // Add to possible variants // TODO koeficient
 	}
+	delete []sortedfit;
 }
 
 int count = 100; // TODO proč je to sakra globální?, zbavit se toho
@@ -779,7 +780,7 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 		last_placed = new_point;
 	}
 	if (sum == 0) {
-		vectorizer_debug("trace_part: no new pixel used, program is doomed\n"); // TODO doomed -> cursed
+		vectorizer_debug("trace_part: no new pixel used, program is cursed\n");
 	}
 }
 
@@ -806,9 +807,10 @@ int interactive(int state, int key) { // Process key press and decide what to do
 		case 'H':
 		default:
 			fprintf(stderr, "Help:\n");
+			fprintf(stderr, "\tEnter\tContinue with next step\n");
 			fprintf(stderr, "\tr\tRerun vectorization from begining\n");
 			fprintf(stderr, "\tq, Esc\tQuit\n");
-			fprintf(stderr, "\th\tHelp\n"); //TODO return
+			fprintf(stderr, "\th\tHelp\n");
 			break;
 	}
 	return ret;
@@ -851,7 +853,6 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 		orig = imread(parameters.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
-	//copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255,255,255)); //TODO delete
 	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255)); // Create boarders around image, replicate pixels
 
 	Mat grayscale (orig.rows, orig.cols, CV_8UC(1)); // Grayscale original
