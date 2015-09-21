@@ -785,9 +785,9 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 
 int interactive(int state, int key) { // Process key press and decide what to do
 	int ret = state;
-	switch (key) {
+	switch (key & 0xFF) {
 		case 0:
-		case 0xFFFF:
+		case 0xFF:
 		case -1:
 			break; // Nothing
 		case 'q':
