@@ -53,6 +53,7 @@ params default_params() { // Default parameters
 	par.step1.threshold_type = 0;
 	par.step1.threshold = 127;
 	par.step1.adaptive_threshold_size = 7;
+	par.step1.save_threshold_name = "";
 	par.step2.type = 0;
 	par.step2.show_window = 1;
 	par.step2.save_peeled_name = "out/skeletonization_%03d.png";
@@ -60,9 +61,15 @@ params default_params() { // Default parameters
 	par.step2.save_distance_name = "out/distance.png";
 	par.step2.save_skeleton_normalized_name = "out/skeleton_norm.png";
 	par.step2.save_distance_normalized_name = "out/distance_norm.png";
+	//par.step2. = ;
 	par.step3.depth_auto_choose = 1; // error allowed (optimization)
 	par.step3.max_dfs_depth = 1; // take first, no dfs allowed
 	par.step3.nearby_limit = 10;
+	par.step3.min_nearby_straight = 0;
+	par.step3.size_nearby_smooth = 3;
+	par.step3.nearby_control_smooth = 5;
+	par.step3.max_angle_search_smooth = 0.8;
+	par.step3.smoothness = 0.5;
 	par.step3.nearby_limit_gauss = 2;
 	par.step3.distance_coef = 2;
 	par.step3.gauss_precision = 0.001;
@@ -81,7 +88,9 @@ params default_params() { // Default parameters
 	par.output.svg_force_opacity = 0;
 	par.output.svg_force_width = 0;
 	par.output.false_colors = 0;
+	par.output.show_opencv_rendered_window = 0;
 	//par.output. = "";
+	par.vectorization_method = 0;
 	par.interactive = 2;
 	par.zoom_level = 0;
 	par.save_parameters_append = 0;
