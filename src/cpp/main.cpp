@@ -57,7 +57,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 			fprintf(stderr, "Failed to read input image.\n");
 			return 1;
 		}
-		input_image.read(input); // Read from file.
+		input_image.read(input); // Read from file
 		fclose(input);
 	}
 
