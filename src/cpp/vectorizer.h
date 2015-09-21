@@ -10,8 +10,7 @@
 namespace vect {
 
 class generic_vectorizer {
-//protected: TODO
-public:
+protected:
 	static void vectorizer_error(const char *format, ...); // Simple printf-like functions
 	static void vectorizer_debug(const char *format, ...);
 };
