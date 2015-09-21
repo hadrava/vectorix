@@ -37,13 +37,7 @@ void export_ps::ps_write_footer(FILE *fd, const v_image &image) {
 
 void export_ps::write_line(FILE *fd, const v_line &line) {
 	auto segment = line.segment.cbegin();
-	if ((line.get_group() == group_normal) || (line.get_group() == group_first)) {
-		fprintf(fd, "%f %f moveto\n", segment->main.x, height - segment->main.y); // y coordinate has to be transformed
-	}
-	else if ((line.get_group() == group_continue) || (line.get_group() == group_last)) {
-		fprintf(fd, "%f %f moveto\n", segment->main.x, height - segment->main.y);
-	}
-	//TODO proč?
+	fprintf(fd, "%f %f moveto\n", segment->main.x, height - segment->main.y); // y coordinate has to be transformed
 
 	v_pt cn = segment->control_next;
 	int count = 1;
