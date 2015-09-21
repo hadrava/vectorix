@@ -166,10 +166,8 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 	p dprev = distance(pt.control_prev, pt.main);
 	p dnext = distance(pt.control_next, pt.main);
 	v_pt prev, next; // Vectors from main point to previous / next point on line
-	prev.x = (pt.control_prev.x - pt.main.x) / dprev; // Make it unit //TODO vektorově
-	prev.y = (pt.control_prev.y - pt.main.y) / dprev;
-	next.x = (pt.control_next.x - pt.main.x) / dnext;
-	next.y = (pt.control_next.y - pt.main.y) / dnext;
+	prev = (pt.control_prev - pt.main) / dprev; // Make it unit
+	next = (pt.control_next - pt.main) / dnext;
 
 	v_pt prot = prev;
 	v_pt nrot = next;
@@ -179,8 +177,7 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 	// If sign is positive, theese line are directing down (prev is to left, next is to right)
 
 	v_pt shift;
-	shift.x = prot.x + nrot.x; //TODO vektorově
-	shift.y = prot.y + nrot.y;
+	shift = prot + nrot;
 
 	if ((prot.x * next.x + prot.y * next.y) >= -epsilon) {
 		// angle is straight, obtuse , right or acute (<= 180 deg)
@@ -194,8 +191,7 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 		out.main.y += shift.y;
 
 		if (pts != context.begin()) { // We are not the first point
-			out.control_prev.x += shift.x; // TODO vektorově
-			out.control_prev.y += shift.y; // Move control point as well
+			out.control_prev += shift; // Move control point as well
 		}
 		else {
 			// Begining of line
@@ -204,14 +200,10 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 		}
 		auto tmp = pts;
 		++tmp;
-		if (tmp != context.end()) {
-			out.control_next.x += shift.x; // Shift also next control point
-			out.control_next.y += shift.y; //TODO vektorově
-		}
-		else {
-			out.control_next.x = out.main.x + next.x*out.width*2/3; // Make round end of line
-			out.control_next.y = out.main.y + next.y*out.width*2/3; //TODO vektorově
-		}
+		if (tmp != context.end())
+			out.control_next += shift; // Shift also next control point
+		else
+			out.control_next = out.main + next*out.width*2/3; // Make round end of line
 		out.width = 1;
 
 		output.push_back(out);
@@ -219,30 +211,21 @@ void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, 
 	else {
 		// Reflex angle (> 180 deg)
 		// Convert to two points
-		p lshift = std::sqrt(shift.x*shift.x + shift.y*shift.y); // TODO len
-		shift.x /= lshift; // TODO vektorově
-		shift.y /= lshift; // Make shift vector unit
+		shift /= shift.len(); // Make shift vector unit
 		// Next two are for correct calculating of control points before two new points
 		p want = 1 - (prot.x*shift.x + prot.y*shift.y); // Wanted sagitta (height of circular segment) (for width 1px)
 		p curr = -prev.x*shift.x - prev.y*shift.y; // Height gained by placint control point in 1px distance from main point
 
 		v_point out1 = *pts;
-		// TODO vektorově
-		out1.main.x += prot.x * out1.width/2; // Just move main point perpendicular to direction
-		out1.main.y += prot.y * out1.width/2;
-		out1.control_prev.x += prot.x * out1.width/2; // Just move previous control point perpendicular to direction
-		out1.control_prev.y += prot.y * out1.width/2;
-		out1.control_next.x = out1.main.x - prev.x*out1.width*2/3*want/curr;// Scale direction to prev correctly to create round continuation
-		out1.control_next.y = out1.main.y - prev.y*out1.width*2/3*want/curr;//TODO
+		out1.main += prot * out1.width/2; // Just move main point perpendicular to direction
+		out1.control_prev += prot * out1.width/2; // Just move previous control point perpendicular to direction
+		out1.control_next = out1.main - prev*out1.width*2/3*want/curr; // Scale direction to prev correctly to create round continuation
 		out1.width = 1;
 
 		v_point out2 = *pts;
-		out2.main.x += nrot.x * out2.width/2; // Just move main point perpendicular to direction
-		out2.main.y += nrot.y * out2.width/2;
-		out2.control_prev.x = out2.main.x - next.x*out2.width*2/3*want/curr;// Scale direction to prev correctly to create round continuation
-		out2.control_prev.y = out2.main.y - next.y*out2.width*2/3*want/curr;//TODO
-		out2.control_next.x += nrot.x * out2.width/2; // Just move next control point perpendicular to direction
-		out2.control_next.y += nrot.y * out2.width/2;
+		out2.main += nrot * out2.width/2; // Just move main point perpendicular to direction
+		out2.control_prev = out2.main - next*out2.width*2/3*want/curr;// Scale direction to prev correctly to create round continuation
+		out2.control_next += nrot * out2.width/2; // Just move next control point perpendicular to direction
 		out2.width = 1;
 
 		output.push_back(out1);
@@ -255,8 +238,7 @@ p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) { // 
 	//u.x = lc.control_next.x - uc.control_prev.x
 	//u.y = lc.control_next.y - uc.control_prev.y
 	v_pt c = cc.control_next - cc.control_prev; // Tangent to line
-	p len = std::sqrt(c.x*c.x + c.y*c.y); // TODO len
-	c /= len; // Make unit length
+	c /= c.len(); // Make unit length
 	rot(c, 1); // Rotate right 90 deg (perpendicular to line)
 	//l.x = lc.control_next.x - lc.control_prev.x
 	//l.y = lc.control_next.y - lc.control_prev.y
@@ -419,16 +401,16 @@ void v_line::auto_smooth() { // Forget all control points (except unused - first
 			continue;
 		v_pt vecp = prev->main - pt->main; // Direction to previous
 		v_pt vecn = next->main - pt->main; // Direction to next
-		p pl = std::sqrt(vecp.x*vecp.x + vecp.y*vecp.y); //TODO len
-		p nl = std::sqrt(vecn.x*vecn.x + vecn.y*vecn.y);
+		p pl = vecp.len();
+		p nl = vecn.len();
 		if ((pl <= epsilon) || (nl <= epsilon)) // Current point is corner -> do not make it smooth
 			continue;
 		vecp /= pl; // Make direction unit vector
 		vecn /= nl;
 		v_pt control = vecn - vecp; // Direction for next control point
-		p cl = std::sqrt(control.x*control.x + control.y*control.y); //TODO len -> normalize
-		pt->control_prev = pt->main - ((control/cl) * pl/3); // Place control point to 1/3 distance of next main point
-		pt->control_next = pt->main + ((control/cl) * nl/3);
+		control /= control.len(); // Normalize
+		pt->control_prev = pt->main - (control * pl/3); // Place control point to 1/3 distance of next main point
+		pt->control_next = pt->main + (control * nl/3);
 	}
 }
 
