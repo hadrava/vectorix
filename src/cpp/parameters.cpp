@@ -55,7 +55,7 @@ params::params() { // Default parameters
 	step1.save_threshold_name = "";
 	//step1. = ;
 	step2.type = 0;
-	step2.show_window = 1;
+	step2.show_window = 0;
 	step2.save_peeled_name = "out/skeletonization_%03d.png";
 	step2.save_skeleton_name = "out/skeleton.png";
 	step2.save_distance_name = "out/distance.png";
@@ -77,7 +77,7 @@ params::params() { // Default parameters
 	step3.angular_precision = 0.001;
 	//step3. = ;
 	opencv_render.render_max_distance = 1;
-	output.export_type = 3;
+	output.export_type = 0;
 	output.output_engine = 0;
 	output.max_contour_error = 0.5;
 	output.auto_contour_variance = 5;

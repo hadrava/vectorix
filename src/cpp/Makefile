@@ -37,8 +37,11 @@ doc.ps: doc.txt
 doc.pdf: doc.ps
 	ps2pdf $<
 
+dokumentace.pdf: doc.pdf priloha.pdf
+	pdftk $^ cat output $@
+
 clean:
-	rm -f vector ${OBJS} doc.ps doc.pdf
+	rm -f vector ${OBJS} doc.ps doc.pdf dokumentace.pdf
 
 remake: clean all
 
