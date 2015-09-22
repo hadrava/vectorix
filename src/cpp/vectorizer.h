@@ -12,6 +12,7 @@ namespace vect {
 class generic_vectorizer {
 protected:
 	static void vectorizer_error(const char *format, ...); // Simple printf-like functions
+	static void vectorizer_info(const char *format, ...);
 	static void vectorizer_debug(const char *format, ...);
 };
 

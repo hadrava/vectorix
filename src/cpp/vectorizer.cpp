@@ -19,6 +19,13 @@ void generic_vectorizer::vectorizer_error(const char *format, ...) { // Prints v
 	va_end(args);
 }
 
+void generic_vectorizer::vectorizer_info(const char *format, ...) { // Prints vectorizer info message
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+}
+
 #ifdef VECTORIZER_DEBUG
 void generic_vectorizer::vectorizer_debug(const char *format, ...) { // Prints vectorizer debug message (iff VECTORIZER_DEBUG is defined)
 	va_list args;

@@ -3,10 +3,10 @@
 +----------------------------------------+
 
 Program je určen převážně pro testování a ladění vektorizačních algoritmů pro čárovou
-grafiku. Implementován byl jednoducúy algoritmus založený na sledování čar. Pro
-porovnání program podporuje i vektorizaci pomocí nástroje Potrace¹⁾, resp. jeho
-knihovní verze potracelib. Potrace však funguje na jiném principu - nesoustředí se na
-čáry, ale hledá plochy.
+grafiku. Implementován byl algoritmus založený na sledování čar. Pro porovnání
+výsledků program podporuje i vektorizaci pomocí nástroje Potrace¹⁾, resp. jeho
+knihovní verze potracelib. Potrace však funguje na jiném principu - nesoustředí
+se na čáry, ale hledá plochy.
 
 Výstupy obou vektorizačních algoritmů jsou mírně odlišné. V případě Potrace jsou to
 uzavřené oblasti, jejich obvod je složený z beziérových křívek a rovných čar. Oblasti
@@ -63,59 +63,256 @@ vect::v_point
 1) Peter Selinger, Potrace: http://potrace.sourceforge.net/
 2) Netpbm project: http://netpbm.sourceforge.net/
 3) OpenCV, Open Source Computer Vision: http://opencv.org/
+vect::changed_pix_roi
+	reprezentuje obdélník ve vstupním obrázku. Slouží ke zrychlení programu tím,
+	že omezuje oblast, ve které se nacházejí změněné pixely. Při následné práci
+	s obrázky je pak možné se omezit pouze na malý výřez (ROI - Region Of
+	Interest). S ROI následně umí pracovat jednotlivé funkce knihovny OpenCV.
+
+vect::start_point
+	dvojice sloužící pro rychlejší hledání možných počátečních pixelů v obrázku.
+	Na začátku se naleznou všechny, seřadí podle váhy a následně jen postupně
+	odebírají. Obsahuje:
+		cv:Point pt - bod v obrázku
+		int val     - váha bodu
+
+vect::match_variant
+	odpovídá jednomu bodu hledané čáry (v_point). V průběhu hledání linií program
+	hledá víc alternativ. K tomu se hodí si pamatovat víc informací, než kolik se
+	jich nachází v obyčejném bodu čáry. match_variant se skládá z:
+		pt     - bod na trasované čáře
+		type   - typ bodu, ovlivňuje tím, jakým způsobem lze na něj
+		         navázat (enum variant_type):
+			start - první bod, z něj lze pokračovat libovolným směrem
+			end   - poslední bod, vynucený konec čáry
+			usual - ostatní body, žádné speciální chování
+
+vect::params
+	veškeré parametry, které lze měnit v konfiguračním souboru (+ některé
+	i za běhu).
+
 * Rozdělení do zdrojových souborů *
 
    soubor         |namespace|
 ------------------+---------+---------------------------------------------------------
 config.h          |         | Kompilační nastavení
 pnm_handler       |  ::pnm  | Obrázky ve formátu Netpbm
-v_image           | ::vect  | Vektorové obrázky
+v_image           | ::vect  | Vektorové obrázky, základní geometrie
 export_svg        | ::vect  | Exportování do svg, třída export_svg<editable|grouped>
+export_ps         | ::vect  | Exportování do svg, třída export_ps
 vectorizer        | ::vect  | Obecné vektorizační rozhraní vectorizer<>
 custom_vectorizer | ::vect  | Vlastní vektorizační algoritmus vectorizer<custom>
 potrace_handler   | ::vect  | Vektorizace pomocí Potrace
 render            | ::vect  | Vykreselní z v_image do pnm_image (třída renderer)
+opencv_render     | ::vect  | Vykreselní z v_image do cv::Mat s použitím OpenCV
 time_measurement  | ::tmea  | Měření času potřebného na běh jednotlivých částí
+parameters        | ::vect  | Načítání konfiguračního souboru s parametry
 
 
-Kompilace, závislosti
+* Kompilace, závislosti *
 
-Program vyžaduje nainstalovanou knihovnu OpenCV (testováno s verzí 2.4.9). Knihovnu
-Potracelib automaticky stáhne a zkompiluje příkaz `make' v podadresáři potrace (1.12).
-Poté je možné program přeložit pomocí `make' v hlavním adresáři.
+V ideálním případě stačí zavolat make ve všech adresářích:
+
+cd src/opencv
+make
+cd ../potrace
+make
+cd ../
+make
+
+Program vyžaduje nainstalovanou knihovnu OpenCV (testováno s verzí 2.4.9). Případně je
+možné použít přiložený Makefile v adresáři opencv pro lokální instalaci jiné verze
+(2.4.11 a 3.0.0 -- s oběmi je program také funkční). Pozor, knihovna OpenCV má velmi
+křehký build-system. (Nelze kompilovat v podadresáři s některými znaky, jako je třeba
++; automaticky stahuje další závislosti.)
+
+Podle verze OpenCV se mírně liší její API.
+
+Knihovnu Potracelib automaticky stáhne a zkompiluje příkaz `make' v podadresáři
+potrace (1.12). Poté je možné program přeložit pomocí `make' v hlavním adresáři.
 
 Nastavení v config.h
 
-Dvě nejdůležitější nastavení:
-	TIMER_MEASURE - povolí měření času v mikrosekundách
+Nejdůležitější nastavení:
+	TIMER_MEASURE - povolí měření času v mikrosekundách -- používá <sys/time.h>
 	VECTORIZER_HIGHGUI - zapne pomocné výstupy na obrazovku v vectorizer<custom>
 	                     (nutné OpenCV/highgui a podpora OpenGL).
+	VECTORIZER_USE_ROI - Zapne optimalizaci trasovacího algoritmu s využitím
+	                     Region Of Interest v OpenCV. Doporučeno nechat zapnuté.
+	VECTORIZER_STARTING_POINTS - Zapne optimalizaci trasovacího algoritmu
+	                     předpočítáním všech počátečních bodů. Doporučeno nechat
+	                     zapnuté.
+	VECTORIZER_DEBUG - Ladící hlášky z vektorizovacího algoritmu.
+	OUTLINE_DEBUG - Ladící hlášky převodu čáry na obvod.
+	DEBUG - Pár běhových kontrol správnosti dat. Doporučeno nechat vypnuté.
 
 
-Spuštění
+* Spuštění *
 
-Program bere až tři parametry, vstupní soubor s bitmapou ve formátu libovolného pnm
-(s výjimkou binárního PBM), výstupní soubor svg, a výstupní bitmapu s vyrenderovaným
-výstupem vektorizování.
+Program přijímá jeden parametr s názvem konfiguračního souboru. Pokud žádný nedostane,
+čte konfiguraci ze standardního vstupu.
 
-./vector [input.pnm [output.svg [output.pnm]]]
+./vector [config.txt]
 
-Pří menším počtu parametrů zapisuje na standardní výstup / čte ze standardního vstupu.
+V defaultní konfiguraci je konfigurace uložena do souboru .vector.config. Pro
+začátek je možné zavolat program
 
+./vector < /dev/null
 
-
-
-
-
+A následně konfiguraci upravit dle valstních potřeb.
 
 
+* Konfigurační soubor *
+
+Konfigurace umožňuje nastavit různé parametry programu. Syntaxe je velmi
+jednoduchá, na každém řádku je název parametru, mezera a jeho hodnota. Pokud
+řádek začíná na #, je považován za komentář. Pokud je jeden parametr
+v konfiguraci specifikován vícekrát, použije se pouze poslední výskyt.
+
+Jednotlivé položky jsou popsány v konfiguračním souboru. Zde uvedeme ty
+nejdůležitější:
+
+# Vstupní obrázek ve formátu pnm
+file_pnm_input vstupni_obrazek.ppm
+
+# Vstupní obrázek v libovolném formátu podporovaným OpenCV
+file_input obrazek.jpg
+# Tento způsob načítání vstupu funguje pouze s vlastním vektorizérem.
+
+# Vektorizační nástroj: 0: Vlastní, 1: Potrace, 2: Pevně zadrátovaný ladící výstup
+vectorization_method 0
+
+# V případě vlastního vektorizace lze zapnout interaktivní (grafický) režim:
+# 0: bez grafiky, 1: zobrazení oken s mezivýsledky, 2: možnost ladění některých
+# parametrů posuvníky
+interactive 2
+
+# Výstupní formát: 0: SVG, 1: PS
+output_engine 0
+
+# Název výstupního souboru
+file_vector_output vystup.svg
+
+# V případě svg lze přilinkovat na pozadí bitmapový obrázek.
+# Nejvhodnější je jej specifikovat absolutní cestou.
+svg_underlay_image /tmp/kostra.png
+# Spolu s vynucením průhlednosti čar (0 = vypnuto)
+svg_force_opacity 0.700000
+# a vynucením pevné šiřky čar (0 = vypnuto)
+svg_force_width 1.000000
+# je možné lépe porovnávat výsledky trasování se vstupním obrázkem /
+# mezistupněm při vektorizaci.
+
+# Například si můžeme na dané místo uložit morfologickou kostru.
+file_skeleton_norm /tmp/kostra.png
+
+# Název souboru, do kterého se má konfigurace ukládat při konci programu.
+# Prázdný soubor znamená nic neukládat.
+file_parameters .konfigurak
+
+# 1/0 podle toho, zda se má připisovat na konec konfiguračního souboru.
+parameters_append 1
 
 
+* Další parametry, týkající se vlastního vektorizátoru *
+
+### První fáze -- prahování
+# Invertování vstupu: 0: bIlé čáry, 1: černé čáry na vstupu
+invert_colors 1
+
+# Způsob prahování 0: Otsův algoritmus, 1: Pevná hodnota
+# 2,3: Adaptivní práh (2 - gaussovské okolí, 3 průměr)
+threshold_type 3
+
+# Hodnota prahu (threshold_type = 1-3)
+threshold 94
+
+# Velikost okolí pro adaptivní práh (liché číslo > 3)
+adaptive_threshold_size 45
+
+# Soubor, do kterého se má mezivýsledek uložit
+file_threshold_output prahovane.png
 
 
+### Druhá fáze -- hledání kostry
+# Metoda: 0: diamond-square, 1: square, 2: diamond
+# 3: dokonalý kruh (nejpřesnější, ale pozor: pomalé!)
+type 0
+
+# Zobrazit postupnw jednotlivé kroky v okně (1/0)
+# Vhodné pro pochopení algoritmu na hledání morfologické kostry
+show_window_steps 0
+
+# Jednotlivé kroky lze uložit do souboru. Řetězec %03d bude nahrazen číslem iterace.
+files_steps_output kroky/kostra_%03d.png
+
+# Výsledek je možné uložit do souborů
+# skeleton - kostra, distance - vzdálenostní mapa od okrajů objektů
+# norm - normalizace rozsahu barev od černé po bílou
+file_skeleton kostra.png
+file_distance vzdalenosti.png
+file_skeleton_norm kostra_normalizovana.png
+file_distance_norm vzdalenosti_normalizovane.png
 
 
+### Třetí fáze -- trasování
+# Tyto parametry nemají jednozančný dopad na výsledek, jejich ladění je mírně
+# obtížnější.
+# Při jaké odchylce od optima přijmeme daný směr.
+depth_auto_choose 1.000000
 
+# Počet tipovaných bodů
+max_dfs_depth 1
+
+# Okolí, ve kterém hledáme další bod (v pixelech)
+nearby_limit 6.000000
+
+# Okolí, ve kterém počítáme odchylku od bitmapového obrázku (v pixelech)
+nearby_limit_gauss 2
+
+# Koeficient gaussovského rozložení pro počítání váhy pixelu
+distance_coef 2.000000
+
+# Požadovaná přesnost při fitování v ploše
+gauss_precision 0.001000
+
+# Počet směrů, ve kterých se zkoušíme pohybovat
+angle_steps 20
+
+# Požadovaná přesnost při fitování úhlu
+angular_precision 0.001000
+
+
+### Export
+# Přesnost vykreslování pomocí opencv_render
+render_max_distance 1.000000
+
+# Jak se chovat k čarám s proměnlivou šířkou:
+# 0: zprůměrovat šířku
+# 1: rozdělit čáru na jednotlivé segmenty
+# 2: převést na obvod
+# 3: automaticky rozpoznávat
+export_type 0
+
+# Přesnost převodu na obvod
+max_contour_error 0.500000
+# Povolený rozptyl šířky. Vyšší čísla, často průměrujeme šířku
+# Nižší čísla, častěji přecádíme na obvod (záporná -> vždy)
+auto_contour_variance 5.000000
+
+# Obarvení jednotlivých úseček saturovanými barvami z barevného kruhu (postupně
+# přičítaný zadaný úhelve stupních).
+false_colors 101.000000
+
+# Vyrenderování a uložení obrázku pomocí render
+file_pnm_output 
+# Vyrenderování a uložení obrázku pomocí opencv_render
+file_opencv_output 
+
+# Zmenšení obrázků v interaktivním režimu
+# 0: zobrazení 1:1
+# větší číslo: zmenšení obrázku před zobrazením na obrazovce
+zoom_level 0
 
 
 
@@ -130,6 +327,8 @@ Pří menším počtu parametrů zapisuje na standardní výstup / čte ze stand
 
 Původní specifikace
 -------------------
+
+(znaky +++ označují text upřesňujíci splnění / odchylky od specifikace)
 
 * Prvotní motivace *
 
@@ -154,23 +353,59 @@ nastavovat samostatně.
 * Základní součásti (v závorce možná rozšíření do budoucna) *
 
 •Ovládání z příkazové řádky
++++ Vzhledem k většímu množství nastavitelných prvků je veškeré ovládání soustředěno
+    do konfiguračního souboru. Ve většině případů však stačí výchozí nastavení.
+
 •Práce s bitmapou - načítání a ukládání pnm (png, jpeg, …)
++++ Načítání a ukládání pnm implementováno vlastní knihovnou (pnm_handler). Ostatní
+    formáty jsou podporovány za pomocí OpenCV.
+
 •Práce s vektorovými formáty - ukládání svg (ps)
++++ Výstup je ve výchozím nastavení ukládán do svg. Je možné přepínat mezi více
+    způsoby exportů čar s proměnlivou šířkou. Export do ps byl také implementován,
+    avšak vzhledem k menší strukturovanosti dat v tomto formátu nepodporuje shlukování
+    čar. Opticky jsou však výstupy ekvivalentní.
+
 •Vektorizace - vlastní hloupý vektorizér, použití potrace (autotrace)
++++ Vlastní vektorizér se nachází v souboru custom_vectorizer, wrapper kolem knihovny
+    potrace v potrace_handler. Napojení na autotrace nebylo implementováno.
+
 •Renderování - pro zpětné ohodnocování jednotlivých nastavení/vektorizérů
++++ Renderování vektorizovaných čar je možné provádět hned dvěma způsoby. Jednak bez
+    použití externí knihovny (zdrojový soubor render) a jednak s pomocí knihovny
+    OpenCV (soubor opencv_render). První renderer však nepodporuje vykreslování
+    vyplňěných oblastí (pouze čar). Druhý zvládá obojí.
+
 •Optimalizování
   •Ohodnocení výstupu dle rozdílu od originálu a hladkosti
   •Fitování parametrů + výběr vektorizovacího algoritmu
+  +++ Původně bylo zamýšleno, že po zvektorizování dojde k ohodnocení celého obrázku
+      a případně k ladění parametrů. V současnosti se o toto snaží přímo vektorizační
+      algoritmus sám. V průběhu pracuje s více variantami a vybírá tu, která nejlépe
+      odpovídá původní předloze.
+
+      V tomto bodě je ještě jisté místo pro zlepšení. Kombinací průběžného fitování
+      v rámci vektorizace a zhodnocení celého výstupu by zřejmě bylo možné dosáhnout
+      kvalitnějších výsledků.
+
 •(Drobná ladění zbývajících parametrů, ukládání/načítání přednastavených parametrů, …)
-•(Postprocessing vektorového obrázku - vyhlazování, zjednodušóvání, převod plocha <-> křivka, …)
++++ Některé parametry je možné ladit v interaktivním režimu programu, ostatní je nutné
+    zadávat přímo do konfiguračního souboru.
+
+•(Postprocessing vektorového obrázku - vyhlazování, zjednodušování, převod plocha <-> křivka, …)
++++ Ze seznamu výše byl implementován jednoduchý převodník z křivky na plochu (obrys
+    křivky). Výstup je mírně nepřesný v případě čar s dramaticky se měnící šířkou
+    a čar s velmi ostrými úhly. Na běžných obrázcích se však takové čáry příliš často
+    nevyskytují.
+
 •(Grafické rozhraní)
++++ Částečně implementováno: je možné zapnout interaktivní režim, ve kterém lze
+    několik parametrů ladit za běhu programu (a následně vše uložit opět do
+    konfiguračního souboru).
 
 * Plánované použití knihoven: *
 
 OpenCV pro vlastní vektorizér
 potrace, autotrace
 NLopt pro fitování
-
-
-
-
++++ Používá se pouze OpenCV a potrace, autotrace ani NLopt využity nejsou.

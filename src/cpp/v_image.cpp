@@ -2,6 +2,8 @@
 #include "parameters.h"
 #include <list>
 #include <cmath>
+#include <cstdlib>
+#include <cstdarg>
 #include <cstdio>
 
 namespace vect {
@@ -233,8 +235,19 @@ void v_line::shift(const std::list<v_point> &context, std::list<v_point>::iterat
 	}
 }
 
+#ifdef OUTLINE_DEBUG
+void v_line::v_line_debug(const char *format, ...) {
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+}
+#else
+void v_line::v_line_debug(const char *format, ...) {}; // Does nothing
+#endif
+
 p v_line::calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) { // Measure error between upper bound (uc), lower bound (lc) and line defined by point cc and width
-	fprintf(stderr, "calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
+	v_line_debug("calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
 	//u.x = lc.control_next.x - uc.control_prev.x
 	//u.y = lc.control_next.y - uc.control_prev.y
 	v_pt c = cc.control_next - cc.control_prev; // Tangent to line
@@ -250,8 +263,8 @@ p v_line::calculate_error(const v_point &uc, const v_point &cc, const v_point &l
 	p error_l = c.x*l.x + c.y*l.y + cc.width/2;
 	error_u *= error_u; // Square error
 	error_l *= error_l;
-	fprintf(stderr, "calculate_error: u: %f, %f; cc: %f, %f; l: %f, %f\n", u.x, u.y, cc.main.x, cc.main.y, l.x, l.y);
-	fprintf(stderr, "calculate_error: distance %f, %f\n", error_u, error_l);
+	v_line_debug("calculate_error: u: %f, %f; cc: %f, %f; l: %f, %f\n", u.x, u.y, cc.main.x, cc.main.y, l.x, l.y);
+	v_line_debug("calculate_error: distance %f, %f\n", error_u, error_l);
 	return error_u + error_l;
 }
 

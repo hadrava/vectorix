@@ -169,6 +169,7 @@ public:
 	v_line_group get_group() const { return group_; };
 	std::list<v_point> segment; // Line data
 private:
+	static void v_line_debug(const char *format, ...);
 	v_line_type type_; // Line type
 	v_line_group group_ = group_normal;
 

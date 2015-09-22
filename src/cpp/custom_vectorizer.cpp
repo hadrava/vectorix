@@ -779,11 +779,11 @@ int custom::interactive(int state, int key) { // Process key press and decide wh
 		case 'h':
 		case 'H':
 		default:
-			fprintf(stderr, "Help:\n");
-			fprintf(stderr, "\tEnter\tContinue with next step\n");
-			fprintf(stderr, "\tr\tRerun vectorization from begining\n");
-			fprintf(stderr, "\tq, Esc\tQuit\n");
-			fprintf(stderr, "\th\tHelp\n");
+			vectorizer_info("Help:\n");
+			vectorizer_info("\tEnter\tContinue with next step\n");
+			vectorizer_info("\tr\tRerun vectorization from begining\n");
+			vectorizer_info("\tq, Esc\tQuit\n");
+			vectorizer_info("\th\tHelp\n");
 			break;
 	}
 	return ret;
@@ -872,7 +872,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 					}
 					vectorize_waitKey(parameters.interactive-1);
 				}
-				fprintf(stderr, "Threshold time: %fs\n", threshold_timer.read()/1e6);
+				vectorizer_info("Threshold time: %fs\n", threshold_timer.read()/1e6);
 				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
@@ -884,7 +884,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 				skeletonization_timer.start();
 					step2_skeletonization(binary, skeleton, distance, iteration, parameters); // Second step -- skeletonization
 				skeletonization_timer.stop();
-				fprintf(stderr, "Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
+				vectorizer_info("Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
 
 				if (parameters.interactive) {
 					//show distance
@@ -911,7 +911,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 				tracing_timer.start();
 					step3_tracing(orig, skeleton, distance, used_pixels, vect, parameters.step3); // Third step -- tracing
 				tracing_timer.stop();
-				fprintf(stderr, "Tracing time: %fs\n", tracing_timer.read()/1e6);
+				vectorizer_info("Tracing time: %fs\n", tracing_timer.read()/1e6);
 				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
