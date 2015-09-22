@@ -4,7 +4,7 @@ make clean
 make dokumentace.pdf
 rm -rf vector.tar.gz
 
-mkdir -p "$dir/vector/"
+mkdir -p "$dir/vector/vector/"
 cp \
 config.h \
 custom_vectorizer.cpp \
@@ -32,19 +32,19 @@ v_image.h \
 Makefile \
 doc.txt \
 dokumentace.pdf \
-"$dir/vector/"
+"$dir/vector/vector/"
 
-mkdir -p "$dir/vector/opencv/"
+mkdir -p "$dir/vector/vector/opencv/"
 cp \
 opencv/Makefile \
-"$dir/vector/opencv/"
+"$dir/vector/vector/opencv/"
 
-mkdir -p "$dir/vector/potrace/"
+mkdir -p "$dir/vector/vector/potrace/"
 cp \
 potrace/Makefile \
 potrace/README.txt \
-"$dir/vector/potrace/"
+"$dir/vector/vector/potrace/"
 
-tar -czf vector.tar.gz -C "$dir" ./
+tar -czf vector.tar.gz -C "$dir/vector" ./
 
 rm -rf "$dir"
