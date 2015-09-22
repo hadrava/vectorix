@@ -53,6 +53,7 @@ params::params() { // Default parameters
 	step1.threshold = 127;
 	step1.adaptive_threshold_size = 7;
 	step1.save_threshold_name = "";
+	//step1. = ;
 	step2.type = 0;
 	step2.show_window = 1;
 	step2.save_peeled_name = "out/skeletonization_%03d.png";
@@ -92,8 +93,8 @@ params::params() { // Default parameters
 	vectorization_method = 0;
 	interactive = 2;
 	zoom_level = 0;
-	save_parameters_append = 0;
-	save_parameters_name = ".vector.params";
+	save_parameters_append = 1;
+	save_parameters_name = "vector.conf";
 }
 
 int params::load_params(FILE *fd) { // Load parameters from file
