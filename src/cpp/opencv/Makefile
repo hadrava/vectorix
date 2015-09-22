@@ -14,7 +14,7 @@ lib-%: build-%
 build-%: opencv-%
 	rm -rf $@
 	mkdir $@
-	cd $@; cmake ../$<
+	cd $@; cmake -D BUILD_FAT_JAVA_LIB=OFF -D WITH_CUDA=OFF -D WITH_IPP=OFF ../$<
 	cd $@; make
 
 opencv-%: opencv-%.zip
