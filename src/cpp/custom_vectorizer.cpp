@@ -88,11 +88,12 @@ uchar &custom::safeat(const Mat &image, int i, int j) { // Safely acces image da
 }
 
 #ifdef VECTORIZER_HIGHGUI
-void custom::vectorize_imshow(const std::string& winname, InputArray mat, const params &parameters) { // Display image in highgui named window.
+// For compatibility issues we use const cv::Mat instead of cv::InputArray.
+void custom::vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters) { // Display image in highgui named window.
 	if (parameters.zoom_level) { // (Down)scale image before displaying
 		Mat scaled_mat;
-		int w = mat.cols() / (log10(parameters.zoom_level+10));
-		int h = mat.rows() / (log10(parameters.zoom_level+10));
+		int w = mat.cols / (log10(parameters.zoom_level+10));
+		int h = mat.rows / (log10(parameters.zoom_level+10));
 		resize(mat, scaled_mat, Size(w, h));
 		return imshow(winname, scaled_mat);
 	}
@@ -106,7 +107,7 @@ void custom::vectorize_destroyWindow(const std::string& winname) { // Close wind
 	return destroyWindow(winname);
 }
 #else
-void custom::vectorize_imshow(const std::string& winname, InputArray mat, const params &parameters) { // Highgui disabled, do nothing
+void custom::vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters) { // Highgui disabled, do nothing
 	return;
 }
 int custom::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'

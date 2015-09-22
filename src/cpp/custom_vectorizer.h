@@ -48,7 +48,7 @@ class custom : generic_vectorizer {
 public:
 	static vect::v_image vectorize(const pnm::pnm_image &image, params &parameters); // Run vectorization
 private:
-	static void vectorize_imshow(const std::string& winname, cv::InputArray mat, const params &parameters); // Display image in window iff graphics (highgui) is enabled
+	static void vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters); // Display image in window iff graphics (highgui) is enabled
 	static int vectorize_waitKey(int delay = 0); // wait for key iff graphics (highgui) is enabled
 	static void vectorize_destroyWindow(const std::string& winname); // Destroy named window
 	static void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration); // Add pixels from `bw' to `out'. Something like image `or', but with more information
