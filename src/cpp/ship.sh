@@ -1,7 +1,8 @@
 #!/bin/bash
 dir=`mktemp -d`
 make clean
-make doc.pdf
+make dokumentace.pdf
+rm -rf vector.tar.gz
 
 mkdir -p "$dir/vector/"
 cp \
@@ -30,7 +31,7 @@ v_image.cpp \
 v_image.h \
 Makefile \
 doc.txt \
-doc.pdf \
+dokumentace.pdf \
 "$dir/vector/"
 
 mkdir -p "$dir/vector/opencv/"
