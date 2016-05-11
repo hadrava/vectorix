@@ -14,8 +14,11 @@ namespace vect {
 class geom {
 	public:
 		static p distance(const v_pt &a, const v_pt &b); // Distance of two points
-		static p maximal_bezier_length(const v_point &a, const v_point &b); // Maximal length of given segment
-		static void chop_in_half(v_point &one, v_point &two, v_point &newpoint); // Chop line segment in half, warning: has to change control points of one and two
+		// True length lies somewhere between theese two:
+		static p bezier_maximal_length(const v_point &a, const v_point &b); // Maximal length of given segment
+		static p bezier_minimal_length(const v_point &a, const v_point &b); // Minimal length of given segment
+		static void bezier_chop_in_half(v_point &one, v_point &two, v_point &newpoint); // Chop line segment in half, warning: has to change control points of one and two
+		static void bezier_chop_in_t(v_point &one, v_point &two, v_point &newpoint, p t, bool constant = false); // Chop line segment in time t, warning: has to change control points of one and two
 		static void chop_line(v_line &line, p max_distance = 1); // Chop line segments, so the maximal length of one segment is max_distance
 		static void group_line(std::list<v_line> &list, const v_line &line); // Split line to group of separate one-segment lines
 

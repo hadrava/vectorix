@@ -90,19 +90,19 @@ public:
 		first *= mul;
 		return first;
 	};
-private:
-	static p from_hue(p hue) { // Helper function for from_color()
-		if (hue < 60)
-			return hue/60*255;
-		else if (hue < 180)
-			return 255;
-		else if (hue < 240)
-			return (240 - hue)/60*255;
-		else
-			return 0;
-	}
 public:
 	static v_co from_color(p hue) { // Set color based on given hue
+		auto from_hue = [](p hue) {
+			if (hue < 60)
+				return hue/60*255;
+			else if (hue < 180)
+				return (p) (255);
+			else if (hue < 240)
+				return (p) ((240 - hue)/60*255);
+			else
+				return (p) (0);
+		};
+
 		v_co ret;
 		hue = fmodf(hue, 360);
 		ret.val[1] = from_hue(hue);

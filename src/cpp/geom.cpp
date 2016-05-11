@@ -17,29 +17,34 @@ p geom::distance(const v_pt &a, const v_pt &b) { // Calculate distance between t
 	return std::sqrt(x*x + y*y);
 }
 
-p geom::maximal_bezier_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
+p geom::bezier_maximal_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
 
-void geom::chop_in_half(v_point &one, v_point &two, v_point &newpoint) { // Add newpoint in the middle of bezier segment
-	newpoint.control_prev.x = ((one.control_next.x + one.main.x)/2 + (one.control_next.x + two.control_prev.x)/2)/2;
-	newpoint.control_prev.y = ((one.control_next.y + one.main.y)/2 + (one.control_next.y + two.control_prev.y)/2)/2;
+p geom::bezier_minimal_length(const v_point &a, const v_point &b) { // Calculate minimal length of given segment
+	return distance(a.main, b.main);
+}
 
-	newpoint.control_next.x = ((two.control_prev.x + two.main.x)/2 + (one.control_next.x + two.control_prev.x)/2)/2;
-	newpoint.control_next.y = ((two.control_prev.y + two.main.y)/2 + (one.control_next.y + two.control_prev.y)/2)/2;
+void geom::bezier_chop_in_half(v_point &one, v_point &two, v_point &newpoint) { // Add newpoint in the middle of bezier segment
+	bezier_chop_in_t(one, two, newpoint, 0.5);
+}
 
-	newpoint.main.x = (newpoint.control_prev.x  + newpoint.control_next.x)/2;
-	newpoint.main.y = (newpoint.control_prev.y  + newpoint.control_next.y)/2;
+void geom::bezier_chop_in_t(v_point &one, v_point &two, v_point &newpoint, p t, bool constant) {
+	p s = 1 - t;
+	newpoint.control_prev = (one.main*s + one.control_next*t)*s + (one.control_next*s + two.control_prev*t)*t;
 
-	newpoint.opacity = (one.opacity + two.opacity)/2;
-	newpoint.width = (one.width + two.width)/2;
-	newpoint.color = one.color;
-	newpoint.color += two.color;
-	newpoint.color /= 2;
-	one.control_next.x = (one.control_next.x + one.main.x)/2;
-	one.control_next.y = (one.control_next.y + one.main.y)/2;
-	two.control_prev.x = (two.control_prev.x + two.main.x)/2;
-	two.control_prev.y = (two.control_prev.y + two.main.y)/2;
+	newpoint.control_next = (one.control_next*s + two.control_prev*t)*s + (two.control_prev*s + two.main*t)*t;
+
+	newpoint.main = newpoint.control_prev*s  + newpoint.control_next*t;
+
+	newpoint.opacity = one.opacity*s + two.opacity*t;
+	newpoint.width = one.width*s + two.width*t;
+	newpoint.color = one.color*s + two.color*t;
+
+	if (!constant) {
+		one.control_next = one.main*s + one.control_next*t;
+		two.control_prev = two.control_prev*s + two.main*t;
+	}
 }
 
 void geom::chop_line(v_line &line, p max_distance) { // Chop whole line, so the maximal length of segment is max_distance
@@ -48,9 +53,9 @@ void geom::chop_line(v_line &line, p max_distance) { // Chop whole line, so the 
 	if (two != line.segment.end())
 		++two;
 	while (two != line.segment.end()) {
-		while (maximal_bezier_length(*one, *two) > max_distance) {
+		while (bezier_maximal_length(*one, *two) > max_distance) {
 			v_point newpoint;
-			chop_in_half(*one, *two, newpoint);
+			bezier_chop_in_half(*one, *two, newpoint);
 			line.segment.insert(two, newpoint);
 			--two;
 		}

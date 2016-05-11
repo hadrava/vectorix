@@ -194,9 +194,9 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 			v_point uc;
 			v_point cc;
 			v_point lc;
-			geom::chop_in_half(u1, u2, uc); // Chop upper segment in half
-			geom::chop_in_half(c1, c2, cc); // Chop center segment in half
-			geom::chop_in_half(l1, l2, lc); // Chop lower segment in half
+			geom::bezier_chop_in_half(u1, u2, uc); // Chop upper segment in half
+			geom::bezier_chop_in_half(c1, c2, cc); // Chop center segment in half
+			geom::bezier_chop_in_half(l1, l2, lc); // Chop lower segment in half
 
 			error = calculate_error(uc, cc, lc); // Calculate error in the middle of current segment
 			if (error > max_error) {
