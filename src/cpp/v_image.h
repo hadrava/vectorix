@@ -163,22 +163,13 @@ public:
 	void reverse(); // Reverse line
 	bool empty() const { return segment.empty(); };
 	void set_group(v_line_group group) { group_ = group; };
-	void convert_to_outline(p max_error = 1); // Convert from stroke to fill (calculate line outline)
-	void auto_smooth(); // Make line auto-smooth (drop all control points and calculate them from begining
 	void set_color(v_co color);
 	v_line_group get_group() const { return group_; };
 	std::list<v_point> segment; // Line data
 private:
-	static void v_line_debug(const char *format, ...);
 	v_line_type type_; // Line type
 	v_line_group group_ = group_normal;
 
-	/*
-	 * Helper functions for convert_to_outline
-	 */
-	static void rot(v_pt &pt, int sign);
-	static void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign);
-	static p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc);
 };
 
 class v_image { // Vector image
@@ -187,7 +178,6 @@ public:
 	v_image(): width(0), height(0) {};
 	void clean(); // Drop all lines
 	void add_line(v_line _line); // Add given line to image
-	void convert_to_variable_width(int type, output_params &par); // Convert variable-width lines:
 	// type == 0: do nothing
 	// type == 1: chop segments to separate lines and group them
 	// type == 2: convert to outline
@@ -199,18 +189,6 @@ public:
 	p height;
 	std::list<v_line> line; // Image data
 };
-
-p distance(const v_pt &a, const v_pt &b); // Distance of two points
-p maximal_bezier_length(const v_point &a, const v_point &b); // Maximal length of given segment
-inline p v_pt_distance(const v_pt &a, const v_pt &b) {
-	distance(a, b);
-}
-void chop_in_half(v_point &one, v_point &two, v_point &newpoint); // Chop line segment in half, warning: has to change control points of one and two
-void chop_line(v_line &line, p max_distance = 1); // Chop line segments, so the maximal length of one segment is max_distance
-void group_line(std::list<v_line> &list, const v_line &line); // Split line to group of separate one-segment lines
-
-v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d); // Calculate intersection between line A-B and C-D; points A and C are absolute, B is relative to A and D to C
-
 
 }; // namespace
 #endif

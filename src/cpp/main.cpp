@@ -1,6 +1,7 @@
 #include <iostream>
 #include <utility>
 #include <cstdio>
+#include "geom.h"
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "export_svg.h"
@@ -118,7 +119,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if (!parameters.output.vector_output_name.empty())
 		svg_output = fopen(parameters.output.vector_output_name.c_str(), "w");
 	if (svg_output) {
-		vector.convert_to_variable_width(parameters.output.export_type, parameters.output); // Convert image before writing
+		geom::convert_to_variable_width(vector, parameters.output.export_type, parameters.output); // Convert image before writing
 		if (parameters.output.output_engine == 0) {
 			export_svg<editable>::write(svg_output, vector, parameters); // Write svg
 		}

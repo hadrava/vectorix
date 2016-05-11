@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include "v_image.h"
+#include "geom.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
 #include "custom_vectorizer.h"
@@ -405,7 +406,7 @@ int custom::place_next_point_at(const Mat &skeleton, v_point &new_point, int cur
 		v_line new_segment;
 		new_segment.segment.push_back(op);
 		new_segment.segment.push_back(np);
-		chop_line(new_segment, 0.1); // make control point in every pixel along new_segment
+		geom::chop_line(new_segment, 0.1); // make control point in every pixel along new_segment
 		for (v_point point: new_segment.segment) {
 			sum += inc_pix_to_near(skeleton, current_depth, point.main, used_pixels);
 		}
@@ -474,7 +475,7 @@ float custom::calculate_line_fitness(const Mat &skeleton, const Mat &distance, c
 		for (int j = corner1.x; j < corner2.x; j++) { // for every pixel in rectangle
 			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) { // pixel is in skeleton and was not used
 				v_pt pixel(j+0.5f, i+0.5f);
-				if ((v_pt_distance(center, pixel) > max_dist) || (v_pt_distance(center, pixel) < std::fabs(min_dist)))
+				if ((geom::distance(center, pixel) > max_dist) || (geom::distance(center, pixel) < std::fabs(min_dist)))
 					continue; // Pixel is too far from center
 				pixel -= center;
 				v_pt en = end - center;
@@ -515,7 +516,7 @@ float custom::find_best_line(const Mat &skeleton, const Mat &distance, const Mat
 void custom::find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) { // Returns best placement of first point
 	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1); // Find best point in neighborhood of `last'
 	match.emplace_back(match_variant(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2)));
-	if (v_pt_distance(best, last) > epsilon) { // We find something else than `last'
+	if (geom::distance(best, last) > epsilon) { // We find something else than `last'
 		match.emplace_back(match_variant(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2))); // Return also second variant with exactly `last'
 	}
 }
@@ -528,9 +529,9 @@ void custom::find_best_variant_smooth(const Mat &color_input, const Mat &skeleto
 	if (hist == line.segment.begin())
 		return; // We have no history, cannot use this predictor
 	hist--;
-	if (v_pt_distance(hist->main, prediction) > epsilon) // Last two points are not identical
+	if (geom::distance(hist->main, prediction) > epsilon) // Last two points are not identical
 		prediction = hist->main;
-	if (v_pt_distance(line.segment.back().main, line.segment.back().control_prev) > epsilon) // Last point has previous control point
+	if (geom::distance(line.segment.back().main, line.segment.back().control_prev) > epsilon) // Last point has previous control point
 		prediction = line.segment.back().control_prev; // Use it for prediction
 
 	// Move prediction forward (flip around last main point)
@@ -559,12 +560,12 @@ void custom::find_best_variant_smooth(const Mat &color_input, const Mat &skeleto
 		else {
 			// It looks more like corner
 			vectorizer_debug("Corner detected\n");
-			pred.main = intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main); // Find best position for corner
+			pred.main = geom::intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main); // Find best position for corner
 			float len = (pred.main - line.segment.back().main).len();
 			pred.control_next = line.segment.back().main + prediction*(len/3);
 			pred.control_prev = line.segment.back().main + prediction*(len*2/3); // Recalculate control points
 
-			if (v_pt_distance(line.segment.back().main - prediction*len, pred.main) > len) { // Corner is between last point and new point
+			if (geom::distance(line.segment.back().main - prediction*len, pred.main) > len) { // Corner is between last point and new point
 				if (apxat(skeleton, pred.main)) { // Use this point
 					pred.color = apxat_co(color_input, pred.main);
 					pred.width = apxat(distance, pred.main)*2;
@@ -642,7 +643,7 @@ void custom::filter_best_variant_end(const Mat &color_input, const Mat &skeleton
 	v_line new_segment;
 	new_segment.segment.push_back(op);
 	new_segment.segment.push_back(np);
-	chop_line(new_segment, 0.1); // Chop segment, so we can read it more precisely than with 1px step
+	geom::chop_line(new_segment, 0.1); // Chop segment, so we can read it more precisely than with 1px step
 	v_pt good = op.main;
 	for (v_point point: new_segment.segment) {
 		if (!apxat(skeleton, point.main)) {

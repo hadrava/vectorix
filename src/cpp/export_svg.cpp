@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "v_image.h"
+#include "geom.h"
 #include "export_svg.h"
 
 // SVG export
@@ -70,7 +71,7 @@ void grouped::write_line(FILE *fd, const v_line &line, const params &parameters)
 		return editable::write_line(fd, line, parameters); // Filled regions should be rendered in `editable' way.
 
 	std::list<v_line> to_render;
-	group_line(to_render, line); // Convert every lint to list of grouped one-segment lines
+	geom::group_line(to_render, line); // Convert every line to list of grouped one-segment lines
 
 	for (v_line a: to_render) {
 		editable::write_line(fd, a, parameters); // Write every segment with editable exporter

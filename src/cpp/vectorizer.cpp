@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdio>
+#include "offset.h"
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
@@ -42,7 +43,7 @@ v_image stupid::vectorize(const pnm_image &image, const params &parameters) { //
 	auto line = v_line(0, 0, image.width/2, image.height/2, image.width, image.height/2, image.width, image.height);
 	line.add_point(v_pt(image.width, image.height/2*3), v_pt(-image.width/2, -image.height/2), v_pt(0,0), v_co(255, 0, 0), 20);
 	out.add_line(line);
-	line.convert_to_outline(parameters.output.max_contour_error); // Convert from stroke to fill
+	offset::convert_to_outline(line, parameters.output.max_contour_error); // Convert from stroke to fill
 	out.add_line(line); // Add same line in the other type as well
 
 	line = v_line();
@@ -53,7 +54,7 @@ v_image stupid::vectorize(const pnm_image &image, const params &parameters) { //
 	line.add_point(v_pt(80, 40), v_co(255, 0, 0), 2);
 	line.add_point(v_pt(110, 70), v_co(255, 0, 0), 30); // This line has variable width
 	out.add_line(line);
-	line.convert_to_outline(parameters.output.max_contour_error); // Convert from stroke to fill
+	offset::convert_to_outline(line, parameters.output.max_contour_error); // Convert from stroke to fill
 	out.add_line(line); // Add same line in the other type as well
 	return out;
 }

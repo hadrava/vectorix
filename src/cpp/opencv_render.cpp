@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include "v_image.h"
+#include "geom.h"
 #include "opencv_render.h"
 #include "parameters.h"
 #include <cmath>
@@ -16,7 +17,7 @@ void opencv_render(const v_image &vector, Mat &output, const params &parameters)
 	lout = Scalar(255, 255, 255);
 	for (v_line line: vector.line) { // For every line in image...
 		v_line l = line; // Copy line
-		chop_line(l, parameters.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
+		geom::chop_line(l, parameters.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
 
 		if (l.get_type() == stroke) { // Normal lines
 			auto two = l.segment.cbegin();
