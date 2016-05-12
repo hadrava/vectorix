@@ -150,20 +150,119 @@ p offset::calculate_error(const v_point &uc, const v_point &cc, const v_point &l
 	return error_u + error_l;
 }
 
+void offset::one_point_circle(v_line &line) {
+	v_point point = line.segment.front();
+	line.segment.erase(line.segment.begin(), line.segment.end());
+
+	p w = point.width/2;
+	p c = w * 4 / 3 * (sqrt(2) - 1); // = (w - (sqrt(2)/2*w))*4/3*sqrt(2)
+
+	v_point curr = point;
+
+	// Right
+	curr.main = point.main + v_pt(w, 0);
+	curr.control_prev = curr.main + v_pt(0, c);
+	curr.control_next = curr.main + v_pt(0, -c);
+	line.segment.push_back(curr);
+
+	// Up
+	curr.main = point.main + v_pt(0, -w);
+	curr.control_prev = curr.main + v_pt(c, 0);
+	curr.control_next = curr.main + v_pt(-c, 0);
+	line.segment.push_back(curr);
+
+	// Left
+	curr.main = point.main + v_pt(-w, 0);
+	curr.control_prev = curr.main + v_pt(0, -c);
+	curr.control_next = curr.main + v_pt(0, c);
+	line.segment.push_back(curr);
+
+	// Down
+	curr.main = point.main + v_pt(0, w);
+	curr.control_prev = curr.main + v_pt(-c, 0);
+	curr.control_next = curr.main + v_pt(c, 0);
+	line.segment.push_back(curr);
+
+	// Close with bezier curve
+	line.segment.push_back(line.segment.front());
+
+	line.set_type(fill);
+}
+
+v_pt find_tangent(v_pt main, v_pt next, p width, p width_next) {
+	v_pt base = next - main;
+	p dl = 3 * base.len();
+	p dw = width - width_next;
+	p l = width/dw * dl;
+
+	p angle = std::acos(width / l);
+	base /= base.len();
+	base *= width;
+	base = geom::rotate(base, angle);
+
+	base += main;
+	return base;
+}
+
+
+v_line offset::smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two) {
+	--two;
+	v_line line;
+
+	if (geom::distance(one->control_next, one->main) < epsilon) {
+		one->control_next = one->main * 2/3 + two->main / 3;
+	}
+
+	if (geom::distance(two->control_prev, two->main) < epsilon) {
+		two->control_prev = two->main * 2/3 + one->main / 3;
+	}
+
+
+	line.add_point(one->main);
+
+	v_pt base = find_tangent(one->main, one->control_next, one->width, two->width);
+	line.add_point(base);
+
+	base = find_tangent(two->main, two->control_prev, two->width, one->width);
+	line.add_point(base);
+
+	line.add_point(one->control_next, two->control_prev, two->main);
+	//line.set_type(fill);
+
+	return line;
+}
+
 void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
 	if (line.get_type() == fill) // It is already outline
 		return;
-	v_line upper;
-	v_line lower;
+
 	auto two = line.segment.begin(); // Right point of current segment
 	auto one = two; // Left point of current segment
-	if (two != line.segment.end())
-		++two; // Change to second point
-	else {
-		line.set_type(fill); // Line is empty, just change its type
+	if (two == line.segment.end()) { // Only one point
+		one_point_circle(line);
 		return;
 	}
-	// Naming assumes that the line stored in segment is continuing to the right
+
+	++two; // Change to second point
+
+	std::list<v_line> smooth_segments;
+	// Naming assumes that the line stored in segment continues to the left
+	do {
+		// TODO uncomment and implement longer segments: & make it working
+		//while (two != line.segment.end() && two->get_smooth() != corner)
+			//++two;
+		//if (two != line.segment.end())
+			++two;
+
+		smooth_segments.emplace_back(smooth_segment_outline(one, two));
+		one = two;
+		--one;
+	} while (two != line.segment.end());
+
+	// TODO merge segments:
+	std::swap(line, smooth_segments.back());
+	//
+	/*
 	std::list<v_point> up; // Upper boundary of line
 	shift(line.segment, one, up, 1); // Shift start of line up
 	upper.segment.splice(upper.segment.end(), up);
@@ -223,7 +322,7 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 	lower.segment.splice(lower.segment.end(), upper.segment); // Connect everything together -- points on outline are in a counterclockwise order
 	lower.segment.push_back(lower.segment.front());
 	std::swap(lower.segment, line.segment); // Replace centerline with outline
-	line.set_type(fill);
+	*/
 }
 
 

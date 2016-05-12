@@ -44,21 +44,21 @@ v_line::v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3) { // New line wit
 	type_ = stroke;
 }
 
-void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main) { // Add segment to end of a line (control_prev is added to previous point)
+void v_line::add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main) { // Add segment to end of a line (control_prev is added to previous point)
 	segment.back().control_next = _p_control_next;
 	segment.emplace_back(v_point(_control_prev, _main, _main));
 }
 
-void v_line::add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co _color, p _width) { // Add segment with specified color and width
+void v_line::add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main, v_co _color, p _width) { // Add segment with specified color and width
 	segment.back().control_next = _p_control_next;
 	segment.emplace_back(v_point(_control_prev, _main, _main, _color, _width));
 }
 
-void v_line::add_point(v_pt &&_main) { // Add point (straight continuation)
+void v_line::add_point(v_pt _main) { // Add point (straight continuation)
 	segment.emplace_back(v_point(_main, _main, _main));
 }
 
-void v_line::add_point(v_pt &&_main, v_co _color, p _width) { // Add point with color and width
+void v_line::add_point(v_pt _main, v_co _color, p _width) { // Add point with color and width
 	segment.emplace_back(v_point(_main, _main, _main, _color, _width));
 }
 

@@ -15,6 +15,9 @@ class offset {
 public:
 	static void convert_to_outline(v_line &line, p max_error = 1); // Convert from stroke to fill (calculate line outline)
 private:
+	static void one_point_circle(v_line &line); // Line containing one point will be converted to outline
+	static v_line smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two);
+
 	static void offset_debug(const char *format, ...);
 	/*
 	 * Helper functions for convert_to_outline

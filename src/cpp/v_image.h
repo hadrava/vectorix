@@ -161,10 +161,10 @@ class v_line { // One line or area
 public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
 	v_line(): type_(stroke) {};
-	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main);
-	void add_point(v_pt &&_p_control_next, v_pt &&_control_prev, v_pt &&_main, v_co _color, p _width = 1);
-	void add_point(v_pt &&_main);
-	void add_point(v_pt &&_main, v_co _color, p _width = 1);
+	void add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main);
+	void add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main, v_co _color, p _width = 1);
+	void add_point(v_pt _main);
+	void add_point(v_pt _main, v_co _color, p _width = 1);
 	void set_type(v_line_type type) { type_ = type; }; // Change line type (stroke/fill)
 	v_line_type get_type() const { return type_; };
 	void reverse(); // Reverse line

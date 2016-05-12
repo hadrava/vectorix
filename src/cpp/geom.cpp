@@ -17,6 +17,16 @@ p geom::distance(const v_pt &a, const v_pt &b) { // Calculate distance between t
 	return std::sqrt(x*x + y*y);
 }
 
+v_pt geom::rotate(const v_pt &vector, p angle) {
+	v_pt ans;
+	p c = std::cos(angle);
+	p s = std::sin(angle);
+
+	ans.x = vector.x * c - vector.y * s;
+	ans.y = vector.x * s + vector.y * c;
+	return ans;
+}
+
 p geom::bezier_maximal_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
