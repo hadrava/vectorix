@@ -15,6 +15,29 @@ void v_image::clean() { // Remove all lines
 	line.erase(line.begin(), line.end());
 }
 
+v_smooth_type v_point::get_smooth() {
+	v_pt prev = control_prev - main;
+	v_pt next = control_next - main;
+
+	p pl = prev.len();
+	p nl = next.len();
+
+	if ((pl > epsilon) && (nl > epsilon)) {
+		//Normalize:
+		prev /= pl;
+		next /= nl;
+
+		prev -= next; // vector will be zero iff prev and next are heading in opposite direction
+		if (prev.len() <= epsilon) {
+			if ((pl - nl > epsilon) || (nl - pl > epsilon))
+				return smooth;
+			else
+				return symetric;
+		}
+	}
+	return corner;
+}
+
 v_line::v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3) { // New line with control points: main(0), control(1) -- control(2), main(3)
 	segment.emplace_back(v_point(v_pt(x0,y0), v_pt(x0,y0), v_pt(x1,y1)));
 	segment.emplace_back(v_point(v_pt(x2,y2), v_pt(x3,y3), v_pt(x3,y3)));

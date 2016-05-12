@@ -10,6 +10,12 @@
 
 namespace vect {
 
+enum v_smooth_type {
+	corner = 0,
+	smooth = 1,
+	symetric = 2
+};
+
 class v_pt { // Point/vector in 2D
 public:
 	v_pt(p _x = 0, p _y = 0): x(_x), y(_y) {};
@@ -135,6 +141,7 @@ public:
 	p opacity; // Opacity of line in given point
 	p width; // Line width in given point
 	v_co color; // Line color in given point
+	v_smooth_type get_smooth();
 };
 
 enum v_line_type { // Line with given width / outline of area
