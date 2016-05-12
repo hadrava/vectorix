@@ -27,6 +27,17 @@ v_pt geom::rotate(const v_pt &vector, p angle) {
 	return ans;
 }
 
+v_pt geom::rotate_right_angle(const v_pt &vector, int sign) { // 1 == rotate left (in Cartesian c. s.), -1 == rotate right
+	v_pt ans;
+	ans.x = -vector.y * sign;
+	ans.y = vector.x * sign;
+	return ans;
+}
+
+p geom::dot_product(const v_pt &direction, const v_pt &vector) {
+	return direction.x * vector.x + direction.y * vector.y;
+}
+
 p geom::bezier_maximal_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }

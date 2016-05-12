@@ -15,6 +15,8 @@ class geom {
 	public:
 		static p distance(const v_pt &a, const v_pt &b); // Distance of two points
 		static v_pt rotate(const v_pt &vector, p angle);
+		static v_pt rotate_right_angle(const v_pt &vector, int sign);
+		static p dot_product(const v_pt &direction, const v_pt &vector);
 		// True length lies somewhere between theese two:
 		static p bezier_maximal_length(const v_point &a, const v_point &b); // Maximal length of given segment
 		static p bezier_minimal_length(const v_point &a, const v_point &b); // Minimal length of given segment
