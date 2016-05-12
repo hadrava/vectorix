@@ -22,7 +22,7 @@ C_OPENCV_3.0.0 := -I opencv/include-3.0.0
 L_OPENCV=${L_OPENCV_3.0.0}
 C_OPENCV=${C_OPENCV_3.0.0}
 
-OBJS = main.o v_image.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o custom_vectorizer.o opencv_render.o parameters.o export_ps.o geom.o offset.o
+OBJS = main.o v_image.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o custom_vectorizer.o opencv_render.o parameters.o export_ps.o geom.o offset.o least_squares.o
 DEBUG = -ggdb
 
 vector: ${OBJS}

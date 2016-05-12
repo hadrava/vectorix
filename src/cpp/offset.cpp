@@ -2,6 +2,7 @@
 #include "offset.h"
 #include "v_image.h"
 #include "parameters.h"
+#include "least_squares.h"
 #include <list>
 #include <vector>
 #include <cmath>
@@ -256,18 +257,71 @@ void set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt &center
 }
 
 bool optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
-	// TODO rewrite with something better:
-	p scaling_factor = geom::bezier_minimal_length(a, b) / geom::distance(c_main, d_main);
+	// 0, Prepare parametrization:
+	std::vector<p> center_times;
+	std::vector<p> offset_times;
+	std::vector<v_pt> center_pt;
+	int check_point_count = 7;
+	for (int i = 0; i < check_point_count; i++) {
+		center_times.push_back(i / (check_point_count - 1));
+		offset_times.push_back(i / (check_point_count - 1));
+	}
+
+	// 1, Calculate points with tangent offset
+	v_point center_one;
+	center_one.main = c_main;
+	center_one.control_next = c_next;
+	center_one.width = c_width;
+	v_point center_two;
+	center_two.main = d_main;
+	center_two.control_prev = d_prev;
+	center_two.width = d_width;
+	for (int i = 0; i < check_point_count; i++) {
+		v_point middle;
+		geom::bezier_chop_in_t(center_one, center_two, middle, center_times[i], true);
+		v_pt pt = find_tangent(middle.main, middle.control_next, middle.width, d_width, 1.0);
+		center_pt.push_back(pt);
+	}
+
 
 	a.control_next -= a.main;
-	a.control_next *= geom::distance(c_next, c_main) * scaling_factor;
+	b.control_prev -= b.main;
+
+	// 2,
+	least_squares mat(2);
+	for (int i = 0; i < check_point_count; i++) {
+		p t = offset_times[i];
+		p s = 1 - t;
+
+		// Equation (before subtraction):
+		//s*s*s*a.main + 3*s*s*t*a.control_next + 3*s*t*t*b.control_prev + t*t*t*b.main == center_pt[i];
+		//s*s*s*a.main + 3*s*s*t*(a.main + a.control_next) + 3*s*t*t*(b.main + b.control_prev) + t*t*t*b.main == center_pt[i];
+		//s*s*s*a.main + 3*s*s*t*a.main + 3*s*s*t*a.control_next + 3*s*t*t*b.main + 3*s*t*t*b.control_prev + t*t*t*b.main == center_pt[i];
+
+		v_pt c0 = a.control_next*3*s*s*t;
+		v_pt c1 = b.control_prev*3*s*t*t;
+		v_pt c2 = center_pt[i] - a.main*s*s*s - a.main*3*s*s*t - b.main*3*s*t*t - b.main*t*t*t;
+
+		p eqx[] = {c0.x, c1.x, c2.x};
+		mat.add_equation(eqx);
+		p eqy[] = {c0.y, c1.y, c2.y};
+		mat.add_equation(eqy);
+	}
+	mat.evaluate();
+	p error = mat.calc_error();
+
+	a.control_next *= mat[0];
 	a.control_next += a.main;
 
-	b.control_prev -= b.main;
-	b.control_prev *= geom::distance(d_prev, d_main) * scaling_factor;
+	b.control_prev *= mat[0];
 	b.control_prev += b.main;
 
-	return true;
+	// TODO 3,4,
+	//
+	if (error < 1)
+		return true;
+	else
+		return false;
 }
 
 bool offset::smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two, std::vector<v_point> &outline) {
