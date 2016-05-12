@@ -15,7 +15,7 @@ namespace vect {
 
 v_image potrace::vectorize(const pnm_image &original, const params &parameters) { // Vectorize using potrace library
 	pnm_image image = original;
-	image.convert(PNM_BINARY_PBM); // Potrace uses binary images, packed in word -- almost similar to binary PBM
+	image.convert(binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
 
 	potrace_bitmap_t pot_bitmap; // Prepare Potrace data structure with image
 	pot_bitmap.w = image.width;

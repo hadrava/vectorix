@@ -59,7 +59,7 @@ bool pnm_image::read_header(FILE *fd) { // Read image header and clear old data.
 			return false;
 		}
 	}
-	type = ntype - '0'; // Convert type to int
+	type = (pnm_variant_type) (ntype - '0'); // Convert type to int
 	if (data)
 		delete[] data; // Drop old data
 	data = NULL;
@@ -85,11 +85,11 @@ void pnm_image::read(FILE *fd) { // Read image from file
 
 	if (nsize) {
 		char scanf_string[8];
-		if (type == PNM_ASCII_PBM)
+		if (type == ascii_pbm)
 			strcpy(scanf_string, "%1i"); // Sometimes there are no spaces between numbers
-		else if (type <= PNM_ASCII_PPM)
+		else if (type <= ascii_ppm)
 			strcpy(scanf_string, "%i"); // Whitespace between numbers are mandatory
-		else if (type >= PNM_BINARY_PBM)
+		else if (type >= binary_pbm)
 			strcpy(scanf_string, "%c"); // Binary data
 
 		data = new pnm_data_t [nsize]; // Alocate buffer
@@ -113,28 +113,28 @@ void pnm_image::write(FILE *fd) { // Save whole image
 #endif
 	write_header(fd);
 	int nsize = size();
-	if (nsize && (type <= PNM_ASCII_PPM)) { // All ASCII images
+	if (nsize && (type <= ascii_ppm)) { // All ASCII images
 		for (int i = 0; i < nsize; i++)
 			fprintf(fd, "%i ", data[i]); // We are printing spaces in ASCII_PBM images even it is not necesary
 	}
-	if (nsize && (type >= PNM_BINARY_PBM)) { // All binary images
+	if (nsize && (type >= binary_pbm)) { // All binary images
 		for (int i = 0; i < nsize; i++) {
 			fprintf(fd, "%c", data[i]);
 		}
 	}
 }
 
-void pnm_image::convert(int new_type) {
+void pnm_image::convert(pnm_variant_type new_type) {
 	if (type == new_type) // Nothing to convert, we are already there
 		return;
 
 	auto dest = pnm_image(width, height, new_type);
 	int new_size = dest.size();
 
-	int convert_type = (type <= PNM_ASCII_PPM) ? type : type - 3; // Forget about binary/ascii
-	convert_type |= ((dest.type <= PNM_ASCII_PPM) ? dest.type : dest.type - 3) << 4; // lower two bits: original type; upper two bits: destination type
+	int convert_type = (type <= ascii_ppm) ? type : type - 3; // Forget about binary/ascii
+	convert_type |= ((dest.type <= ascii_ppm) ? dest.type : dest.type - 3) << 4; // lower two bits: original type; upper two bits: destination type
 
-	if ((((convert_type&3) == PNM_ASCII_PGM) || (type == PNM_ASCII_PBM)) && (dest.type == PNM_BINARY_PBM)) { // Convert (ascii/binary) grayscale (or ascii bitmap) to binary bitmap image
+	if ((((convert_type&3) == ascii_pgm) || (type == ascii_pbm)) && (dest.type == binary_pbm)) { // Convert (ascii/binary) grayscale (or ascii bitmap) to binary bitmap image
 		for (int r = 0; r < height; r++) {
 			for (int i = 0; i <= (width - 1)/8; i++) {
 				dest.data[r*((width-1)/8+1) + i] = \
@@ -149,7 +149,7 @@ void pnm_image::convert(int new_type) {
 			}
 		}
 	}
-	else if (((convert_type&3) == PNM_ASCII_PPM) && (dest.type == PNM_BINARY_PBM)) { // Convert (ascii/binary) color image to binary bitmap image
+	else if (((convert_type&3) == ascii_ppm) && (dest.type == binary_pbm)) { // Convert (ascii/binary) color image to binary bitmap image
 		for (int r = 0; r < height; r++) {
 			for (int i = 0; i <= (width - 1)/8; i++) {
 				dest.data[r*((width-1)/8+1) + i] = \
@@ -164,43 +164,43 @@ void pnm_image::convert(int new_type) {
 			}
 		}
 	}
-	else if (type == PNM_BINARY_PBM) { // Unpacking of binary PGM images is unimplemented (well, this is realy unusual format)
+	else if (type == binary_pbm) { // Unpacking of binary PGM images is unimplemented (well, this is realy unusual format)
 		pnm_error("Conversion from binary PBM is not implemented.\n");
 		throw std::invalid_argument("Conversion from binary PBM is not implemented.");
 	}
 	else {
 		switch (convert_type) {
-			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PGM: // Same type to same type, only change binary to ascii or vice versa
-			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PPM:
+			case (ascii_pgm << 4) | ascii_pgm: // Same type to same type, only change binary to ascii or vice versa
+			case (ascii_ppm << 4) | ascii_ppm:
 				std::swap(dest.data, data); // Move data, keep format
 				break;
-			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PBM: // Scale up from bitmap to grayscale
+			case (ascii_pgm << 4) | ascii_pbm: // Scale up from bitmap to grayscale
 				for (int i = 0; i < new_size; i++)
 					dest.data[i] = dest.maxvalue * (1-data[i]);
 				break;
-			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PBM: // Scale up from bitmap to color
+			case (ascii_ppm << 4) | ascii_pbm: // Scale up from bitmap to color
 				for (int i = 0; i < new_size; i+=3) {
 					dest.data[i+0] = dest.maxvalue * (1-data[i/3]);
 					dest.data[i+1] = dest.maxvalue * (1-data[i/3]);
 					dest.data[i+2] = dest.maxvalue * (1-data[i/3]);
 				}
 				break;
-			case (PNM_ASCII_PBM << 4) | PNM_ASCII_PGM: // Threshold from grayscale to binary
+			case (ascii_pbm << 4) | ascii_pgm: // Threshold from grayscale to binary
 				for (int i = 0; i < new_size; i++)
 					dest.data[i] = (data[i] >= 128) ? 0 : 1;
 				break;
-			case (PNM_ASCII_PPM << 4) | PNM_ASCII_PGM: // Copy from grayscale to color
+			case (ascii_ppm << 4) | ascii_pgm: // Copy from grayscale to color
 				for (int i = 0; i < new_size; i+=3) {
 					dest.data[i+0] = data[i/3];
 					dest.data[i+1] = data[i/3];
 					dest.data[i+2] = data[i/3];
 				}
 				break;
-			case (PNM_ASCII_PBM << 4) | PNM_ASCII_PPM: // Threshold from color to bitmap
+			case (ascii_pbm << 4) | ascii_ppm: // Threshold from color to bitmap
 				for (int i = 0; i < new_size; i++)
 					dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2] >= 128*3) ? 0 : 1;
 				break;
-			case (PNM_ASCII_PGM << 4) | PNM_ASCII_PPM: // Average from color to grayscale
+			case (ascii_pgm << 4) | ascii_ppm: // Average from color to grayscale
 				for (int i = 0; i < new_size; i++)
 					dest.data[i] = (data[i*3] + data[i*3 + 1] + data[i*3 + 2]) / 3;
 				break;
@@ -224,18 +224,18 @@ void pnm_image::erase_image() {
 int pnm_image::size() { // Calculate size for image storing
 	int size = 0;
 	switch (type) {
-		case PNM_ASCII_PBM: // bitmap (black/white)
+		case ascii_pbm: // bitmap (black/white)
 			size = width * height;
 			break;
-		case PNM_BINARY_PBM: // bitmap (black/white)
+		case binary_pbm: // bitmap (black/white)
 			size = ((width - 1) / 8 + 1) * height; // Binary PBM images has 8 pixels packed in one byte. Bits at the end of each row are unused
 			break;
-		case PNM_ASCII_PGM: // grayscale
-		case PNM_BINARY_PGM: // grayscale
+		case ascii_pgm: // grayscale
+		case binary_pgm: // grayscale
 			size = width * height;
 			break;
-		case PNM_ASCII_PPM: // RGB
-		case PNM_BINARY_PPM: // RGB
+		case ascii_ppm: // RGB
+		case binary_ppm: // RGB
 			size = width * height * 3;
 			break;
 	}
@@ -248,8 +248,8 @@ int pnm_image::size() { // Calculate size for image storing
 int pnm_image::guess_maxvalue() { // Return usual maxvalue for given imagetype
 	int maxvalue = 0;
 	switch (type) {
-		case PNM_ASCII_PBM: // Binary bitmap
-		case PNM_BINARY_PBM:
+		case ascii_pbm: // Binary bitmap
+		case binary_pbm:
 			maxvalue = 1;
 			break;
 		default:
