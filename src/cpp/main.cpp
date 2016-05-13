@@ -85,6 +85,9 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if (parameters.output.false_colors)
 		vector.false_colors(parameters.output.false_colors);
 
+	// TODO show debug lines
+	vector.show_debug_lines();
+
 	/*
 	 * Show and save output using OpenCV
 	 */

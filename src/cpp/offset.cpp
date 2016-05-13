@@ -263,8 +263,8 @@ bool optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c
 	std::vector<v_pt> center_pt;
 	int check_point_count = 7;
 	for (int i = 0; i < check_point_count; i++) {
-		center_times.push_back(i / (check_point_count - 1));
-		offset_times.push_back(i / (check_point_count - 1));
+		center_times.push_back((i + 1.0) / (check_point_count + 1.0));
+		offset_times.push_back((i + 1.0) / (check_point_count + 1.0));
 	}
 
 	// 1, Calculate points with tangent offset
@@ -313,12 +313,18 @@ bool optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c
 	a.control_next *= mat[0];
 	a.control_next += a.main;
 
-	b.control_prev *= mat[0];
+	b.control_prev *= mat[1];
 	b.control_prev += b.main;
 
+	// DEBUG:
+	for (int i = 0; i < check_point_count; i++) {
+		v_point middle;
+		geom::bezier_chop_in_t(a, b, middle, offset_times[i], true);
+		//v_image::add_debug_line(middle.main, center_pt[i]);
+	}
 	// TODO 3,4,
 	//
-	if (error < 1)
+	if (error < 10)
 		return true;
 	else
 		return false;
@@ -417,16 +423,16 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 		}
 		else {
 			v_point middle;
+			--two;
 			geom::bezier_chop_in_half(*one, *two, middle);
 			line.segment.insert(two, middle);
-			--two;
 			--two;
 		}
 	} while (two != line.segment.end());
 
 	// TODO merge segments:
 	v_line a;
-	auto x = smooth_segments.front();
+	auto x = smooth_segments.back();
 	std::copy(x.begin(), x.end(), std::back_inserter(a.segment));
 	std::swap(line, a);
 	line.set_type(fill);

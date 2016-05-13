@@ -89,4 +89,18 @@ void v_image::false_colors(p hue_step) { // Colorize each line with saturated co
 	}
 }
 
+void v_image::add_debug_line(v_pt a, v_pt b) {
+	v_line lin;
+	lin.add_point(a);
+	lin.add_point(b);
+	debug_line.push_back(lin);
+}
+
+void v_image::show_debug_lines() {
+	line.splice(line.end(), debug_line);
+}
+
+std::list<v_line> v_image::debug_line;
+
+
 }; // namespace

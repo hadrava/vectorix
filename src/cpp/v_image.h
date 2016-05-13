@@ -195,6 +195,10 @@ public:
 	p width; // Image dimensions
 	p height;
 	std::list<v_line> line; // Image data
+
+	static void add_debug_line(v_pt a, v_pt b);
+	void show_debug_lines();
+	static std::list<v_line> debug_line;
 };
 
 }; // namespace
