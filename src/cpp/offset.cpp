@@ -256,6 +256,14 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 	v_pt b_p = b_prev - b_main;
 
 	int iteration = 0;
+
+	// 1.5, preacalculate length for step 3
+	p total_length = geom::distance(a_main, points[0]);
+	for (int i = 1; i < points.size(); i++) {
+		total_length += geom::distance(points[i-1], points[i]);
+	}
+	total_length += geom::distance(points.back(), b_main);
+
 	while (true) {
 		// 2, Compute coefficients by least squares
 		least_squares mat(2);
@@ -280,14 +288,29 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 		mat.evaluate();
 		p error = mat.calc_error();
 
-		// TODO 3
 		// 3, Find improved parametrization
-		//
+		v_point a, b;
+		a.main = a_main;
+		a.control_next = a_n * mat[0] + a_main;
+
+		b.main = b_main;
+		b.control_prev = b_p * mat[1] + b_main;
+		for (int i = 0; i < times.size(); i++) {
+			v_point middle;
+			geom::bezier_chop_in_t(a, b, middle, times[i], true);
+
+			v_pt error_vector = points[i] - middle.main;
+			middle.control_next -= middle.main;
+			middle.control_next /= middle.control_next.len();
+
+			times[i] += geom::dot_product(middle.control_next, error_vector) / total_length;
+		}
+
 		// 4
 		iteration++;
 
 		// 5
-		if (error < 10) { //TODO const
+		if (error < 1) { //TODO const
 			a_next = a_n * mat[0] + a_main;
 			b_prev = b_p * mat[1] + b_main;
 
