@@ -56,6 +56,9 @@ public:
 	bool operator==(const v_pt &other) {
 		return ((x == other.x) && (y == other.y));
 	};
+	bool operator!=(const v_pt &other) {
+		return !((x == other.x) && (y == other.y));
+	};
 	p len() const { // get length of vector = distance from pt (0, 0)
 		return std::sqrt(x*x + y*y);
 	}

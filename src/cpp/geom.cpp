@@ -113,6 +113,150 @@ v_pt geom::intersect(v_pt a, v_pt b, v_pt c, v_pt d) { // Calculate intersection
 	return d+c+a; // Absolute position of intersection
 }
 
+bool right_of(const v_pt &center, v_pt heading, v_pt right) {
+	right -= center;
+	heading -= center;
+	return (heading.y * right.x - heading.x * right.y) >= 0;
+}
+
+int four_points_to_hull(v_pt *x) {
+	int mini = 0;
+	v_pt minpt = x[0];
+	for (int i = 1; i < 4; ++i) {
+		if ((x[i].x < minpt.x) || ((x[i].x == minpt.x) && (x[i].y < minpt.y))) {
+			mini = i;
+			minpt = x[i];
+		}
+	}
+	if (mini)
+		std::swap(x[0], x[mini]);
+
+	int minai = 1;
+	int maxai = 1;
+	v_pt tmp = x[1] - x[0];
+	p mina = tmp.y / tmp.x;
+	p maxa = mina;
+	for (int i = 2; i < 4; ++i) {
+		tmp = x[i] - x[0];
+		p angle = tmp.y / tmp.x;
+		if (angle < mina) {
+			mina = angle;
+			minai = i;
+		}
+		if (angle >= maxa) {
+			maxa = angle;
+			maxai = i;
+		}
+	}
+
+	if (minai != 1)
+		std::swap(x[1], x[minai]);
+	if (maxai == 1)
+		maxai = minai;
+
+	int lasti = 2 + 3 - maxai;
+
+	if (right_of(x[2], x[maxai], x[lasti])) {
+		if (maxai == 3)
+			std::swap(x[2], x[3]);
+		return 4;
+	}
+	else {
+		if (maxai == 4)
+			std::swap(x[2], x[3]);
+		return 3;
+	}
+}
+
+bool segment_intersect(const v_pt &a, const v_pt &b, const v_pt &c, const v_pt &d) {
+	if (right_of(a, b, c) == right_of(a, b, d))
+		return false;
+	else if (right_of(c, d, a) == right_of(c, d, b))
+		return false;
+	else
+		return true;
+}
+
+bool bezier_may_intersect(const v_point &a, const v_point &b, const v_point &c, const v_point &d) {
+	v_pt x[4], y[4];
+	x[0] = a.main;
+	x[1] = a.control_next;
+	x[2] = b.control_prev;
+	x[3] = b.main;
+
+	y[0] = c.main;
+	y[1] = c.control_next;
+	y[2] = d.control_prev;
+	y[3] = d.main;
+
+	int xc = four_points_to_hull(x);
+	int yc = four_points_to_hull(y);
+
+	for (int i = 0; i < xc; ++i) {
+		for (int j = 0; j < yc; ++j) {
+			if (segment_intersect(x[i], x[(i+1) % xc], y[j], y[(j+1) % yc]))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+bool geom::bezier_intersection(const v_point &a, const v_point &b, const v_point &c, const v_point &d, p &t1, p &t2) {
+	if (!bezier_may_intersect(a, b, c, d))
+		return false;
+
+	if (bezier_maximal_length(a, b) + bezier_maximal_length(c, d) < 0.001) { // TODO const
+		t1 = 0.5;
+		t2 = 0.5;
+		return true;
+	}
+
+	v_point x[3];
+	v_point y[3];
+	x[0] = a;
+	x[2] = b;
+	bezier_chop_in_half(x[0], x[2], x[1]);
+
+	y[0] = c;
+	y[2] = d;
+	bezier_chop_in_half(y[0], y[2], y[1]);
+
+	p tx, ty;
+	if (bezier_intersection(x[0], x[1], y[1], y[2], tx, ty)) {
+		t1 = tx / 2;
+		t2 = ty / 2 + 0.5;
+		return true;
+	}
+	else if (bezier_intersection(x[0], x[1], y[0], y[1], tx, ty)) {
+		t1 = tx / 2;
+		t2 = ty / 2;
+		return true;
+	}
+	else if (bezier_intersection(x[1], x[2], y[1], y[2], tx, ty)) {
+		t1 = tx / 2 + 0.5;
+		t2 = ty / 2 + 0.5;
+		return true;
+	}
+	else if (bezier_intersection(x[1], x[2], y[0], y[1], tx, ty)) {
+		t1 = tx / 2 + 0.5;
+		t2 = ty / 2;
+		return true;
+	}
+	else
+		return false;
+}
+
+p geom::angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2) {
+	v_pt a = dir2 - center;
+	p angle = a.angle();
+	a = dir1 - center;
+	angle -= a.angle();
+	if (angle < 0)
+		angle += 2*M_PI;
+	return angle;
+}
+
 
 void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert one line to list of lines. Each created line consists of one segment. Created lines are marked as group
 	auto two = line.segment.begin();

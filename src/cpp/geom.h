@@ -27,9 +27,13 @@ class geom {
 
 		static v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d); // Calculate intersection between line A-B and C-D; points A and C are absolute, B is relative to A and D to C
 
+		static bool bezier_intersection(const v_point &a, const v_point &b, const v_point &c, const v_point &d, p &t1, p &t2);
+
 
 		static void convert_to_variable_width(v_image &img, int type, output_params &par); // Convert variable-width lines:
 		static void auto_smooth(v_line &line); // Make line auto-smooth (drop all control points and calculate them from begining
+
+		static p angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2);
 };
 
 

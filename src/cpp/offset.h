@@ -17,7 +17,7 @@ public:
 	static void convert_to_outline(v_line &line, p max_error = 1); // Convert from stroke to fill (calculate line outline)
 private:
 	static void one_point_circle(v_line &line); // Line containing one point will be converted to outline
-	static bool smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two, std::vector<v_point> &outline);
+	static bool segment_outline(v_point &one, v_point &two, std::vector<v_point> &outline);
 
 	static v_pt find_cap_end(v_pt main, v_pt next, p width);
 	static v_pt find_tangent(v_pt main, v_pt next, p width, p width_next, p sign);
