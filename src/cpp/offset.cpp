@@ -13,150 +13,52 @@
 
 namespace vect {
 
-void offset::rot(v_pt &pt, int sign) { // rotate vector by +- 90 degrees (sign == 1: rotate right; sign == -1: rotate left)
-	p x = pt.x;
-	p y = pt.y;
-	pt.x = y * sign;
-	pt.y = -x * sign;
-}
+void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
+	if (line.get_type() == fill) // It is already outline
+		return;
 
-void offset::shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign) { // Calculate position of new points when shifting point to boundary. Input: context + iterator to current point on line, sign (shift up +1 / down -1); Output: list of new point(s) (one or two)
-	v_point pt = *pts;
-	if (geom::distance(pt.control_prev, pt.main) < epsilon) { // Previous control point not set
-		if (pts != context.begin()) {
-			auto tmp = pts;
-			--tmp;
-			pt.control_prev = tmp->main; // Replace with direction to previous main point
-		}
+	auto two = line.segment.begin(); // Right point of current segment
+	auto one = two; // Left point of current segment
+	if (two == line.segment.end()) { // Only one point
+		one_point_circle(line);
+		return;
 	}
-	if (geom::distance(pt.control_next, pt.main) < epsilon) { // Next control point not set
-		auto tmp = pts;
-		++tmp;
-		if (tmp != context.end()) {
-			pt.control_next = tmp->main; // Replace with direction to previous main point
-		}
-	}
-	if (geom::distance(pt.control_prev, pt.main) < epsilon) { // Previous direction is still undefined
-		pt.control_prev.x = 2*pt.main.x - pt.control_next.x; // Assume, that point is autosmooth: reverse direction to next control point
-		pt.control_prev.y = 2*pt.main.y - pt.control_next.y;
-	}
-	if (geom::distance(pt.control_next, pt.main) < epsilon) { // Next direction is still undefined
-		pt.control_next.x = 2*pt.main.x - pt.control_prev.x; // Assume, that point is autosmooth: reverse direction to previous control point
-		pt.control_next.y = 2*pt.main.y - pt.control_prev.y;
-	}
-	if (geom::distance(pt.control_prev, pt.main) < epsilon) { // There is no control point at all (probably only one point on line -> should be replaced with circle)
-		pt.control_prev = pt.main;
-		--pt.control_prev.x; // Previous control point will be on left
-		pt.control_next = pt.main;
-		++pt.control_next.x; // Next control point will be on right
-	}
-	p dprev = geom::distance(pt.control_prev, pt.main);
-	p dnext = geom::distance(pt.control_next, pt.main);
-	v_pt prev, next; // Vectors from main point to previous / next point on line
-	prev = (pt.control_prev - pt.main) / dprev; // Make it unit
-	next = (pt.control_next - pt.main) / dnext;
 
-	v_pt prot = prev;
-	v_pt nrot = next;
-	rot(prot, -sign); // perpendicular to line before current main point (*pts)
-	rot(nrot, sign); // perpendicular to line after current main point (*pts)
-	// For straight line, theese vectors have the save direction
-	// If sign is positive, theese line are directing down (prev is to left, next is to right)
+	++two; // Change to second point
 
-	v_pt shift;
-	shift = prot + nrot;
+	std::list<std::vector<v_point>> smooth_segments;
+	// Naming assumes that the line stored in segment continues to the left
+	do {
+		// TODO uncomment and implement longer segments: & make it working
+		//while (two != line.segment.end() && two->get_smooth() != corner)
+			//++two;
+		//if (two != line.segment.end())
+			++two;
 
-	if ((prot.x * next.x + prot.y * next.y) >= -epsilon) {
-		// angle is straight, obtuse , right or acute (<= 180 deg)
-		// Will create just one point...
-		p d = shift.x * prot.x + shift.y * prot.y;
-		shift.x *= pts->width / 2 / d;
-		shift.y *= pts->width / 2 / d;
+		std::vector<v_point> segment;
 
-		v_point out = *pts;
-		out.main.x += shift.x; // move main to shifted position
-		out.main.y += shift.y;
-
-		if (pts != context.begin()) { // We are not the first point
-			out.control_prev += shift; // Move control point as well
+		if (smooth_segment_outline(one, two, segment)) {
+			smooth_segments.push_back(segment);
+			one = two;
+			--one;
 		}
 		else {
-			// Begining of line
-			out.control_prev.x = out.main.x + prev.x*out.width*2/3; // Set control point to make round end of line (4/3 of half-width)
-			out.control_prev.y = out.main.y + prev.y*out.width*2/3;
+			v_point middle;
+			--two;
+			geom::bezier_chop_in_half(*one, *two, middle);
+			line.segment.insert(two, middle);
+			--two;
 		}
-		auto tmp = pts;
-		++tmp;
-		if (tmp != context.end())
-			out.control_next += shift; // Shift also next control point
-		else
-			out.control_next = out.main + next*out.width*2/3; // Make round end of line
-		out.width = 1;
+	} while (two != line.segment.end());
 
-		output.push_back(out);
-	}
-	else {
-		// Reflex angle (> 180 deg)
-		// Convert to two points
-		shift /= shift.len(); // Make shift vector unit
-		// Next two are for correct calculating of control points before two new points
-		p want = 1 - (prot.x*shift.x + prot.y*shift.y); // Wanted sagitta (height of circular segment) (for width 1px)
-		p curr = -prev.x*shift.x - prev.y*shift.y; // Height gained by placint control point in 1px distance from main point
-
-		v_point out1 = *pts;
-		out1.main += prot * out1.width/2; // Just move main point perpendicular to direction
-		out1.control_prev += prot * out1.width/2; // Just move previous control point perpendicular to direction
-		out1.control_next = out1.main - prev*out1.width*2/3*want/curr; // Scale direction to prev correctly to create round continuation
-		out1.width = 1;
-
-		v_point out2 = *pts;
-		out2.main += nrot * out2.width/2; // Just move main point perpendicular to direction
-		out2.control_prev = out2.main - next*out2.width*2/3*want/curr;// Scale direction to prev correctly to create round continuation
-		out2.control_next += nrot * out2.width/2; // Just move next control point perpendicular to direction
-		out2.width = 1;
-
-		output.push_back(out1);
-		output.push_back(out2);
-	}
+	// TODO merge segments:
+	v_line a;
+	auto x = smooth_segments.back();
+	std::copy(x.begin(), x.end(), std::back_inserter(a.segment));
+	std::swap(line, a);
+	line.set_type(fill);
+	//
 }
-
-#ifdef OUTLINE_DEBUG
-void offset::offset_debug(const char *format, ...) {
-	va_list args;
-	va_start(args, format);
-	vfprintf(stderr, format, args);
-	va_end(args);
-}
-#else
-void offset::offset_debug(const char *format, ...) {}; // Does nothing
-#endif
-
-p offset::calculate_error(const v_point &uc, const v_point &cc, const v_point &lc) { // Measure error between upper bound (uc), lower bound (lc) and line defined by point cc and width
-	offset_debug("calculate_error: lc: %f, %f; cc: %f, %f; uc: %f, %f\n", lc.main.x, lc.main.y, cc.main.x, cc.main.y, uc.main.x, uc.main.y);
-	//u.x = lc.control_next.x - uc.control_prev.x
-	//u.y = lc.control_next.y - uc.control_prev.y
-	v_pt c = cc.control_next - cc.control_prev; // Tangent to line
-	c /= c.len(); // Make unit length
-	rot(c, 1); // Rotate right 90 deg (perpendicular to line)
-	//l.x = lc.control_next.x - lc.control_prev.x
-	//l.y = lc.control_next.y - lc.control_prev.y
-	//up = c
-	//low = -c
-	v_pt u = uc.main - cc.main; // Up vector
-	v_pt l = lc.main - cc.main; // Down vector
-	p error_u = c.x*u.x + c.y*u.y - cc.width/2; // Calculate distance of point uc to centerline
-	p error_l = c.x*l.x + c.y*l.y + cc.width/2;
-	error_u *= error_u; // Square error
-	error_l *= error_l;
-	offset_debug("calculate_error: u: %f, %f; cc: %f, %f; l: %f, %f\n", u.x, u.y, cc.main.x, cc.main.y, l.x, l.y);
-	offset_debug("calculate_error: distance %f, %f\n", error_u, error_l);
-	return error_u + error_l;
-}
-
-
-// old
-// ---
-// new
 
 void offset::one_point_circle(v_line &line) {
 	v_point point = line.segment.front();
@@ -195,139 +97,6 @@ void offset::one_point_circle(v_line &line) {
 	line.segment.push_back(line.segment.front());
 
 	line.set_type(fill);
-}
-
-v_pt find_tangent(v_pt main, v_pt next, p width, p width_next, p sign) {
-	v_pt base = next - main;
-	p dl = 3.0 * base.len();
-	p dw = (width - width_next)/2;
-	p l = width/dw/2 * dl;
-
-	p angle = std::acos(width/2 / l);
-	base /= base.len();
-	base *= width/2;
-	base = geom::rotate(base, angle*sign);
-
-	base += main;
-	return base;
-}
-
-v_pt find_cap_end(v_pt main, v_pt next, p width) {
-	v_pt base = next - main;
-	base /= base.len();
-	base *= -width/2;
-
-	base += main;
-	return base;
-}
-
-v_point calculate_control_points_perpendicular(v_pt pt, v_pt inside) {
-	v_point ans;
-	ans.main = pt;
-
-	inside -= pt;
-	inside /= inside.len();
-
-	ans.control_next = geom::rotate_right_angle(inside, 1);
-	ans.control_next += pt;
-
-	ans.control_prev = geom::rotate_right_angle(inside, -1);
-	ans.control_prev += pt;
-
-	return ans;
-}
-
-void set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt &center, p width) {
-	v_pt middle = (a.main + b.main)/2;
-	p final_length = width / 2 - geom::distance(middle, center);
-	final_length *= 4.0 / 3.0;
-
-	middle -= center;
-	middle /= middle.len();
-
-	a.control_next -= a.main;
-	b.control_prev -= b.main;
-	p current_length = geom::dot_product(middle, a.control_next);
-
-	a.control_next *= final_length / current_length;
-	b.control_prev *= final_length / current_length;
-
-	a.control_next += a.main;
-	b.control_prev += b.main;
-}
-
-bool optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
-	// 0, Prepare parametrization:
-	std::vector<p> center_times;
-	std::vector<p> offset_times;
-	std::vector<v_pt> center_pt;
-	int check_point_count = 7;
-	for (int i = 0; i < check_point_count; i++) {
-		center_times.push_back((i + 1.0) / (check_point_count + 1.0));
-		offset_times.push_back((i + 1.0) / (check_point_count + 1.0));
-	}
-
-	// 1, Calculate points with tangent offset
-	v_point center_one;
-	center_one.main = c_main;
-	center_one.control_next = c_next;
-	center_one.width = c_width;
-	v_point center_two;
-	center_two.main = d_main;
-	center_two.control_prev = d_prev;
-	center_two.width = d_width;
-	for (int i = 0; i < check_point_count; i++) {
-		v_point middle;
-		geom::bezier_chop_in_t(center_one, center_two, middle, center_times[i], true);
-		v_pt pt = find_tangent(middle.main, middle.control_next, middle.width, d_width, 1.0);
-		center_pt.push_back(pt);
-	}
-
-
-	a.control_next -= a.main;
-	b.control_prev -= b.main;
-
-	// 2,
-	least_squares mat(2);
-	for (int i = 0; i < check_point_count; i++) {
-		p t = offset_times[i];
-		p s = 1 - t;
-
-		// Equation (before subtraction):
-		//s*s*s*a.main + 3*s*s*t*a.control_next + 3*s*t*t*b.control_prev + t*t*t*b.main == center_pt[i];
-		//s*s*s*a.main + 3*s*s*t*(a.main + a.control_next) + 3*s*t*t*(b.main + b.control_prev) + t*t*t*b.main == center_pt[i];
-		//s*s*s*a.main + 3*s*s*t*a.main + 3*s*s*t*a.control_next + 3*s*t*t*b.main + 3*s*t*t*b.control_prev + t*t*t*b.main == center_pt[i];
-
-		v_pt c0 = a.control_next*3*s*s*t;
-		v_pt c1 = b.control_prev*3*s*t*t;
-		v_pt c2 = center_pt[i] - a.main*s*s*s - a.main*3*s*s*t - b.main*3*s*t*t - b.main*t*t*t;
-
-		p eqx[] = {c0.x, c1.x, c2.x};
-		mat.add_equation(eqx);
-		p eqy[] = {c0.y, c1.y, c2.y};
-		mat.add_equation(eqy);
-	}
-	mat.evaluate();
-	p error = mat.calc_error();
-
-	a.control_next *= mat[0];
-	a.control_next += a.main;
-
-	b.control_prev *= mat[1];
-	b.control_prev += b.main;
-
-	// DEBUG:
-	for (int i = 0; i < check_point_count; i++) {
-		v_point middle;
-		geom::bezier_chop_in_t(a, b, middle, offset_times[i], true);
-		//v_image::add_debug_line(middle.main, center_pt[i]);
-	}
-	// TODO 3,4,
-	//
-	if (error < 10)
-		return true;
-	else
-		return false;
 }
 
 bool offset::smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two, std::vector<v_point> &outline) {
@@ -392,113 +161,171 @@ bool offset::smooth_segment_outline(std::list<v_point>::iterator one, std::list<
 	return a & b;
 }
 
-void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
-	if (line.get_type() == fill) // It is already outline
-		return;
+v_pt offset::find_cap_end(v_pt main, v_pt next, p width) {
+	v_pt base = next - main;
+	base /= base.len();
+	base *= -width/2;
 
-	auto two = line.segment.begin(); // Right point of current segment
-	auto one = two; // Left point of current segment
-	if (two == line.segment.end()) { // Only one point
-		one_point_circle(line);
-		return;
-	}
-
-	++two; // Change to second point
-
-	std::list<std::vector<v_point>> smooth_segments;
-	// Naming assumes that the line stored in segment continues to the left
-	do {
-		// TODO uncomment and implement longer segments: & make it working
-		//while (two != line.segment.end() && two->get_smooth() != corner)
-			//++two;
-		//if (two != line.segment.end())
-			++two;
-
-		std::vector<v_point> segment;
-
-		if (smooth_segment_outline(one, two, segment)) {
-			smooth_segments.push_back(segment);
-			one = two;
-			--one;
-		}
-		else {
-			v_point middle;
-			--two;
-			geom::bezier_chop_in_half(*one, *two, middle);
-			line.segment.insert(two, middle);
-			--two;
-		}
-	} while (two != line.segment.end());
-
-	// TODO merge segments:
-	v_line a;
-	auto x = smooth_segments.back();
-	std::copy(x.begin(), x.end(), std::back_inserter(a.segment));
-	std::swap(line, a);
-	line.set_type(fill);
-	//
-	/*
-	std::list<v_point> up; // Upper boundary of line
-	shift(line.segment, one, up, 1); // Shift start of line up
-	upper.segment.splice(upper.segment.end(), up);
-	std::list<v_point> down; // Lower boundary of line
-	shift(line.segment, one, down, -1); // Shift start of line down
-	lower.segment.splice(lower.segment.end(), down);
-
-	while (two != line.segment.end()) { // Until we run out of segments
-		p error;
-		do {
-			auto u = upper.segment.end();
-			auto l = lower.segment.end();
-			v_point u1 = *(--u); // Last new (upper) point -- left end of current segment
-			v_point l1 = *(--l); // Last new (lower) point -- left end of current segment
-
-			std::list<v_point> up;
-			shift(line.segment, two, up, 1); // Shift second end of current segment up
-			upper.segment.splice(upper.segment.end(), up);
-			std::list<v_point> down;
-			shift(line.segment, two, down, -1); // Shift second end of current segment up
-			lower.segment.splice(lower.segment.end(), down);
-
-			v_point u2 = *(++u); // Right end of current segment (upper boundary)
-			v_point l2 = *(++l); // Right end of current segment (lower boundary)
-
-			v_point c1 = *one; // Left end of center line
-			v_point c2 = *two; // Right end of center line
-			v_point uc;
-			v_point cc;
-			v_point lc;
-			geom::bezier_chop_in_half(u1, u2, uc); // Chop upper segment in half
-			geom::bezier_chop_in_half(c1, c2, cc); // Chop center segment in half
-			geom::bezier_chop_in_half(l1, l2, lc); // Chop lower segment in half
-
-			error = calculate_error(uc, cc, lc); // Calculate error in the middle of current segment
-			if (error > max_error) {
-				// Error is too high, chop current segment in half and try it again
-				*one = c1; // Shorter control_next
-				*two = c2; // Shorter control_prev
-				line.segment.insert(two, cc); // Add point in the middle of center line
-				--two;
-				upper.segment.erase(u,upper.segment.end()); // Drop point(s) added in this iteration of while cycle to upper boundary
-				lower.segment.erase(l,lower.segment.end()); // Drop point(s) added in this iteration of while cycle to lower boundary
-
-				std::list<v_point> up;
-				shift(line.segment, one, up, 1); // Recalculate control_next for begining of current segment (upper line)
-				upper.segment.back() = up.back(); // Correct last upper point acording to newly chopped center segment
-				std::list<v_point> down;
-				shift(line.segment, one, down, -1); // Recalculate control_next for begining of current segment (lower line)
-				lower.segment.back() = down.back(); // Correct last lower point acording to newly chopped center segment
-			}
-		} while (error > max_error); // If we choped our line, we need to add first segment again
-		one=two;
-		two++;
-	}
-	upper.reverse(); // Reverse upper line
-	lower.segment.splice(lower.segment.end(), upper.segment); // Connect everything together -- points on outline are in a counterclockwise order
-	lower.segment.push_back(lower.segment.front());
-	std::swap(lower.segment, line.segment); // Replace centerline with outline
-	*/
+	base += main;
+	return base;
 }
 
+v_pt offset::find_tangent(v_pt main, v_pt next, p width, p width_next, p sign) {
+	v_pt base = next - main;
+	p dl = 3.0 * base.len();
+	p dw = (width - width_next)/2;
+	p l = width/dw/2 * dl;
+
+	p angle = std::acos(width/2 / l);
+	base /= base.len();
+	base *= width/2;
+	base = geom::rotate(base, angle*sign);
+
+	base += main;
+	return base;
+}
+
+v_point offset::calculate_control_points_perpendicular(v_pt pt, v_pt inside) {
+	v_point ans;
+	ans.main = pt;
+
+	inside -= pt;
+	inside /= inside.len();
+
+	ans.control_next = geom::rotate_right_angle(inside, 1);
+	ans.control_next += pt;
+
+	ans.control_prev = geom::rotate_right_angle(inside, -1);
+	ans.control_prev += pt;
+
+	return ans;
+}
+
+void offset::set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt &center, p width) {
+	v_pt middle = (a.main + b.main)/2;
+	p final_length = width / 2 - geom::distance(middle, center);
+	final_length *= 4.0 / 3.0;
+
+	middle -= center;
+	middle /= middle.len();
+
+	a.control_next -= a.main;
+	b.control_prev -= b.main;
+	p current_length = geom::dot_product(middle, a.control_next);
+
+	a.control_next *= final_length / current_length;
+	b.control_prev *= final_length / current_length;
+
+	a.control_next += a.main;
+	b.control_prev += b.main;
+}
+
+bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
+	// 0, Prepare parametrization:
+	std::vector<p> center_times;
+	std::vector<p> offset_times;
+	std::vector<v_pt> center_pt;
+	int check_point_count = 7;
+	for (int i = 0; i < check_point_count; i++) {
+		center_times.push_back((i + 1.0) / (check_point_count + 1.0));
+		offset_times.push_back((i + 1.0) / (check_point_count + 1.0));
+	}
+
+	// 1, Calculate points with tangent offset
+	v_point center_one;
+	center_one.main = c_main;
+	center_one.control_next = c_next;
+	center_one.width = c_width;
+	v_point center_two;
+	center_two.main = d_main;
+	center_two.control_prev = d_prev;
+	center_two.width = d_width;
+	for (int i = 0; i < check_point_count; i++) {
+		v_point middle;
+		geom::bezier_chop_in_t(center_one, center_two, middle, center_times[i], true);
+		v_pt pt = find_tangent(middle.main, middle.control_next, middle.width, d_width, 1.0);
+		center_pt.push_back(pt);
+	}
+
+	// 2 -- 5
+	return optimize_control_point_lengths(center_pt, offset_times, a.main, a.control_next, b.control_prev, b.main);
+}
+
+bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main) {
+	v_pt a_n = a_next - a_main;
+	v_pt b_p = b_prev - b_main;
+
+	int iteration = 0;
+	while (true) {
+		// 2, Compute coefficients by least squares
+		least_squares mat(2);
+		for (int i = 0; i < times.size(); i++) {
+			p t = times[i];
+			p s = 1 - t;
+
+			// Equation (before subtraction):
+			//s*s*s*a_main + 3*s*s*t*a_n + 3*s*t*t*b_p + t*t*t*b_main == points[i];
+			//s*s*s*a_main + 3*s*s*t*(a_main + a_n) + 3*s*t*t*(b_main + b_p) + t*t*t*b_main == points[i];
+			//s*s*s*a_main + 3*s*s*t*a_main + 3*s*s*t*a_n + 3*s*t*t*b_main + 3*s*t*t*b_p + t*t*t*b_main == points[i];
+
+			v_pt c0 = a_n*3*s*s*t;
+			v_pt c1 = b_p*3*s*t*t;
+			v_pt c2 = points[i] - a_main*s*s*s - a_main*3*s*s*t - b_main*3*s*t*t - b_main*t*t*t;
+
+			p eqx[] = {c0.x, c1.x, c2.x};
+			mat.add_equation(eqx);
+			p eqy[] = {c0.y, c1.y, c2.y};
+			mat.add_equation(eqy);
+		}
+		mat.evaluate();
+		p error = mat.calc_error();
+
+		// TODO 3
+		// 3, Find improved parametrization
+		//
+		// 4
+		iteration++;
+
+		// 5
+		if (error < 10) { //TODO const
+			a_next = a_n * mat[0] + a_main;
+			b_prev = b_p * mat[1] + b_main;
+
+#ifdef OUTLINE_DEBUG
+			v_point a, b;
+			a.main = a_main;
+			a.control_next = a_next;
+
+			b.main = b_main;
+			b.control_prev = b_prev;
+
+			for (int i = 0; i < times.size(); i++) {
+				v_point middle;
+				geom::bezier_chop_in_t(a, b, middle, times[i], true);
+				v_image::add_debug_line(middle.main, points[i]);
+			}
+#endif
+
+			return true;
+		}
+		else if (iteration > 5) { // TODO const
+			a_next = a_n * mat[0] + a_main;
+			b_prev = b_p * mat[1] + b_main;
+
+			return false; // Split segment and try again
+		}
+	}
+}
+
+#ifdef OUTLINE_DEBUG
+void offset::offset_debug(const char *format, ...) {
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+}
+#else
+void offset::offset_debug(const char *format, ...) {}; // Does nothing
+#endif
 
 }; // namespace

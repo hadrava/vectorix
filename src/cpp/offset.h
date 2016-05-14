@@ -19,13 +19,15 @@ private:
 	static void one_point_circle(v_line &line); // Line containing one point will be converted to outline
 	static bool smooth_segment_outline(std::list<v_point>::iterator one, std::list<v_point>::iterator two, std::vector<v_point> &outline);
 
+	static v_pt find_cap_end(v_pt main, v_pt next, p width);
+	static v_pt find_tangent(v_pt main, v_pt next, p width, p width_next, p sign);
+	static v_point calculate_control_points_perpendicular(v_pt pt, v_pt inside);
+	static void set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt &center, p width);
+
+	static bool optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width);
+	static bool optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main);
+
 	static void offset_debug(const char *format, ...);
-	/*
-	 * Helper functions for convert_to_outline
-	 */
-	static void rot(v_pt &pt, int sign);
-	static void shift(const std::list<v_point> &context, std::list<v_point>::iterator pts, std::list<v_point> &output, int sign);
-	static p calculate_error(const v_point &uc, const v_point &cc, const v_point &lc);
 };
 
 
