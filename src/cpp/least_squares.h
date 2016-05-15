@@ -18,9 +18,9 @@ class least_squares {
 		std::vector<std::vector<p>> A;
 		std::vector<p> x_vector;
 		std::vector<p> y_vector;
-		static std::vector<std::vector<p>> transpose(const std::vector<std::vector<p>> mat);
-		static std::vector<std::vector<p>> multiply(const std::vector<std::vector<p>> a, const std::vector<std::vector<p>> b);
-		static std::vector<std::vector<p>> inverse(const std::vector<std::vector<p>> mat);
+		static std::vector<std::vector<p>> transpose(const std::vector<std::vector<p>> &mat);
+		static std::vector<std::vector<p>> multiply(const std::vector<std::vector<p>> &a, const std::vector<std::vector<p>> &b);
+		static std::vector<std::vector<p>> inverse(std::vector<std::vector<p>> mat);
 };
 
 }; // namespace

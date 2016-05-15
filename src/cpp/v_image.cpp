@@ -93,6 +93,7 @@ void v_image::add_debug_line(v_pt a, v_pt b) {
 	v_line lin;
 	lin.add_point(a);
 	lin.add_point(b);
+	lin.set_color(v_co(255, 0, 0));
 	debug_line.push_back(lin);
 }
 

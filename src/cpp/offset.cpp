@@ -18,13 +18,13 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 		return;
 
 	auto two = line.segment.begin(); // Right point of current segment
+	auto one = two; // Left point of current segment
+	++two; // Change to the second point
+
 	if (two == line.segment.end()) { // Only one point
 		one_point_circle(line);
 		return;
 	}
-
-	auto one = two; // Left point of current segment
-	++two; // Change to the second point
 
 	std::list<std::vector<v_point>> segments;
 	do {
@@ -170,52 +170,35 @@ bool offset::segment_outline(v_point &one, v_point &two, std::vector<v_point> &o
 	v_pt pt;
 	v_point bt;
 
-			//// One
-			//// [0]
-			//pt = find_cap_end(one.main, one.control_next, one.width);
-			//bt = calculate_control_points_perpendicular(pt, one.main);
-			//outline.push_back(bt);
-
-	// [1]
+	// One
+	// [0]
 	pt = find_tangent(one.main, one.control_next, one.width, two.width, 1.0);
 	bt = calculate_control_points_perpendicular(pt, one.main);
 	outline.push_back(bt);
 
 	// Two
-	// [2]
+	// [1]
 	pt = find_tangent(two.main, two.control_prev, two.width, one.width, -1.0);
 	bt = calculate_control_points_perpendicular(pt, two.main);
 	outline.push_back(bt);
 
-			//// [3]
-			//pt = find_cap_end(two.main, two.control_prev, two.width);
-			//bt = calculate_control_points_perpendicular(pt, two.main);
-			//outline.push_back(bt);
-
-	// [4]
+	// Two
+	// [2]
 	pt = find_tangent(two.main, two.control_prev, two.width, one.width, 1.0);
 	bt = calculate_control_points_perpendicular(pt, two.main);
 	outline.push_back(bt);
 
 	// One
-	// [5]
+	// [3]
 	pt = find_tangent(one.main, one.control_next, one.width, two.width, -1.0);
 	bt = calculate_control_points_perpendicular(pt, one.main);
 	outline.push_back(bt);
 
-			//// [6]
-			//outline.push_back(outline.front());
-
-			//set_circle_control_point_lengths(outline[5], outline[6], one.main, one.width);
-			//set_circle_control_point_lengths(outline[0], outline[1], one.main, one.width);
-
-			//set_circle_control_point_lengths(outline[2], outline[3], two.main, two.width);
-			//set_circle_control_point_lengths(outline[3], outline[4], two.main, two.width);
-
 	bool a = optimize_offset_control_point_lengths(outline[0], outline[1], one.main, one.control_next, two.control_prev, two.main, one.width, two.width);
 	bool b = optimize_offset_control_point_lengths(outline[2], outline[3], two.main, two.control_prev, one.control_next, one.main, two.width, one.width);
+	bool segment_is_short = geom::bezier_maximal_length(one, two) < 1; //TODO const
 
-	return a & b;
+	return (a & b) | segment_is_short;
 }
 
 v_pt offset::find_cap_end(v_pt main, v_pt next, p width) {

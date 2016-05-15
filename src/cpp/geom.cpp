@@ -143,7 +143,7 @@ int four_points_to_hull(v_pt *x) {
 			mina = angle;
 			minai = i;
 		}
-		if (angle >= maxa) {
+		else {
 			maxa = angle;
 			maxai = i;
 		}

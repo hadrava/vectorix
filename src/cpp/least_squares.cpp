@@ -11,7 +11,7 @@ void least_squares::add_equation(p *arr) {
 	y_vector.push_back(arr[count]);
 }
 
-std::vector<std::vector<p>> least_squares::transpose(const std::vector<std::vector<p>> mat) {
+std::vector<std::vector<p>> least_squares::transpose(const std::vector<std::vector<p>> &mat) {
 	std::vector<std::vector<p>> ans;
 	unsigned int cols = mat.size();
 
@@ -29,7 +29,7 @@ std::vector<std::vector<p>> least_squares::transpose(const std::vector<std::vect
 	return ans;
 };
 
-std::vector<std::vector<p>> least_squares::multiply(const std::vector<std::vector<p>> a, const std::vector<std::vector<p>> b) {
+std::vector<std::vector<p>> least_squares::multiply(const std::vector<std::vector<p>> &a, const std::vector<std::vector<p>> &b) {
 	std::vector<std::vector<p>> ans;
 	//std::cout << "mat a: " << a.size() << "x" << a[0].size() << std::endl;
 	//std::cout << "mat b: " << b.size() << "x" << b[0].size() << std::endl;
