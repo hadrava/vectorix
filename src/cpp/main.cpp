@@ -85,9 +85,6 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if (parameters.output.false_colors)
 		vector.false_colors(parameters.output.false_colors);
 
-	// TODO show debug lines
-	vector.show_debug_lines();
-
 	/*
 	 * Show and save output using OpenCV
 	 */
@@ -123,6 +120,10 @@ int main(int argc, char **argv) { // ./main [configuration]
 		svg_output = fopen(parameters.output.vector_output_name.c_str(), "w");
 	if (svg_output) {
 		geom::convert_to_variable_width(vector, parameters.output.export_type, parameters.output); // Convert image before writing
+
+		// TODO show debug lines
+		vector.show_debug_lines();
+
 		if (parameters.output.output_engine == 0) {
 			export_svg<editable>::write(svg_output, vector, parameters); // Write svg
 		}

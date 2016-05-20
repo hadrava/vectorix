@@ -20,7 +20,7 @@ private:
 	static bool segment_outline(v_point &one, v_point &two, std::vector<v_point> &outline);
 
 	static v_pt find_cap_end(v_pt main, v_pt next, p width);
-	static v_pt find_tangent(v_pt main, v_pt next, p width, p width_next, p sign);
+	static v_pt find_tangent(v_pt main, v_pt next, v_pt next_backup, p width, p width_next, p sign);
 	static v_point calculate_control_points_perpendicular(v_pt pt, v_pt inside);
 	static void set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt &center, p width);
 

@@ -172,25 +172,25 @@ bool offset::segment_outline(v_point &one, v_point &two, std::vector<v_point> &o
 
 	// One
 	// [0]
-	pt = find_tangent(one.main, one.control_next, one.width, two.width, 1.0);
+	pt = find_tangent(one.main, one.control_next, two.main, one.width, two.width, 1.0);
 	bt = calculate_control_points_perpendicular(pt, one.main);
 	outline.push_back(bt);
 
 	// Two
 	// [1]
-	pt = find_tangent(two.main, two.control_prev, two.width, one.width, -1.0);
+	pt = find_tangent(two.main, two.control_prev, one.main, two.width, one.width, -1.0);
 	bt = calculate_control_points_perpendicular(pt, two.main);
 	outline.push_back(bt);
 
 	// Two
 	// [2]
-	pt = find_tangent(two.main, two.control_prev, two.width, one.width, 1.0);
+	pt = find_tangent(two.main, two.control_prev, one.main, two.width, one.width, 1.0);
 	bt = calculate_control_points_perpendicular(pt, two.main);
 	outline.push_back(bt);
 
 	// One
 	// [3]
-	pt = find_tangent(one.main, one.control_next, one.width, two.width, -1.0);
+	pt = find_tangent(one.main, one.control_next, two.main, one.width, two.width, -1.0);
 	bt = calculate_control_points_perpendicular(pt, one.main);
 	outline.push_back(bt);
 
@@ -210,18 +210,33 @@ v_pt offset::find_cap_end(v_pt main, v_pt next, p width) {
 	return base;
 }
 
-v_pt offset::find_tangent(v_pt main, v_pt next, p width, p width_next, p sign) {
+v_pt offset::find_tangent(v_pt main, v_pt next, v_pt next_backup, p width, p width_next, p sign) {
 	v_pt base = next - main;
 	p dl = 3.0 * base.len();
 	p dw = (width - width_next)/2;
 	p l = width/dw/2 * dl;
+	p acos = width/2 / l;
 
-	p angle = std::acos(width/2 / l);
+	if ((acos < -1.) || (acos > 1.)) {
+		base = next_backup - main;
+		dl = base.len();
+		dw = (width - width_next)/2;
+		l = width/dw/2 * dl;
+		acos = width/2 / l;
+	}
+
+	if (acos < -1.)
+		acos = -1.;
+	else if (acos > 1.)
+		acos = 1.;
+
+	p angle = std::acos(acos);
 	base /= base.len();
 	base *= width/2;
 	base = geom::rotate(base, angle*sign);
 
 	base += main;
+
 	return base;
 }
 
@@ -283,7 +298,7 @@ bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const
 	for (int i = 0; i < check_point_count; i++) {
 		v_point middle;
 		geom::bezier_chop_in_t(center_one, center_two, middle, center_times[i], true);
-		v_pt pt = find_tangent(middle.main, middle.control_next, middle.width, d_width, 1.0);
+		v_pt pt = find_tangent(middle.main, middle.control_next, center_two.main, middle.width, d_width, 1.0);
 		center_pt.push_back(pt);
 	}
 
@@ -344,13 +359,17 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 			middle.control_next /= middle.control_next.len();
 
 			times[i] += geom::dot_product(middle.control_next, error_vector) / total_length;
+			if (times[i] < 0.)
+				times[i] = 0.;
+			else if (times[i] > 1.)
+				times[i] = 1.;
 		}
 
 		// 4
 		iteration++;
 
 		// 5
-		if (error < 0.001) { //TODO const
+		if (error < 1) { //TODO const
 			a_next = a_n * mat[0] + a_main;
 			b_prev = b_p * mat[1] + b_main;
 
