@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
-namespace pnm {
+namespace vectorix {
 
 typedef unsigned char pnm_data_t; // PNM image data type for one pixel (1 channel)
 

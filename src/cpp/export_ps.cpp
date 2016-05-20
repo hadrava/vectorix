@@ -5,7 +5,7 @@
 
 //Post Script export
 
-namespace vect {
+namespace vectorix {
 
 v_co export_ps::group_col; // Color of first line in a group
 p export_ps::height; // Height of an image for coordinate transformation

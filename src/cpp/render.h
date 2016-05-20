@@ -8,14 +8,14 @@
 #include "pnm_handler.h"
 #include "v_image.h"
 
-namespace vect {
+namespace vectorix {
 
 class renderer {
 public:
-	static pnm::pnm_image render(const vect::v_image &vector);
+	static pnm_image render(const v_image &vector);
 protected:
 	static void render_error(const char *format, ...);
-	static void bezier_render(pnm::pnm_image &bitmap, const v_line &line); // render one line
+	static void bezier_render(pnm_image &bitmap, const v_line &line); // render one line
 };
 
 }; // namespace

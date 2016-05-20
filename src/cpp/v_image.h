@@ -8,7 +8,7 @@
 #include "config.h"
 #include "parameters.h"
 
-namespace vect {
+namespace vectorix {
 
 enum v_smooth_type {
 	corner = 0,

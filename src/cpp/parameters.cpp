@@ -5,7 +5,7 @@
 
 // Program parameters
 
-namespace vect {
+namespace vectorix {
 
 int params::load_var(const char *name, const char *value, const char *my_name, int &data) { // Load integer
 	if (!strcmp(name, my_name)) {

@@ -2,7 +2,7 @@
 #include <cmath>
 #include <iostream>
 
-namespace vect {
+namespace vectorix {
 
 void least_squares::add_equation(p *arr) {
 	std::vector<p> eq;

@@ -10,7 +10,7 @@
 #include "config.h"
 #include "parameters.h"
 
-namespace vect {
+namespace vectorix {
 
 class offset {
 public:

@@ -5,7 +5,7 @@
 
 // SVG export
 
-namespace vect {
+namespace vectorix {
 
 v_co editable::group_col; // Color of first fill path in one group
 

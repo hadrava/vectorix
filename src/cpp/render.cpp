@@ -9,9 +9,7 @@
 // Does not need OpenCV
 // Warning: Ignores fill type -- renders everything as lines
 
-using namespace pnm;
-
-namespace vect {
+namespace vectorix {
 
 void renderer::render_error(const char *format, ...) { // Errors are writen to stderr
 	va_list args;

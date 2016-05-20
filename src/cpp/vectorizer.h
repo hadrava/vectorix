@@ -7,7 +7,7 @@
 #include "v_image.h"
 #include <opencv2/opencv.hpp>
 
-namespace vect {
+namespace vectorix {
 
 class generic_vectorizer {
 protected:
@@ -18,13 +18,13 @@ protected:
 
 class stupid : generic_vectorizer {
 public:
-	static vect::v_image vectorize(const pnm::pnm_image &image, const params &parameters);
+	static v_image vectorize(const pnm_image &image, const params &parameters);
 };
 
 template <class Vectorizer = stupid>
 class vectorizer {
 public:
-	static vect::v_image run(const pnm::pnm_image &image, params &parameters) {
+	static v_image run(const pnm_image &image, params &parameters) {
 		return Vectorizer::vectorize(image, parameters);
 	};
 };

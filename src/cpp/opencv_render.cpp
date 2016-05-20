@@ -9,7 +9,7 @@
 
 using namespace cv;
 
-namespace vect {
+namespace vectorix {
 
 void opencv_render(const v_image &vector, Mat &output, const params &parameters) { // Render whole vector image
 	output = Scalar(255, 255, 255); // Fill with white color

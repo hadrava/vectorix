@@ -9,9 +9,7 @@
 
 // Simple vectorizer and output functions
 
-using namespace pnm;
-
-namespace vect {
+namespace vectorix {
 
 void generic_vectorizer::vectorizer_error(const char *format, ...) { // Prints vectorizer error message
 	va_list args;

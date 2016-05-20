@@ -6,7 +6,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-namespace vect {
+namespace vectorix {
 
 void v_image::clean() { // Remove all lines
 	for (v_line _line: line) {

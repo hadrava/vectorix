@@ -10,7 +10,7 @@
 #include "parameters.h"
 
 
-namespace vect {
+namespace vectorix {
 
 // Default exporter
 class editable {

@@ -4,7 +4,7 @@
 #include <vector>
 #include "config.h"
 
-namespace vect {
+namespace vectorix {
 
 class least_squares {
 	public:

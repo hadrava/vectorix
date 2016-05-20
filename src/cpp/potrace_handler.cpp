@@ -9,9 +9,7 @@
 
 // Vectorize using potracelib
 
-using namespace pnm;
-
-namespace vect {
+namespace vectorix {
 
 v_image potrace::vectorize(const pnm_image &original, const params &parameters) { // Vectorize using potrace library
 	pnm_image image = original;

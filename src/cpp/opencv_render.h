@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include "v_image.h"
 
-namespace vect {
+namespace vectorix {
 
 void opencv_render(const v_image &vector, cv::Mat &output, const params &parameters);
 

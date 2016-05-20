@@ -3,7 +3,7 @@
 
 // Compiletime configuration
 
-namespace vect {
+namespace vectorix {
 
 typedef float p; // Vector data precision -- float should be enought
 const char p_scanf[] = "%f"; // scanf string for loading type "p"

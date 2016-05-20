@@ -8,7 +8,7 @@
 
 // Manipulation with Netpbm format images
 
-namespace pnm {
+namespace vectorix {
 
 #define MAX_LINE_LENGTH	64 // Buffer size for one line in an image header, longer lines appears only in comments and are discarded
 

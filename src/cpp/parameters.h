@@ -7,7 +7,7 @@
 #include <cstdio>
 #include "config.h"
 
-namespace vect {
+namespace vectorix {
 
 typedef struct { // Input reading
 	std::string pnm_input_name;

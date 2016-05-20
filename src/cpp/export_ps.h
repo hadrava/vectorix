@@ -6,7 +6,7 @@
 #include <cstdio>
 #include "v_image.h"
 
-namespace vect {
+namespace vectorix {
 
 class export_ps {
 public:

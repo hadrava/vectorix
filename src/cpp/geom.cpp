@@ -8,8 +8,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-namespace vect {
-
+namespace vectorix {
 
 p geom::distance(const v_pt &a, const v_pt &b) { // Calculate distance between two points
 	p x = (a.x - b.x);

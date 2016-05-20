@@ -7,11 +7,11 @@
 #include "v_image.h"
 #include "vectorizer.h"
 
-namespace vect {
+namespace vectorix {
 
 class potrace : generic_vectorizer {
 public:
-	static vect::v_image vectorize(const pnm::pnm_image &image, const params &parameters);
+	static v_image vectorize(const pnm_image &image, const params &parameters);
 };
 
 }; // namespace

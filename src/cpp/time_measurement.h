@@ -10,7 +10,7 @@
 
 #include <sys/time.h>
 
-namespace tmea {
+namespace vectorix {
 
 typedef long long int usec_t;
 
@@ -45,7 +45,7 @@ private:
 #else
 // Fake measurement, do nothing
 
-namespace tmea {
+namespace vectorix {
 
 typedef long long int usec_t;
 

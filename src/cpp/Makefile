@@ -1,4 +1,4 @@
-all: vector
+all: vectorix
 
 COMP=g++
 L_FLAGS=
@@ -25,7 +25,7 @@ C_OPENCV=${C_OPENCV_3.0.0}
 OBJS = main.o v_image.o export_svg.o pnm_handler.o vectorizer.o render.o potrace_handler.o custom_vectorizer.o opencv_render.o parameters.o export_ps.o geom.o offset.o least_squares.o
 DEBUG = -ggdb
 
-vector: ${OBJS}
+vectorix: ${OBJS}
 	${COMP} $^ -o $@ ${L_OPENCV} -L potrace/lib/ -lpotrace -lm ${L_FLAGS}
 
 %.o: %.cpp
@@ -41,7 +41,7 @@ dokumentace.pdf: doc.pdf priloha.pdf
 	pdftk $^ cat output $@
 
 clean:
-	rm -f vector ${OBJS} doc.ps doc.pdf dokumentace.pdf
+	rm -f vectorix ${OBJS} doc.ps doc.pdf dokumentace.pdf
 
 remake: clean all
 

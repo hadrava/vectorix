@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <iostream>
 
-namespace vect {
+namespace vectorix {
 
 void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
 	if (line.get_type() == fill) // It is already outline

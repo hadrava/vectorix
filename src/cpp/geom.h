@@ -9,7 +9,7 @@
 #include "parameters.h"
 #include "v_image.h"
 
-namespace vect {
+namespace vectorix {
 
 class geom {
 	public:

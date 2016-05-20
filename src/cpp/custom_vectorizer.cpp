@@ -15,9 +15,8 @@
 // Vectorizer
 
 using namespace cv;
-using namespace pnm;
 
-namespace vect {
+namespace vectorix {
 
 changed_pix_roi custom::step3_changed; // Roi with pixels (value < 254)
 changed_pix_roi custom::step3_changed_start; // Roi with pixels (value == 254)
@@ -826,16 +825,16 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 	Mat grayscale (orig.rows, orig.cols, CV_8UC(1)); // Grayscale original
 	Mat binary (orig.rows, orig.cols, CV_8UC(1)); // Thresholded image
 
-	tmea::timer threshold_timer;
+	timer threshold_timer;
 	Mat skeleton; // Skeleton calculated in first step
 	Mat distance; // Distance map calculated in first step
 	int iteration; // Count of iterations in skeletonization step
-	tmea::timer skeletonization_timer;
+	timer skeletonization_timer;
 	Mat distance_show; // Images normalized for displaying
 	Mat skeleton_show; // Images normalized for displaying
 	v_image vect = v_image(orig.cols, orig.rows); // Vector output
 	Mat used_pixels; // Pixels used by tracing
-	tmea::timer tracing_timer;
+	timer tracing_timer;
 
 	volatile int state = 2; // State of vectorizer, remembers in which step we are
 

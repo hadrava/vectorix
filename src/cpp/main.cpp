@@ -16,9 +16,7 @@
 #include <opencv2/opencv.hpp>
 
 using namespace std;
-using namespace vect;
-using namespace pnm;
-using namespace tmea;
+using namespace vectorix;
 
 int main(int argc, char **argv) { // ./main [configuration]
 	/*
