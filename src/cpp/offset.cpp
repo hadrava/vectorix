@@ -10,6 +10,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <iostream>
+#include <cassert>
 
 namespace vectorix {
 
@@ -65,6 +66,8 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 
 		p t1, t2; // Times of intersection
 		if (geom::distance((*seg)[1].main, (*seg2)[0].main) < epsilon) {
+			std::cout << "Merguju\n";
+			// Segments can be connected directly by main points.
 			(*seg)[1].control_next = (*seg2)[0].control_next;
 			(*seg2)[0].control_prev = (*seg)[1].control_prev;
 
@@ -73,6 +76,8 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
 		}
 		else if (geom::bezier_intersection((*seg)[0], (*seg)[1], (*seg2)[0], (*seg2)[1], t1, t2)) {
+			std::cout << "Sektím\n";
+			// Segments are intersecting, chop them in this intersection.
 			v_point intersection_1, intersection_2;
 			geom::bezier_chop_in_t((*seg)[0], (*seg)[1], intersection_1, t1);
 			geom::bezier_chop_in_t((*seg2)[0], (*seg2)[1], intersection_2, t2);
@@ -84,6 +89,16 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
 		}
 		else {
+			std::cout << "Cyklím\n";
+			v_pt center_dir = (*seg)[2].control_next - (*seg)[2].control_prev;
+			v_pt offset_dir = (*seg2)[0].main - (*seg)[1].main;
+			p projection = geom::dot_product(center_dir, offset_dir);
+			if (projection < 0.) {
+				std::cout << "Tady se to neprotina, ale pritom je podezreleporadi\n";
+				v_image::add_debug_line((*seg2)[0].main, (*seg)[1].main);
+			}
+
+			// Connect segments with arc.
 			v_pt center = (*seg)[2].main;
 			p width = (*seg)[2].width;
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
@@ -275,15 +290,9 @@ void offset::set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt
 	b.control_prev += b.main;
 }
 
-bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
-	// 0, Prepare parametrization:
-	std::vector<p> center_times;
-	std::vector<p> offset_times;
-	std::vector<v_pt> center_pt;
-	int check_point_count = 7;
+void prepare_tangent_offset_points(std::vector<p> &times, std::vector<v_pt> &center_pt, std::vector<p> &width, std::vector<v_pt> &offset_pt, int check_point_count, const v_point &a, const v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
 	for (int i = 0; i < check_point_count; i++) {
-		center_times.push_back((i + 1.0) / (check_point_count + 1.0));
-		offset_times.push_back((i + 1.0) / (check_point_count + 1.0));
+		times.push_back((i + 1.0) / (check_point_count + 1.0));
 	}
 
 	// 1, Calculate points with tangent offset
@@ -297,13 +306,144 @@ bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const
 	center_two.width = d_width;
 	for (int i = 0; i < check_point_count; i++) {
 		v_point middle;
-		geom::bezier_chop_in_t(center_one, center_two, middle, center_times[i], true);
-		v_pt pt = find_tangent(middle.main, middle.control_next, center_two.main, middle.width, d_width, 1.0);
-		center_pt.push_back(pt);
+		geom::bezier_chop_in_t(center_one, center_two, middle, times[i], true);
+		center_pt.push_back(middle.main);
+		v_pt pt = offset::find_tangent(middle.main, middle.control_next, center_two.main, middle.width, d_width, 1.0);
+		width.push_back(middle.width);
+		offset_pt.push_back(pt);
+	}
+}
+
+int remove_hidden_offset_points(std::vector<v_pt> &center_pt, std::vector<v_pt> &offset_pt, std::vector<p> &times, std::vector<p> &width) {
+	/*
+	// Old version
+	// 1.5, Check for backward directions
+	int bagr = 0; // TODO remove
+	for (int i = 1; i < center_pt.size(); i++) {
+		v_pt center_dir = center_pt[i] - center_pt[i-1];
+		v_pt offset_dir = offset_pt[i] - offset_pt[i-1];
+		p projection = geom::dot_product(center_dir, offset_dir);
+		if (projection < 0.) {
+			bagr++;
+		//if (projection < -18) {
+			//v_image::add_debug_line(center_pt[i], center_pt[i-1]);
+			//v_image::add_debug_line(offset_pt[i], offset_pt[i-1]);
+			//Trochu lepší debug:
+			v_image::add_debug_line(center_pt[i], offset_pt[i]);
+			//TODO něco s tím udělat
+			//std::cout << "projection: " << projection << "\n";
+			//std::cout << "projection: " << i << "\n";
+		}
+	}
+	if (bagr == 8) {
+		// TODO
+		//Trochu lepší debug:
+		//v_image::add_debug_line(center_pt[0], offset_pt[0]);
+		//v_image::add_debug_line(offset_pt[8], center_pt[8]);
+		//std::cout << "bagr\n";
+	}
+	*/
+	/*
+	int ret = 0;
+	for (int i = 1; i < center_pt.size() - 1; i++) {
+		if ((geom::distance(offset_pt[i], center_pt[i-1]) < width[i-1]/2) || (geom::distance(offset_pt[i], center_pt[i+1]) < width[i+1]/2)) {
+			v_image::add_debug_line(center_pt[i], offset_pt[i]);
+
+			center_pt.erase(center_pt.begin() + i);
+			offset_pt.erase(offset_pt.begin() + i);
+			times.erase(times.begin() + i-1);
+			width.erase(width.begin() + i);
+			ret++;
+			i--;
+
+		}
+	}
+	return ret;
+	*/
+	int ret = 0;
+	for (int i = 1; i < center_pt.size(); i++) {
+		v_pt center_dir = center_pt[i] - center_pt[i-1];
+		v_pt offset_dir = offset_pt[i] - offset_pt[i-1];
+		p projection = geom::dot_product(center_dir, offset_dir);
+		if (projection < 0.) {
+			int del = i;
+			if (width[i-1] < width[i])
+				del = i-1;
+			if (del && (del < center_pt.size() - 1)) {
+				center_pt.erase(center_pt.begin() + del);
+				offset_pt.erase(offset_pt.begin() + del);
+				times.erase(times.begin() + del-1);
+				width.erase(width.begin() + del);
+
+				ret++;
+				i--;
+			}
+		}
+	}
+	return ret;
+}
+
+bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
+	// 0, Prepare parametrization:
+	std::vector<p> times;
+	std::vector<p> width;
+	std::vector<v_pt> center_pt;
+	std::vector<v_pt> offset_pt;
+
+	prepare_tangent_offset_points(times, center_pt, width, offset_pt, 7, a, b, c_main, c_next, d_prev, d_main, c_width, d_width);
+
+	// add first and last (fixed) points
+	//
+	v_point center_one;
+	center_one.main = c_main;
+	center_one.control_next = c_next;
+	center_one.width = c_width;
+	v_point center_two;
+	center_two.main = d_main;
+	center_two.control_prev = d_prev;
+	center_two.width = d_width;
+
+	center_pt.push_back(center_two.main);
+	offset_pt.push_back(b.main);
+	width.push_back(d_width);
+	center_pt.insert(center_pt.begin(), center_one.main);
+	offset_pt.insert(offset_pt.begin(), a.main);
+	width.insert(width.begin(), c_width);
+	//
+
+	int r = 0;
+	r = remove_hidden_offset_points(center_pt, offset_pt, times, width);
+
+	offset_pt.pop_back();
+	offset_pt.erase(offset_pt.begin());
+	// and delete them back ^, ^^
+	assert(7 - r == offset_pt.size());
+	std::cout << "deleted " << r << "\n";
+	if (r > 5)
+		return 1;
+	// not enought points left ^, do not run optimization
+
+
+	// guess time from ditances
+	assert(times.size() == offset_pt.size());
+
+	p total_length = geom::distance(a.main, offset_pt[0]);
+	times[0] = total_length;
+	for (int i = 1; i < offset_pt.size(); i++) {
+		total_length += geom::distance(offset_pt[i-1], offset_pt[i]);
+		times[i] = total_length;
+	}
+	total_length += geom::distance(offset_pt.back(), b.main);
+
+	for (int i = 0; i < times.size(); i++) {
+		times[i] /= total_length;
 	}
 
+
 	// 2 -- 5
-	return optimize_control_point_lengths(center_pt, offset_times, a.main, a.control_next, b.control_prev, b.main);
+	bool ret = optimize_control_point_lengths(offset_pt, times, a.main, a.control_next, b.control_prev, b.main);
+	std::cout << "ret: " << ret << "\n";
+	return ret;
 }
 
 bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main) {

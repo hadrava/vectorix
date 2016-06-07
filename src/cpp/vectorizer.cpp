@@ -54,6 +54,24 @@ v_image stupid::vectorize(const pnm_image &image, const params &parameters) { //
 	out.add_line(line);
 	offset::convert_to_outline(line, parameters.output.max_contour_error); // Convert from stroke to fill
 	out.add_line(line); // Add same line in the other type as well
+
+	line = v_line();
+	line.add_point(v_pt(0, 100), v_co(255, 0, 0), 8);
+	line.add_point(v_pt(150, 100), v_pt(200, 100), v_pt(300, 100), v_co(255, 0, 0), 300);
+	offset::convert_to_outline(line, parameters.output.max_contour_error); // Convert from stroke to fill
+	out.add_line(line);
+
+	line = v_line();
+	line.add_point(v_pt(0, 400), v_co(255, 0, 0), 202);
+	line.add_point(v_pt(1, 400), v_pt(2.5, 400), v_pt(3, 400), v_co(255, 0, 0), 200);
+	offset::convert_to_outline(line, parameters.output.max_contour_error); // Convert from stroke to fill
+	out.add_line(line);
+
+	line = v_line();
+	line.add_point(v_pt(0, 900), v_co(255, 0, 0), 0.5);
+	line.add_point(v_pt(1, 901), v_pt(2.5, 902), v_pt(3, 903), v_co(255, 0, 0), 0.5);
+	out.add_line(line);
+
 	return out;
 }
 

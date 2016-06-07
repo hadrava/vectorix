@@ -17,7 +17,7 @@ const p epsilon = 0.00001f; // small value for comparision of two numbers
 #define VECTORIZER_HIGHGUI // Use opencv/highgui windows
 #define VECTORIZER_USE_ROI // Use "region of interest" optimization -- works better with larger images
 #define VECTORIZER_STARTING_POINTS // Use starting points optimization -- use vector of all possible starting points
-#define OUTLINE_DEBUG // Show convert to outline debug messages
+//#define OUTLINE_DEBUG // Show convert to outline debug messages
 //#define DEBUG // Enable run-time asserts
 
 #endif
