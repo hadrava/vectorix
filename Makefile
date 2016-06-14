@@ -31,18 +31,12 @@ vectorix: ${OBJS}
 %.o: %.cpp
 	${COMP} -c -o $@ $< ${C_OPENCV} -std=c++11 ${DEBUG}
 
-doc.ps: doc.txt
-	paps --font="Monospace 10" $< >$@
-
-doc.pdf: doc.ps
-	ps2pdf $<
-
-dokumentace.pdf: doc.pdf priloha.pdf
-	pdftk $^ cat output $@
-
 clean:
-	rm -f vectorix ${OBJS} doc.ps doc.pdf dokumentace.pdf
+	rm -f vectorix ${OBJS}
 
 remake: clean all
+
+vectorix.tar.bz2:
+	git archive master | bzip2 > $@
 
 .PHONY: all clean remake
