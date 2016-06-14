@@ -39,4 +39,4 @@ remake: clean all
 vectorix.tar.bz2:
 	git archive master | bzip2 > $@
 
-.PHONY: all clean remake
+.PHONY: all clean remake vectorix.tar.bz2
