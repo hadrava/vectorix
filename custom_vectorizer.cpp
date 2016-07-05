@@ -275,12 +275,10 @@ void custom::find_max_starting_point(std::vector<start_point> &starting_points, 
 
 void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
 	used_pixels = Scalar(0); // Pixels already used for tracing
-#ifdef VECTORIX_USE_ROI
+
 	// Speedup using OpenCV region of interest
-	// This optimization should NOT change program outcome
 	step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 	step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
-#endif
 
 #ifdef VECTORIX_STARTING_POINTS
 	// Use queue for all possible starting points
@@ -306,14 +304,12 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		line.reverse();
 
 		// Drop everything (<= 254)
-#ifdef VECTORIX_USE_ROI
+
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 254, 255, THRESH_BINARY);
 		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 254, 255, THRESH_BINARY);
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows); // There is no pixel with value < 254
 		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows); // There is no pixel with value == 254
-#else
-		threshold(used_pixels, used_pixels, 254, 255, THRESH_BINARY);
-#endif
+
 		if (line.empty()) {
 			vectorizer_error("Vectorizer warning: No new point found!\n"); // Vectorization started from one point, but no new line was found. This should not happen
 			spix(used_pixels, max_pos, 255); // Clear pixel to prevent infinite loop
@@ -321,14 +317,11 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		else
 			line.segment.pop_back();
 		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par); //Trace second part of a line
-#ifdef VECTORIX_USE_ROI
+
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_BINARY); // save first point
 		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 253, 255, THRESH_BINARY); // save first point
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 		step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
-#else
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_BINARY); // Save first point (value 254)
-#endif
 
 		vectorization_output.add_line(line); // Add line to output
 		count++;
@@ -364,7 +357,7 @@ void custom::spix(const Mat &img, const Point &point, int value) { // Set pixel
 int custom::inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) { // Increase value of pixel
 	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
 		spix(used_pixels, point, value); // Set pixel
-#ifdef VECTORIX_USE_ROI
+
 		// Add pixel to corresponding roi
 		if (value < 254) {
 			step3_roi_update(step3_changed, point.x, point.y);
@@ -372,7 +365,7 @@ int custom::inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_
 		if (value == 254) {
 			step3_roi_update(step3_changed_start, point.x, point.y);
 		}
-#endif
+
 		return 1; // one pixel changed
 	}
 	else
@@ -710,11 +703,7 @@ float custom::do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton,
 		if (allowed_depth - best_match.depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ... We found something good enought
 			break; // Do not try anything else
 		}
-#ifdef VECTORIX_USE_ROI
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), allowed_depth, 0, THRESH_TOZERO); // Drop all markings by recursive call do_prediction()
-#else
-		threshold(used_pixels, used_pixels, allowed_depth, 0, THRESH_TOZERO);
-#endif
 	}
 	new_point = best_match; // Return best match
 	return best_match.depth;
@@ -730,12 +719,10 @@ void custom::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, con
 	for (;;) {
 		match_variant new_point;
 		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par); // Do prediction (by recursion) -- place one new point
-#ifdef VECTORIX_USE_ROI
+
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // All changed pixels are in roi step3_changed
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
-#else
-		threshold(used_pixels, used_pixels, 253, 255, THRESH_TOZERO); // Threshold whole image, this is much slower for bigger images
-#endif
+
 		if (depth_found > 0) {
 			if (first_point) { // First two points are marked with value 254 (means temporary, will be deleted) (So segment between them is also marked with 254)
 				sum += place_next_point_at(skeleton, new_point.pt, 254, line, used_pixels);
