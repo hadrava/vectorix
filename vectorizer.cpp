@@ -26,7 +26,7 @@ void generic_vectorizer::vectorizer_info(const char *format, ...) { // Prints ve
 }
 
 #ifdef VECTORIX_VECTORIZER_DEBUG
-void generic_vectorizer::vectorizer_debug(const char *format, ...) { // Prints vectorizer debug message (iff VECTORIZER_DEBUG is defined)
+void generic_vectorizer::vectorizer_debug(const char *format, ...) { // Prints vectorizer debug message (iff VECTORIX_VECTORIZER_DEBUG is defined)
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);
