@@ -1,5 +1,5 @@
-#ifndef _EXPORT_SVG_H
-#define _EXPORT_SVG_H
+#ifndef VECTORIX__EXPORT_SVG_H
+#define VECTORIX__EXPORT_SVG_H
 
 // SVG export
 

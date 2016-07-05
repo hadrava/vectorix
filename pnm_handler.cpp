@@ -10,8 +10,6 @@
 
 namespace vectorix {
 
-#define MAX_LINE_LENGTH	64 // Buffer size for one line in an image header, longer lines appears only in comments and are discarded
-
 void pnm_image::pnm_error(const char *format, ...) { // Write error to stderr
 	va_list args;
 	va_start(args, format);
@@ -20,10 +18,10 @@ void pnm_image::pnm_error(const char *format, ...) { // Write error to stderr
 }
 
 int pnm_image::fscanf_comment(FILE *stream, const char *format, ...) { // Read line from PNM header, ignore comments
-	char line[MAX_LINE_LENGTH];
+	char line[64]; // Longer lines are used only for comments
 	bool comment_continuation = false;
 	for (;;) {
-		fgets(line, MAX_LINE_LENGTH, stream); // Read max one line
+		fgets(line, 64, stream); // Read max one line
 		if (!line[0]) // Check if read was successfull
 			return 0;
 		if (comment_continuation || (line[0] == '#')) { // Line starting with '#' is commented and should be skipped
@@ -79,7 +77,7 @@ void pnm_image::read(FILE *fd) { // Read image from file
 		throw std::underflow_error("Unable to read image header.");
 
 	int nsize = size(); // Calculate size for data
-#ifdef PNM_DEBUG
+#ifdef VECTORIX_PNM_DEBUG
 	write_header(stderr);
 #endif
 
@@ -105,7 +103,7 @@ void pnm_image::read(FILE *fd) { // Read image from file
 }
 
 void pnm_image::write(FILE *fd) { // Save whole image
-#ifdef DEBUG
+#ifdef VECTORIX_DEBUG
 	if (!data) { // In debug mode refuses to write empty image
 		pnm_error("Error: trying to acces NULLpointer by pnm_image::write().\n");
 		throw std::length_error("Error: trying to acces NULLpointer by pnm_image::write().");
@@ -239,7 +237,7 @@ int pnm_image::size() { // Calculate size for image storing
 			size = width * height * 3;
 			break;
 	}
-#ifdef PNM_DEBUG
+#ifdef VECTORIX_PNM_DEBUG
 	pnm_error("Debug: size = %i\n", size);
 #endif
 	return size;

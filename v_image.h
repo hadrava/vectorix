@@ -1,5 +1,5 @@
-#ifndef _VECTOR_LINES_H
-#define _VECTOR_LINES_H
+#ifndef VECTORIX__VECTOR_LINES_H
+#define VECTORIX__VECTOR_LINES_H
 
 // Basic vector data structures and transformations
 

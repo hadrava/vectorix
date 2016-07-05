@@ -1,5 +1,5 @@
-#ifndef _LEAST_SQUARE_H
-#define _LEAST_SQUARE_H
+#ifndef VECTORIX__LEAST_SQUARE_H
+#define VECTORIX__LEAST_SQUARE_H
 
 #include <vector>
 #include "config.h"

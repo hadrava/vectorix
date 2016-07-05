@@ -1,5 +1,5 @@
-#ifndef _OFFSET_H
-#define _OFFSET_H
+#ifndef VECTORIX__OFFSET_H
+#define VECTORIX__OFFSET_H
 
 // Basic vector data structures and transformations
 

@@ -1,5 +1,5 @@
-#ifndef _POTRACE_HANDLER_H
-#define _POTRACE_HANDLER_H
+#ifndef VECTORIX__POTRACE_HANDLER_H
+#define VECTORIX__POTRACE_HANDLER_H
 
 // Vectorize using potracelib
 

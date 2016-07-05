@@ -1,5 +1,5 @@
-#ifndef _RENDER_H
-#define _RENDER_H
+#ifndef VECTORIX__RENDER_H
+#define VECTORIX__RENDER_H
 
 // Simple renderer from v_image to pnm bitmap
 // Does not need OpenCV

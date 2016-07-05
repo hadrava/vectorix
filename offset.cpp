@@ -513,7 +513,7 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 			a_next = a_n * mat[0] + a_main;
 			b_prev = b_p * mat[1] + b_main;
 
-#ifdef OUTLINE_DEBUG
+#ifdef VECTORIX_OUTLINE_DEBUG
 			v_point a, b;
 			a.main = a_main;
 			a.control_next = a_next;
@@ -539,7 +539,7 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 	}
 }
 
-#ifdef OUTLINE_DEBUG
+#ifdef VECTORIX_OUTLINE_DEBUG
 void offset::offset_debug(const char *format, ...) {
 	va_list args;
 	va_start(args, format);

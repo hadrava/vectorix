@@ -1,5 +1,5 @@
-#ifndef _GEOM_H
-#define _GEOM_H
+#ifndef VECTORIX__GEOM_H
+#define VECTORIX__GEOM_H
 
 // Basic vector data structures and transformations
 

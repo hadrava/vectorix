@@ -1,5 +1,5 @@
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef VECTORIX__CONFIG_H
+#define VECTORIX__CONFIG_H
 
 // Compiletime configuration
 
@@ -12,12 +12,12 @@ const p epsilon = 0.00001f; // small value for comparision of two numbers
 
 }; // namespace
 
-#define TIMER_MEASURE // Enable time measurement with usec precision (requires <sys/time.h>)
-#define VECTORIZER_DEBUG // Just show vectorizer debug messages
-#define VECTORIZER_HIGHGUI // Use opencv/highgui windows
-#define VECTORIZER_USE_ROI // Use "region of interest" optimization -- works better with larger images
-#define VECTORIZER_STARTING_POINTS // Use starting points optimization -- use vector of all possible starting points
-//#define OUTLINE_DEBUG // Show convert to outline debug messages
-//#define DEBUG // Enable run-time asserts
+#define VECTORIX_TIMER_MEASURE // Enable time measurement with usec precision (requires <sys/time.h>)
+#define VECTORIX_VECTORIZER_DEBUG // Just show vectorizer debug messages
+#define VECTORIX_HIGHGUI // Use opencv/highgui windows
+#define VECTORIX_USE_ROI // Use "region of interest" optimization -- works better with larger images
+#define VECTORIX_STARTING_POINTS // Use starting points optimization -- use vector of all possible starting points
+//#define VECTORIX_OUTLINE_DEBUG // Show convert to outline debug messages
+//#define VECTORIX_DEBUG // Enable run-time asserts
 
 #endif

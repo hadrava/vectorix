@@ -1,11 +1,11 @@
-#ifndef _TIME_MEASUREMENT_H
-#define _TIME_MEASUREMENT_H
+#ifndef VECTORIX__TIME_MEASUREMENT_H
+#define VECTORIX__TIME_MEASUREMENT_H
 
 // Time measurement
 
 #include "config.h"
 
-#ifdef TIMER_MEASURE
+#ifdef VECTORIX_TIMER_MEASURE
 // Real measurement
 
 #include <sys/time.h>

@@ -1,5 +1,5 @@
-#ifndef _VECTORIZER_H
-#define _VECTORIZER_H
+#ifndef VECTORIX__VECTORIZER_H
+#define VECTORIX__VECTORIZER_H
 
 // Interface of all vectorizers
 

@@ -1,5 +1,5 @@
-#ifndef _EXPORT_PS_H
-#define _EXPORT_PS_H
+#ifndef VECTORIX__EXPORT_PS_H
+#define VECTORIX__EXPORT_PS_H
 
 //Post Script export
 

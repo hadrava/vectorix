@@ -1,5 +1,5 @@
-#ifndef _PARAMETERS_H
-#define _PARAMETERS_H
+#ifndef VECTORIX__PARAMETERS_H
+#define VECTORIX__PARAMETERS_H
 
 // Program parameters
 

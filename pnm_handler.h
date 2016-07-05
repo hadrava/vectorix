@@ -1,5 +1,5 @@
-#ifndef _PNM_HANDLER_H
-#define _PNM_HANDLER_H
+#ifndef VECTORIX__PNM_HANDLER_H
+#define VECTORIX__PNM_HANDLER_H
 
 // Manipulation with Netpbm format images
 

@@ -1,5 +1,5 @@
-#ifndef _OPENCV_RENDER_H
-#define _OPENCV_RENDER_H
+#ifndef VECTORIX__OPENCV_RENDER_H
+#define VECTORIX__OPENCV_RENDER_H
 
 // Render vector image to OpenCV matrix
 

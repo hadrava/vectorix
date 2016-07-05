@@ -94,7 +94,7 @@ params::params() { // Default parameters
 	interactive = 2;
 	zoom_level = 0;
 	save_parameters_append = 1;
-	save_parameters_name = "vector.conf";
+	save_parameters_name = "vectorix.conf";
 }
 
 int params::load_params(FILE *fd) { // Load parameters from file
