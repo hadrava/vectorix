@@ -15,7 +15,6 @@ const p epsilon = 0.00001f; // small value for comparision of two numbers
 #define VECTORIX_TIMER_MEASURE // Enable time measurement with usec precision (requires <sys/time.h>)
 #define VECTORIX_VECTORIZER_DEBUG // Just show vectorizer debug messages
 #define VECTORIX_HIGHGUI // Use opencv/highgui windows
-#define VECTORIX_STARTING_POINTS // Use starting points optimization -- use vector of all possible starting points
 //#define VECTORIX_OUTLINE_DEBUG // Show convert to outline debug messages
 //#define VECTORIX_DEBUG // Enable run-time asserts
 

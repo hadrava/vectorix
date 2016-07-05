@@ -280,21 +280,12 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 	step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
 	step3_roi_clear(step3_changed_start, used_pixels.cols, used_pixels.rows);
 
-#ifdef VECTORIX_STARTING_POINTS
 	// Use queue for all possible starting points
-	// This optimization CAN change program outcome by changing order
 	std::vector<start_point> starting_points;
 	int max;
 	Point max_pos;
 	prepare_starting_points(skeleton, starting_points); // Find all startingpoints
 	find_max_starting_point(starting_points, used_pixels, max, max_pos); // Get first startingpoint
-#else
-	// Find every point in input image
-	Mat starting_points = skeleton.clone();
-	double max;
-	Point max_pos;
-	minMaxLoc(starting_points, NULL, &max, NULL, &max_pos); // Get first starting point
-#endif
 
 	int count = 0;
 	while (max !=0) { // While we have unused pixel.
@@ -326,12 +317,7 @@ void custom::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, 
 		vectorization_output.add_line(line); // Add line to output
 		count++;
 
-#ifdef VECTORIX_STARTING_POINTS
 		find_max_starting_point(starting_points, used_pixels, max, max_pos); // Get next possible starting point
-#else
-		bitwise_and(Mat::zeros(used_pixels.rows, used_pixels.cols, CV_8UC(1)), Scalar(), starting_points, used_pixels);
-		minMaxLoc(starting_points, NULL, &max, NULL, &max_pos); // Find next starting point
-#endif
 	}
 	vectorizer_debug("lines found: %i\n", count);
 }
