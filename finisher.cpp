@@ -20,6 +20,16 @@ void finisher::apply_settings(v_image &vector, const params &parameters) {
 				segment.opacity = parameters.output.svg_force_opacity; // set opacity of every line to the same value
 		}
 	}
+
+	// TODO grouped export:
+	//for (v_line &line: vector.line) {
+	//std::list<v_line> to_render;
+	//geom::group_line(to_render, line); // Convert every line to list of grouped one-segment lines
+	// insert back
+
+
+	if (!parameters.output.svg_underlay_image.empty())
+		vector.underlay_path = parameters.output.svg_underlay_image;
 }
 
 }; // namespace

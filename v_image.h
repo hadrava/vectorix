@@ -198,6 +198,7 @@ public:
 	p width; // Image dimensions
 	p height;
 	std::list<v_line> line; // Image data
+	std::string underlay_path; // Underlay image for exporting
 
 	static void add_debug_line(v_pt a, v_pt b);
 	void show_debug_lines();

@@ -13,7 +13,7 @@ void exporter::write(FILE *fd_, const v_image &image_) {
 
 	std::locale("C"); // Set locale for printing flaoting-point
 	write_header();
-	for (v_line line: image->line) {
+	for (const v_line &line: image->line) {
 		if (line.segment.empty()) // Skip empty lines
 			continue;
 		write_line(line);

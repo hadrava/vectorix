@@ -124,8 +124,8 @@ int main(int argc, char **argv) { // ./main [configuration]
 		svg_output = fopen(parameters.output.vector_output_name.c_str(), "w");
 	if (svg_output) {
 		if (parameters.output.output_engine == 0) {
-			export_svg<editable> ex;
-			ex.write(svg_output, vector, parameters); // Write svg
+			exporter_svg ex;
+			ex.write(svg_output, vector); // Write svg
 		}
 		else {
 			exporter_ps ex;

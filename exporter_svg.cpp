@@ -7,9 +7,34 @@
 
 namespace vectorix {
 
-v_co editable::group_col; // Color of first fill path in one group
+void exporter_svg::write_header() { // Write image header
+	fprintf(fd, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+	fprintf(fd, "<svg\n");
+	fprintf(fd, "   xmlns:svg=\"http://www.w3.org/2000/svg\"\n");
+	fprintf(fd, "   xmlns=\"http://www.w3.org/2000/svg\"\n");
+	if (!image->underlay_path.empty()) // Original (or other) image can be linked and displayed in background, needs xlink extension
+		fprintf(fd, "   xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n");
+	fprintf(fd, "   version=\"1.1\"\n");
+	fprintf(fd, "   width=\"%f\"\n", image->width);
+	fprintf(fd, "   height=\"%f\"\n", image->height);
+	fprintf(fd, "   id=\"svg\">\n");
+	fprintf(fd, "  <g\n");
+	fprintf(fd, "     id=\"layer1\">\n");
+	if (!image->underlay_path.empty()) {
+		fprintf(fd, "    <image\n");
+		fprintf(fd, "       y=\"0\" x=\"0\"\n");
+		fprintf(fd, "       xlink:href=\"file://%s\"\n", image->underlay_path.c_str()); // Display background image
+		fprintf(fd, "       width=\"%f\"\n", image->width);
+		fprintf(fd, "       height=\"%f\" />\n", image->height);
+	}
+}
 
-void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output in editable way - one path.
+void exporter_svg::write_footer() {
+	fprintf(fd, "  </g>\n"); // Closes layer
+	fprintf(fd, "</svg>\n");
+}
+
+void exporter_svg::write_line(const v_line &line) { // Write one `v_line' in svg format to output in editable way - one path.
 	auto segment = line.segment.cbegin();
 	if ((line.get_group() == group_first) && (line.get_type() == stroke)) {
 		fprintf(fd, "    <g>\n"); // SVG group is used with stroke only
@@ -56,16 +81,5 @@ void editable::write_line(FILE *fd, const v_line &line) { // Write one `v_line' 
 	}
 }
 
-void grouped::write_line(FILE *fd, const v_line &line) { // Write one `v_line' in svg format to output with changing colors and width using group tag
-	if (line.get_type() == fill)
-		return editable::write_line(fd, line); // Filled regions should be rendered in `editable' way.
-
-	std::list<v_line> to_render;
-	geom::group_line(to_render, line); // Convert every line to list of grouped one-segment lines
-
-	for (v_line a: to_render) {
-		editable::write_line(fd, a); // Write every segment with editable exporter
-	}
-}
 
 }; // namespace
