@@ -10,7 +10,7 @@
 #include "potrace_handler.h"
 #include "custom_vectorizer.h"
 #include "render.h"
-#include "time_measurement.h"
+#include "timer.h"
 #include "opencv_render.h"
 #include "parameters.h"
 #include <opencv2/opencv.hpp>
@@ -65,7 +65,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 */
 	input_image.convert(binary_ppm);
 	v_image vector;
-	timer vectorization_timer(0); // Measure time (if compiled with TIMER_MEASURE), 0 -- without cpu preheating
+	timer vectorization_timer(0); // Measure time
 	vectorization_timer.start();
 		switch (parameters.vectorization_method) {
 			case 0: // Custom center-line based vectorizer
@@ -78,7 +78,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 				vector = vectorizer<stupid>::run(input_image, parameters);
 		}
 	vectorization_timer.stop();
-	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read()/1e6);
+	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read());
 
 	if (parameters.output.false_colors)
 		vector.false_colors(parameters.output.false_colors);
@@ -106,7 +106,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 		render_timer.start();
 			input_image = renderer::render(vector); // Render bezier curves
 		render_timer.stop();
-		fprintf(stderr, "Render time: %fs\n", render_timer.read()/1e6);
+		fprintf(stderr, "Render time: %fs\n", render_timer.read());
 		input_image.write(pnm_output); // Write rendered image to file
 		fclose(pnm_output);
 	}

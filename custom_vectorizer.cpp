@@ -4,7 +4,7 @@
 #include "pnm_handler.h"
 #include "vectorizer.h"
 #include "custom_vectorizer.h"
-#include "time_measurement.h"
+#include "timer.h"
 #include "parameters.h"
 #include <string>
 #include <cmath>
@@ -846,7 +846,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 					}
 					vectorize_waitKey(parameters.interactive-1);
 				}
-				vectorizer_info("Threshold time: %fs\n", threshold_timer.read()/1e6);
+				vectorizer_info("Threshold time: %fs\n", threshold_timer.read());
 				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
@@ -858,7 +858,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 				skeletonization_timer.start();
 					step2_skeletonization(binary, skeleton, distance, iteration, parameters); // Second step -- skeletonization
 				skeletonization_timer.stop();
-				vectorizer_info("Skeletonization time: %fs\n", skeletonization_timer.read()/1e6);
+				vectorizer_info("Skeletonization time: %fs\n", skeletonization_timer.read());
 
 				if (parameters.interactive) {
 					//show distance
@@ -885,7 +885,7 @@ v_image custom::vectorize(const pnm_image &original, params &parameters) { // Or
 				tracing_timer.start();
 					step3_tracing(orig, skeleton, distance, used_pixels, vect, parameters.step3); // Third step -- tracing
 				tracing_timer.stop();
-				vectorizer_info("Tracing time: %fs\n", tracing_timer.read()/1e6);
+				vectorizer_info("Tracing time: %fs\n", tracing_timer.read());
 				if (parameters.interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else

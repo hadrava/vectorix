@@ -320,7 +320,7 @@ custom_vectorizer | Vlastní vektorizační algoritmus vectorizer<custom>
 potrace_handler   | Vektorizace pomocí Potrace
 render            | Vykreselní z v_image do pnm_image (třída renderer)
 opencv_render     | Vykreselní z v_image do cv::Mat s použitím OpenCV
-time_measurement  | Měření času potřebného na běh jednotlivých částí
+timer             | Měření času potřebného na běh jednotlivých částí
 parameters        | Načítání konfiguračního souboru s parametry
 
 * Původní specifikace *
