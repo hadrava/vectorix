@@ -287,7 +287,7 @@ void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert 
 		list.front().set_group(group_normal);
 }
 
-void geom::convert_to_variable_width(v_image &img, int type, output_params &par) { // Convert lines before exporting to support variable-width lines
+void geom::convert_to_variable_width(v_image &img, int type, const output_params &par) { // Convert lines before exporting to support variable-width lines
 	for (auto c = img.line.begin(); c != img.line.end(); c++) {
 		std::list<v_line> new_list;
 		int new_type = type;

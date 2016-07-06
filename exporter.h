@@ -1,10 +1,10 @@
 #ifndef VECTORIX__EXPORTER_H
 #define VECTORIX__EXPORTER_H
 
-//Generic exporter
-
 #include <cstdio>
 #include "v_image.h"
+
+// Generic exporter
 
 namespace vectorix {
 

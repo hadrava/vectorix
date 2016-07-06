@@ -1,11 +1,11 @@
 #ifndef VECTORIX__EXPORTER_PS_H
 #define VECTORIX__EXPORTER_PS_H
 
-//Post Script exporter
-
 #include <cstdio>
 #include "exporter.h"
 #include "v_image.h"
+
+// Post Script exporter
 
 namespace vectorix {
 

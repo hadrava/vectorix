@@ -30,7 +30,7 @@ class geom {
 		static bool bezier_intersection(const v_point &a, const v_point &b, const v_point &c, const v_point &d, p &t1, p &t2);
 
 
-		static void convert_to_variable_width(v_image &img, int type, output_params &par); // Convert variable-width lines:
+		static void convert_to_variable_width(v_image &img, int type, const output_params &par); // Convert variable-width lines:
 		static void auto_smooth(v_line &line); // Make line auto-smooth (drop all control points and calculate them from begining
 
 		static p angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2);

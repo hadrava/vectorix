@@ -1,7 +1,5 @@
-#ifndef VECTORIX__EXPORT_SVG_H
-#define VECTORIX__EXPORT_SVG_H
-
-// SVG export
+#ifndef VECTORIX__EXPORTER_SVG_H
+#define VECTORIX__EXPORTER_SVG_H
 
 #include <cstdio>
 #include <cstdarg>
@@ -9,13 +7,14 @@
 #include "v_image.h"
 #include "parameters.h"
 
+// SVG exporter
 
 namespace vectorix {
 
 // Default exporter
 class editable {
 public:
-	static void write_line(FILE *fd, const v_line &line, const params &parameters);
+	static void write_line(FILE *fd, const v_line &line);
 private:
 	static v_co group_col; // Color of first "fill"-style line in a group
 };
@@ -23,7 +22,7 @@ private:
 // Export everything in grouped format, should not be needed
 class grouped {
 public:
-	static void write_line(FILE *fd, const v_line &line, const params &parameters);
+	static void write_line(FILE *fd, const v_line &line);
 };
 
 
@@ -36,9 +35,9 @@ public:
 		for (v_line line: image.line) {
 			if (line.segment.empty())
 				continue;
-			Exporter::write_line(fd, line, parameters);
+			Exporter::write_line(fd, line);
 		}
-		svg_write_footer(fd, image, parameters);
+		svg_write_footer(fd, image);
 	};
 private:
 	static void svg_error(const char *format, ...) { // Helper function printf-like error
@@ -70,7 +69,7 @@ private:
 		}
 	};
 
-	static void svg_write_footer(FILE *fd, const v_image &image, const params &parameters) { // Footer
+	static void svg_write_footer(FILE *fd, const v_image &image) { // Footer
 		fprintf(fd, "  </g>\n"); // Closes layer
 		fprintf(fd, "</svg>\n");
 	};

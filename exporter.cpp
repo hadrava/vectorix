@@ -3,6 +3,8 @@
 #include "v_image.h"
 #include "exporter.h"
 
+// Generic exporter
+
 namespace vectorix {
 
 void exporter::write(FILE *fd_, const v_image &image_) {

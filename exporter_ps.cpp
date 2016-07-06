@@ -3,7 +3,7 @@
 #include "v_image.h"
 #include "exporter_ps.h"
 
-//Post Script exporter
+// Post Script exporter
 
 namespace vectorix {
 

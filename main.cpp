@@ -4,7 +4,7 @@
 #include "geom.h"
 #include "v_image.h"
 #include "pnm_handler.h"
-#include "export_svg.h"
+#include "exporter_svg.h"
 #include "exporter_ps.h"
 #include "vectorizer.h"
 #include "potrace_handler.h"
@@ -13,6 +13,7 @@
 #include "timer.h"
 #include "opencv_render.h"
 #include "parameters.h"
+#include "finisher.h"
 #include <opencv2/opencv.hpp>
 
 using namespace std;
@@ -111,19 +112,20 @@ int main(int argc, char **argv) { // ./main [configuration]
 		fclose(pnm_output);
 	}
 
+	// Pre-export changes & transformations
+	finisher fin;
+	fin.apply_settings(vector, parameters);
+	fin.apply_settings(vector, parameters);
+
 	/*
 	 * Save vector output to stdout / file specified in configfile
 	 */
 	if (!parameters.output.vector_output_name.empty())
 		svg_output = fopen(parameters.output.vector_output_name.c_str(), "w");
 	if (svg_output) {
-		geom::convert_to_variable_width(vector, parameters.output.export_type, parameters.output); // Convert image before writing
-
-		// TODO show debug lines
-		vector.show_debug_lines();
-
 		if (parameters.output.output_engine == 0) {
-			export_svg<editable>::write(svg_output, vector, parameters); // Write svg
+			export_svg<editable> ex;
+			ex.write(svg_output, vector, parameters); // Write svg
 		}
 		else {
 			exporter_ps ex;
