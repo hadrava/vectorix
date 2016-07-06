@@ -1,43 +1,29 @@
 #include <cstdio>
 #include <locale>
 #include "v_image.h"
-#include "export_ps.h"
+#include "exporter_ps.h"
 
-//Post Script export
+//Post Script exporter
 
 namespace vectorix {
 
-v_co export_ps::group_col; // Color of first line in a group
-p export_ps::height; // Height of an image for coordinate transformation
-
-void export_ps::write(FILE *fd, const v_image & image) {
-	std::locale("C"); // Set locale for printing flaoting-point
-	ps_write_header(fd, image); 
-	for (v_line line: image.line) {
-		if (line.segment.empty()) // Skip empty lines
-			continue;
-		write_line(fd, line);
-	}
-	ps_write_footer(fd, image);
-};
-
-void export_ps::ps_write_header(FILE *fd, const v_image &image) {
+void exporter_ps::write_header() {
 	fprintf(fd, "%%!PS-Adobe-3.0 EPSF-3.0\n");
-	int w = image.width;
-	int h = image.height;
-	height = image.height; // Save image height
+	int w = image->width;
+	int h = image->height;
 	fprintf(fd, "%%%%BoundingBox: 0 0 %d %d\n", w, h);
-	fprintf(fd, "gsave\n"); // Save current drawing state (needed for EPS)
+	fprintf(fd, "gsave\n"); // Save current drawing state (needed by EPS)
 };
 
-void export_ps::ps_write_footer(FILE *fd, const v_image &image) {
+void exporter_ps::write_footer() {
 	fprintf(fd, "grestore\n"); // Restore drawing state
 	fprintf(fd, "%%EOF\n");
 };
 
-void export_ps::write_line(FILE *fd, const v_line &line) {
+void exporter_ps::write_line(const v_line &line) {
 	auto segment = line.segment.cbegin();
-	fprintf(fd, "%f %f moveto\n", segment->main.x, height - segment->main.y); // y coordinate has to be transformed
+	auto h = image->height;
+	fprintf(fd, "%f %f moveto\n", segment->main.x, h - segment->main.y); // y coordinate has to be transformed
 
 	v_pt cn = segment->control_next;
 	int count = 1;
@@ -46,7 +32,7 @@ void export_ps::write_line(FILE *fd, const v_line &line) {
 	v_co color = segment->color;
 	segment++;
 	while (segment != line.segment.cend()) {
-		fprintf(fd, "%f %f %f %f %f %f curveto\n", cn.x, height - cn.y, segment->control_prev.x, height - segment->control_prev.y, segment->main.x, height - segment->main.y); // draw bezier curve
+		fprintf(fd, "%f %f %f %f %f %f curveto\n", cn.x, h - cn.y, segment->control_prev.x, h - segment->control_prev.y, segment->main.x, h - segment->main.y); // draw bezier curve
 		cn = segment->control_next;
 		count ++;
 		// average width, opacity and color

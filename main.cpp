@@ -5,7 +5,7 @@
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "export_svg.h"
-#include "export_ps.h"
+#include "exporter_ps.h"
 #include "vectorizer.h"
 #include "potrace_handler.h"
 #include "custom_vectorizer.h"
@@ -126,7 +126,8 @@ int main(int argc, char **argv) { // ./main [configuration]
 			export_svg<editable>::write(svg_output, vector, parameters); // Write svg
 		}
 		else {
-			export_ps::write(svg_output, vector); // Write postscript
+			exporter_ps ex;
+			ex.write(svg_output, vector); // Write postscript
 		}
 		if (svg_output != stdout)
 			fclose(svg_output);
