@@ -100,7 +100,7 @@ public:
 		return first;
 	};
 public:
-	static v_co from_color(p hue) { // Set color based on given hue
+	void saturated_hue(p hue) { // Set color based on given hue
 		auto from_hue = [](p hue) {
 			if (hue < 60)
 				return hue/60*255;
@@ -112,16 +112,14 @@ public:
 				return (p) (0);
 		};
 
-		v_co ret;
 		hue = fmodf(hue, 360);
-		ret.val[1] = from_hue(hue);
+		val[1] = from_hue(hue);
 		hue += 120;
 		hue = fmodf(hue, 360);
-		ret.val[0] = from_hue(hue);
+		val[0] = from_hue(hue);
 		hue += 120;
 		hue = fmodf(hue, 360);
-		ret.val[2] = from_hue(hue);
-		return ret;
+		val[2] = from_hue(hue);
 	}
 	int val[3];
 };

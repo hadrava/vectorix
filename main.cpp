@@ -81,9 +81,6 @@ int main(int argc, char **argv) { // ./main [configuration]
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read());
 
-	if (parameters.output.false_colors)
-		vector.false_colors(parameters.output.false_colors);
-
 	/*
 	 * Show and save output using OpenCV
 	 */

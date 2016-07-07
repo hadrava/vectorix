@@ -82,7 +82,8 @@ void v_line::set_color(v_co color) { // Set color to each point of line
 void v_image::false_colors(p hue_step) { // Colorize each line with saturated color
 	p hue = 0;
 	for (auto l = line.begin(); l != line.end(); l++) {
-		v_co col = v_co::from_color(hue); // Calculate color from hue
+		v_co col;
+		col.saturated_hue(hue); // Calculate color from hue
 		l->set_color(col); // Set color for current line
 		hue += hue_step; // Increase hue angle
 		hue = fmodf (hue, 360);

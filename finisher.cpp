@@ -6,6 +6,9 @@
 namespace vectorix {
 
 void finisher::apply_settings(v_image &vector, const params &parameters) {
+	if (parameters.output.false_colors)
+		vector.false_colors(parameters.output.false_colors);
+
 	geom::convert_to_variable_width(vector, parameters.output.export_type, parameters.output); // Convert image before writing
 
 	// TODO show debug lines
