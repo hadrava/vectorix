@@ -6,12 +6,13 @@
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "potrace_handler.h"
+#include "logger.h"
 
 // Vectorize using potracelib
 
 namespace vectorix {
 
-v_image potrace::vectorize(const pnm_image &original, const params &parameters) { // Vectorize using potrace library
+v_image vectorizer_potrace::vectorize(const pnm_image &original, params &parameters) { // Vectorize using potrace library
 	pnm_image image = original;
 	image.convert(pnm_variant_type::binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
 
@@ -32,13 +33,13 @@ v_image potrace::vectorize(const pnm_image &original, const params &parameters) 
 
 	potrace_param_t *pot_params = potrace_param_default(); // Use default Potrace parameters
 	if (!pot_params) {
-		fprintf(stderr, "Error: " __FILE__ ":%i: In %s(): %s\n", __LINE__, __func__, strerror(errno));
+		log.log<log_level::error>("Error: " __FILE__ ":%i: In %s(): %s\n", __LINE__, __func__, strerror(errno));
 		throw std::bad_alloc();
 	}
 
 	potrace_state_t *pot_state = potrace_trace(pot_params, &pot_bitmap); // Run tracing
 	if (!pot_state || pot_state->status != POTRACE_STATUS_OK) {
-		fprintf(stderr, "Error: " __FILE__ ":%i: In %s(): %s\n", __LINE__, __func__, strerror(errno));
+		log.log<log_level::error>("Error: " __FILE__ ":%i: In %s(): %s\n", __LINE__, __func__, strerror(errno));
 		throw std::bad_alloc();
 	}
 

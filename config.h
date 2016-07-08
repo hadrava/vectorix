@@ -16,7 +16,8 @@ const p epsilon = 0.00001f; // small value for comparision of two numbers
 
 #define VECTORIX_PNM_VERBOSITY   (log_level::warning)
 
-#define VECTORIX_VECTORIZER_DEBUG // Just show vectorizer debug messages
+#define VECTORIX_VECTORIZER_VERBOSITY   (log_level::debug)
+
 #define VECTORIX_HIGHGUI // Use opencv/highgui windows
 //#define VECTORIX_OUTLINE_DEBUG // Show convert to outline debug messages
 //#define VECTORIX_DEBUG // Enable run-time asserts

@@ -68,16 +68,19 @@ int main(int argc, char **argv) { // ./main [configuration]
 	v_image vector;
 	timer vectorization_timer(0); // Measure time
 	vectorization_timer.start();
+		vectorizer *ve;
 		switch (parameters.vectorization_method) {
 			case 0: // Custom center-line based vectorizer
-				vector = vectorizer<custom>::run(input_image, parameters);
+				ve = new vectorizer_vectorix;
 				break;
 			case 1: // Use potracelib
-				vector = vectorizer<potrace>::run(input_image, parameters);
+				ve = new vectorizer_potrace;
 				break;
 			case 2: // Stupid - just output simple line; frankly, it ignores input image
-				vector = vectorizer<stupid>::run(input_image, parameters);
+				ve = new vectorizer_example;
 		}
+		vector = ve->vectorize(input_image, parameters);
+		delete ve;
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read());
 
