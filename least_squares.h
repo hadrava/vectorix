@@ -3,24 +3,46 @@
 
 #include <vector>
 #include "config.h"
+#include "logger.h"
 
 namespace vectorix {
 
 class least_squares {
+public:
+	least_squares(unsigned int variable_count): count(variable_count), log(log_level::debug) {};
+	void add_equation(p *arr);
+	void evaluate();
+	p calc_error() const;
+	p operator[](unsigned int i) const;
+private:
+	typedef std::vector<p> vector_p;
+	class matrix_p {
 	public:
-		least_squares(unsigned int variable_count): count(variable_count) {};
-		void add_equation(p *arr);
-		void evaluate();
-		p calc_error() const;
-		p operator[](unsigned int i) const;
+		void add_row(vector_p v) {
+			// TODO assert save vector size
+			data.push_back(v);
+		};
+		unsigned int rows() const {
+			return data.size();
+		};
+		const vector_p operator[] (unsigned int i) const {
+			return data[i];
+		}
+		vector_p &operator[] (unsigned int i) {
+			return data[i];
+		}
+		void transpose();
+		void inverse();
+		matrix_p operator*(const matrix_p &a) const;
 	private:
-		unsigned int count;
-		std::vector<std::vector<p>> A;
-		std::vector<p> x_vector;
-		std::vector<p> y_vector;
-		static std::vector<std::vector<p>> transpose(const std::vector<std::vector<p>> &mat);
-		static std::vector<std::vector<p>> multiply(const std::vector<std::vector<p>> &a, const std::vector<std::vector<p>> &b);
-		static std::vector<std::vector<p>> inverse(std::vector<std::vector<p>> mat);
+		std::vector<vector_p> data;
+	};
+
+	unsigned int count;
+	matrix_p A;
+	vector_p x_vector;
+	vector_p y_vector;
+	logger log;
 };
 
 }; // namespace
