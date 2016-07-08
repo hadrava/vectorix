@@ -30,18 +30,18 @@ v_smooth_type v_point::get_smooth() {
 		prev -= next; // vector will be zero iff prev and next are heading in opposite direction
 		if (prev.len() <= epsilon) {
 			if ((pl - nl > epsilon) || (nl - pl > epsilon))
-				return smooth;
+				return v_smooth_type::smooth;
 			else
-				return symetric;
+				return v_smooth_type::symetric;
 		}
 	}
-	return corner;
+	return v_smooth_type::corner;
 }
 
 v_line::v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3) { // New line with control points: main(0), control(1) -- control(2), main(3)
 	segment.emplace_back(v_point(v_pt(x0,y0), v_pt(x0,y0), v_pt(x1,y1)));
 	segment.emplace_back(v_point(v_pt(x2,y2), v_pt(x3,y3), v_pt(x3,y3)));
-	type_ = stroke;
+	type_ = v_line_type::stroke;
 }
 
 void v_line::add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main) { // Add segment to end of a line (control_prev is added to previous point)

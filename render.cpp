@@ -19,7 +19,7 @@ void renderer::render_error(const char *format, ...) { // Errors are writen to s
 }
 
 void renderer::bezier_render(pnm_image &bitmap, const v_line &line) { // Render one path made of bezier curves (or straight line)
-	if (bitmap.type != binary_pgm) {
+	if (bitmap.type != pnm_variant_type::binary_pgm) {
 		render_error("Error: Image type %i not supported.\n", bitmap.type);
 		return;
 	}

@@ -19,7 +19,7 @@ void opencv_render(const v_image &vector, Mat &output, const params &parameters)
 		v_line l = line; // Copy line
 		geom::chop_line(l, parameters.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
 
-		if (l.get_type() == stroke) { // Normal lines
+		if (l.get_type() == v_line_type::stroke) { // Normal lines
 			auto two = l.segment.cbegin();
 			auto one = two;
 			if (two != l.segment.cend())
@@ -63,7 +63,7 @@ void opencv_render(const v_image &vector, Mat &output, const params &parameters)
 			delete []pts;
 		}
 
-		if ((l.get_group() == group_normal) || (l.get_group() == group_last)) { // Copy image to output
+		if ((l.get_group() == v_line_group::group_normal) || (l.get_group() == v_line_group::group_last)) { // Copy image to output
 			for (int i = 0; i < output.rows; i++) {
 				for (int j = 0; j < output.cols; j++) {
 					if (lout.at<Vec3b>(i,j) != Vec3b(255,255,255)) { // lout is not empty at this pixel

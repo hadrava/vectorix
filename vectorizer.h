@@ -5,6 +5,7 @@
 
 #include "pnm_handler.h"
 #include "v_image.h"
+#include "logger.h"
 #include <opencv2/opencv.hpp>
 
 namespace vectorix {
@@ -14,6 +15,8 @@ protected:
 	static void vectorizer_error(const char *format, ...); // Simple printf-like functions
 	static void vectorizer_info(const char *format, ...);
 	static void vectorizer_debug(const char *format, ...);
+
+	logger log = logger(log_level::debug);
 };
 
 class stupid : generic_vectorizer {

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <tuple>
 #include <vector>
+#include "logger.h"
 
 // Vectorizer
 

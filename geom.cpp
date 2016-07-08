@@ -260,7 +260,7 @@ p geom::angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2) {
 void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert one line to list of lines. Each created line consists of one segment. Created lines are marked as group
 	auto two = line.segment.begin();
 	auto one = two;
-	if ((two != line.segment.end()) && (line.get_type() == stroke))
+	if ((two != line.segment.end()) && (line.get_type() == v_line_type::stroke))
 		++two;
 	else {
 		list.push_back(line);
@@ -271,8 +271,8 @@ void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert 
 		v_line new_line;
 		new_line.segment.push_back(*one);
 		new_line.segment.push_back(*two);
-		new_line.set_type(stroke);
-		new_line.set_group(group_continue);
+		new_line.set_type(v_line_type::stroke);
+		new_line.set_group(v_line_group::group_continue);
 		list.push_back(new_line); // Add segment to list
 
 		one=two;
@@ -280,11 +280,11 @@ void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert 
 		segment_count++;
 	}
 	if (segment_count >= 2) {
-		list.front().set_group(group_first);
-		list.back().set_group(group_last);
+		list.front().set_group(v_line_group::group_first);
+		list.back().set_group(v_line_group::group_last);
 	}
 	else
-		list.front().set_group(group_normal);
+		list.front().set_group(v_line_group::group_normal);
 }
 
 void geom::convert_to_variable_width(v_image &img, int type, const output_params &par) { // Convert lines before exporting to support variable-width lines

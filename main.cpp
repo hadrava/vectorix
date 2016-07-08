@@ -64,7 +64,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	/*
 	 * Vectorize image
 	 */
-	input_image.convert(binary_ppm);
+	input_image.convert(pnm_variant_type::binary_ppm);
 	v_image vector;
 	timer vectorization_timer(0); // Measure time
 	vectorization_timer.start();

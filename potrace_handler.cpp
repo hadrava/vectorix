@@ -13,7 +13,7 @@ namespace vectorix {
 
 v_image potrace::vectorize(const pnm_image &original, const params &parameters) { // Vectorize using potrace library
 	pnm_image image = original;
-	image.convert(binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
+	image.convert(pnm_variant_type::binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
 
 	potrace_bitmap_t pot_bitmap; // Prepare Potrace data structure with image
 	pot_bitmap.w = image.width;
@@ -51,11 +51,11 @@ v_image potrace::vectorize(const pnm_image &original, const params &parameters) 
 		v_co color(0, 0, 0); // Foreground color should be black since Potrace knows only BW images
 		if (pot_path->sign == '-') {
 			color = v_co(255, 255, 255); // Inner curve (subtract) --> white color
-			if (vector.line.back().get_group() == group_normal) // last segment has + sign
-				vector.line.back().set_group(group_first); // last segment should be first in a group
-			if (vector.line.back().get_group() == group_last) // last segment has - sign
-				vector.line.back().set_group(group_continue); // last segment should be continuation of a group
-			line.set_group(group_last);
+			if (vector.line.back().get_group() == v_line_group::group_normal) // last segment has + sign
+				vector.line.back().set_group(v_line_group::group_first); // last segment should be first in a group
+			if (vector.line.back().get_group() == v_line_group::group_last) // last segment has - sign
+				vector.line.back().set_group(v_line_group::group_continue); // last segment should be continuation of a group
+			line.set_group(v_line_group::group_last);
 		}
 		line.add_point(v_pt(pot_path->curve.c[pot_path->curve.n - 1][2].x, pot_path->curve.c[pot_path->curve.n - 1][2].y), color); // Add last point --> closed path
 		for (int n = 0; n < pot_path->curve.n; n++) {
@@ -70,7 +70,7 @@ v_image potrace::vectorize(const pnm_image &original, const params &parameters) 
 						v_pt(pot_path->curve.c[n][2].x, pot_path->curve.c[n][2].y), color);
 			}
 		}
-		line.set_type(fill); // Change type to fill (from default stroke)
+		line.set_type(v_line_type::fill); // Change type to fill (from default stroke)
 		vector.add_line(line); // Add line to output
 		pot_path = pot_path->next; // Process next potrace path
 	}

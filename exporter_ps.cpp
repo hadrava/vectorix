@@ -42,17 +42,17 @@ void exporter_ps::write_line(const v_line &line) {
 		segment++;
 	}
 	color /= count;
-	if (line.get_type() == stroke) {
+	if (line.get_type() == v_line_type::stroke) {
 		fprintf(fd, "1 setlinecap\n"); // line end is round
 		fprintf(fd, "1 setlinejoin\n"); // line join is round
 		fprintf(fd, "%f setlinewidth\n", width/count); // average width
 		fprintf(fd, "%f %f %f setrgbcolor stroke\n", color.val[0]/255.f, color.val[1]/255.f, color.val[2]/255.f); // average color
 	}
 	else {
-		if ((line.get_group() == group_normal) || (line.get_group() == group_first)) {
+		if ((line.get_group() == v_line_group::group_normal) || (line.get_group() == v_line_group::group_first)) {
 			group_col = color; //save color of first area in a group
 		}
-		if ((line.get_group() == group_normal) || (line.get_group() == group_last)) {
+		if ((line.get_group() == v_line_group::group_normal) || (line.get_group() == v_line_group::group_last)) {
 			fprintf(fd, "%f %f %f setrgbcolor fill\n", group_col.val[0]/255.f, group_col.val[1]/255.f, group_col.val[2]/255.f); // fill with color
 		}
 	}

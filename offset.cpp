@@ -15,7 +15,7 @@
 namespace vectorix {
 
 void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
-	if (line.get_type() == fill) // It is already outline
+	if (line.get_type() == v_line_type::fill) // It is already outline
 		return;
 
 	auto two = line.segment.begin(); // Right point of current segment
@@ -131,7 +131,7 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 		ans.push_back(ans.front());
 
 	std::swap(line.segment, ans);
-	line.set_type(fill);
+	line.set_type(v_line_type::fill);
 }
 
 void offset::one_point_circle(v_line &line) {
@@ -170,7 +170,7 @@ void offset::one_point_circle(v_line &line) {
 	// Close with bezier curve
 	line.segment.push_back(line.segment.front());
 
-	line.set_type(fill);
+	line.set_type(v_line_type::fill);
 }
 
 bool offset::segment_outline(v_point &one, v_point &two, std::vector<v_point> &outline) {

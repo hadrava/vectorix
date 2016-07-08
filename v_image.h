@@ -10,7 +10,7 @@
 
 namespace vectorix {
 
-enum v_smooth_type {
+enum class v_smooth_type {
 	corner = 0,
 	smooth = 1,
 	symetric = 2
@@ -145,12 +145,12 @@ public:
 	v_smooth_type get_smooth();
 };
 
-enum v_line_type { // Line with given width / outline of area
+enum class v_line_type { // Line with given width / outline of area
 	stroke,
 	fill
 };
 
-enum v_line_group { // How are lines grouped
+enum class v_line_group { // How are lines grouped
 	// with v_line_type stroke similar to svg group
 	group_normal, // Just one line per object (no group)
 	group_first, // First line in an object - it has positive sign (black color)
@@ -161,7 +161,7 @@ enum v_line_group { // How are lines grouped
 class v_line { // One line or area
 public:
 	v_line(p x0, p y0, p x1, p y1, p x2, p y2, p x3, p y3);
-	v_line(): type_(stroke) {};
+	v_line(): type_(v_line_type::stroke) {};
 	void add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main);
 	void add_point(v_pt _p_control_next, v_pt _control_prev, v_pt _main, v_co _color, p _width = 1);
 	void add_point(v_pt _main);
@@ -176,7 +176,7 @@ public:
 	std::list<v_point> segment; // Line data
 private:
 	v_line_type type_; // Line type
-	v_line_group group_ = group_normal;
+	v_line_group group_ = v_line_group::group_normal;
 
 };
 
