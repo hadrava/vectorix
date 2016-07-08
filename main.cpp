@@ -66,23 +66,23 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 */
 	input_image.convert(pnm_variant_type::binary_ppm);
 	v_image vector;
+	vectorizer *ve;
+	switch (parameters.vectorization_method) {
+		case 0: // Custom center-line based vectorizer
+			ve = new vectorizer_vectorix;
+			break;
+		case 1: // Use potracelib
+			ve = new vectorizer_potrace;
+			break;
+		case 2: // Stupid - just output simple line; frankly, it ignores input image
+			ve = new vectorizer_example;
+	}
 	timer vectorization_timer(0); // Measure time
 	vectorization_timer.start();
-		vectorizer *ve;
-		switch (parameters.vectorization_method) {
-			case 0: // Custom center-line based vectorizer
-				ve = new vectorizer_vectorix;
-				break;
-			case 1: // Use potracelib
-				ve = new vectorizer_potrace;
-				break;
-			case 2: // Stupid - just output simple line; frankly, it ignores input image
-				ve = new vectorizer_example;
-		}
 		vector = ve->vectorize(input_image, parameters);
-		delete ve;
 	vectorization_timer.stop();
 	fprintf(stderr, "Vectorization time: %fs\n", vectorization_timer.read());
+	delete ve;
 
 	/*
 	 * Show and save output using OpenCV

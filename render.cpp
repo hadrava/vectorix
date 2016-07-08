@@ -11,16 +11,10 @@
 
 namespace vectorix {
 
-void renderer::render_error(const char *format, ...) { // Errors are writen to stderr
-	va_list args;
-	va_start(args, format);
-	vfprintf(stderr, format, args);
-	va_end(args);
-}
-
 void renderer::bezier_render(pnm_image &bitmap, const v_line &line) { // Render one path made of bezier curves (or straight line)
 	if (bitmap.type != pnm_variant_type::binary_pgm) {
-		render_error("Error: Image type %i not supported.\n", bitmap.type);
+		logger log(log_level::error);
+		log.log<log_level::error>("Error: Image type %i not supported.\n", bitmap.type);
 		return;
 	}
 	auto two = line.segment.cbegin();

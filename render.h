@@ -14,7 +14,6 @@ class renderer {
 public:
 	static pnm_image render(const v_image &vector);
 protected:
-	static void render_error(const char *format, ...);
 	static void bezier_render(pnm_image &bitmap, const v_line &line); // render one line
 };
 

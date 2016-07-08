@@ -3,7 +3,7 @@
 #include "geom.h"
 #include "pnm_handler.h"
 #include "vectorizer.h"
-#include "custom_vectorizer.h"
+#include "vectorizer_vectorix.h"
 #include "timer.h"
 #include "parameters.h"
 #include <string>
@@ -627,7 +627,7 @@ void vectorizer_vectorix::filter_best_variant_end(const Mat &color_input, const 
 			}
 			else {
 				var->pt.main = good;
-				var->type = end;
+				var->type = variant_type::end;
 				log.log<log_level::debug>("Setting type to end\n"); // We found end of line
 			}
 			break;
@@ -645,7 +645,7 @@ void vectorizer_vectorix::find_best_variant(const Mat &color_input, const Mat &s
 	}
 	log.log<log_level::debug>("last type is %i\n", last.type);
 
-	if (last.type == end) // Last point is marked as ending, do not predict anything
+	if (last.type == variant_type::end) // Last point is marked as ending, do not predict anything
 		return;
 
 	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Try smooth continuation
@@ -695,7 +695,7 @@ void vectorizer_vectorix::trace_part(const cv::Mat &color_input, const cv::Mat &
 	match_variant last_placed;
 	last_placed.pt.main.x = startpoint.x + 0.5f; // Move point to center of pixel
 	last_placed.pt.main.y = startpoint.y + 0.5f;
-	last_placed.type = start;
+	last_placed.type = variant_type::start;
 	int sum = 0;
 	int first_point = 2;
 	for (;;) {

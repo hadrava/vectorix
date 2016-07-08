@@ -5,7 +5,7 @@
 #include "potrace/include/potracelib.h"
 #include "v_image.h"
 #include "pnm_handler.h"
-#include "potrace_handler.h"
+#include "vectorizer_potrace.h"
 #include "logger.h"
 
 // Vectorize using potracelib

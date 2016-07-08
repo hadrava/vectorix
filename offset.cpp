@@ -290,7 +290,7 @@ void offset::set_circle_control_point_lengths(v_point &a, v_point &b, const v_pt
 	b.control_prev += b.main;
 }
 
-void prepare_tangent_offset_points(std::vector<p> &times, std::vector<v_pt> &center_pt, std::vector<p> &width, std::vector<v_pt> &offset_pt, int check_point_count, const v_point &a, const v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
+void offset::prepare_tangent_offset_points(std::vector<p> &times, std::vector<v_pt> &center_pt, std::vector<p> &width, std::vector<v_pt> &offset_pt, int check_point_count, const v_point &a, const v_point &b, const v_pt &c_main, const v_pt &c_next, const v_pt &d_prev, const v_pt &d_main, p c_width, p d_width) {
 	for (int i = 0; i < check_point_count; i++) {
 		times.push_back((i + 1.0) / (check_point_count + 1.0));
 	}
@@ -308,13 +308,13 @@ void prepare_tangent_offset_points(std::vector<p> &times, std::vector<v_pt> &cen
 		v_point middle;
 		geom::bezier_chop_in_t(center_one, center_two, middle, times[i], true);
 		center_pt.push_back(middle.main);
-		v_pt pt = offset::find_tangent(middle.main, middle.control_next, center_two.main, middle.width, d_width, 1.0);
+		v_pt pt = find_tangent(middle.main, middle.control_next, center_two.main, middle.width, d_width, 1.0);
 		width.push_back(middle.width);
 		offset_pt.push_back(pt);
 	}
 }
 
-int remove_hidden_offset_points(std::vector<v_pt> &center_pt, std::vector<v_pt> &offset_pt, std::vector<p> &times, std::vector<p> &width) {
+int offset::remove_hidden_offset_points(std::vector<v_pt> &center_pt, std::vector<v_pt> &offset_pt, std::vector<p> &times, std::vector<p> &width) {
 	/*
 	// Old version
 	// 1.5, Check for backward directions
@@ -538,16 +538,5 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 		}
 	}
 }
-
-#ifdef VECTORIX_OUTLINE_DEBUG
-void offset::offset_debug(const char *format, ...) {
-	va_list args;
-	va_start(args, format);
-	vfprintf(stderr, format, args);
-	va_end(args);
-}
-#else
-void offset::offset_debug(const char *format, ...) {}; // Does nothing
-#endif
 
 }; // namespace

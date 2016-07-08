@@ -24,7 +24,7 @@ typedef struct { // Structure for handle all unused starting points
 	int val; // Distance to edge of object
 } start_point;
 
-enum variant_type { // State of traced point
+enum class variant_type { // State of traced point
 	unset, // nothing special -- ordinary point
 	start, // start of line -- all directions has same probability
 	end // last point of a line -- we will refuse to continue
@@ -40,8 +40,8 @@ public:
 	v_point pt; // Point in image
 	variant_type type; // Tracing state
 	float depth; // Prediction depth (for DFS-like searching)
-	match_variant(): depth(0), type(unset) { pt = v_point(); };
-	match_variant(v_point p): depth(1), type(unset), pt(p) {};
+	match_variant(): depth(0), type(variant_type::unset) { pt = v_point(); };
+	match_variant(v_point p): depth(1), type(variant_type::unset), pt(p) {};
 };
 
 class vectorizer_vectorix: public vectorizer {
