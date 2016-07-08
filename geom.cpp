@@ -9,14 +9,15 @@
 #include <cstdio>
 
 namespace vectorix {
+namespace geom {
 
-p geom::distance(const v_pt &a, const v_pt &b) { // Calculate distance between two points
+p distance(const v_pt &a, const v_pt &b) { // Calculate distance between two points
 	p x = (a.x - b.x);
 	p y = (a.y - b.y);
 	return std::sqrt(x*x + y*y);
 }
 
-v_pt geom::rotate(const v_pt &vector, p angle) {
+v_pt rotate(const v_pt &vector, p angle) {
 	v_pt ans;
 	p c = std::cos(angle);
 	p s = std::sin(angle);
@@ -26,30 +27,30 @@ v_pt geom::rotate(const v_pt &vector, p angle) {
 	return ans;
 }
 
-v_pt geom::rotate_right_angle(const v_pt &vector, int sign) { // 1 == rotate left (in Cartesian c. s.), -1 == rotate right
+v_pt rotate_right_angle(const v_pt &vector, int sign) { // 1 == rotate left (in Cartesian c. s.), -1 == rotate right
 	v_pt ans;
 	ans.x = -vector.y * sign;
 	ans.y = vector.x * sign;
 	return ans;
 }
 
-p geom::dot_product(const v_pt &direction, const v_pt &vector) {
+p dot_product(const v_pt &direction, const v_pt &vector) {
 	return direction.x * vector.x + direction.y * vector.y;
 }
 
-p geom::bezier_maximal_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
+p bezier_maximal_length(const v_point &a, const v_point &b) { // Calculate maximal length of given segment
 	return distance(a.main, a.control_next) + distance(a.control_next, b.control_prev) + distance(b.control_prev, b.main);
 }
 
-p geom::bezier_minimal_length(const v_point &a, const v_point &b) { // Calculate minimal length of given segment
+p bezier_minimal_length(const v_point &a, const v_point &b) { // Calculate minimal length of given segment
 	return distance(a.main, b.main);
 }
 
-void geom::bezier_chop_in_half(v_point &one, v_point &two, v_point &newpoint) { // Add newpoint in the middle of bezier segment
+void bezier_chop_in_half(v_point &one, v_point &two, v_point &newpoint) { // Add newpoint in the middle of bezier segment
 	bezier_chop_in_t(one, two, newpoint, 0.5);
 }
 
-void geom::bezier_chop_in_t(v_point &one, v_point &two, v_point &newpoint, p t, bool constant) {
+void bezier_chop_in_t(v_point &one, v_point &two, v_point &newpoint, p t, bool constant) {
 	p s = 1 - t;
 	newpoint.control_prev = (one.main*s + one.control_next*t)*s + (one.control_next*s + two.control_prev*t)*t;
 
@@ -67,7 +68,7 @@ void geom::bezier_chop_in_t(v_point &one, v_point &two, v_point &newpoint, p t, 
 	}
 }
 
-void geom::chop_line(v_line &line, p max_distance) { // Chop whole line, so the maximal length of segment is max_distance
+void chop_line(v_line &line, p max_distance) { // Chop whole line, so the maximal length of segment is max_distance
 	auto two = line.segment.begin();
 	auto one = two;
 	if (two != line.segment.end())
@@ -85,7 +86,7 @@ void geom::chop_line(v_line &line, p max_distance) { // Chop whole line, so the 
 }
 
 
-v_pt geom::intersect(v_pt a, v_pt b, v_pt c, v_pt d) { // Calculate intersection of line AB with line CD. A and C are absolute coordinates. B is relative to A, D is relative to C
+v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d) { // Calculate intersection of line AB with line CD. A and C are absolute coordinates. B is relative to A, D is relative to C
 	// Geometry background is described in a documentation
 	/*
 	// Alternative version with unpleasant singularity
@@ -201,7 +202,7 @@ bool bezier_may_intersect(const v_point &a, const v_point &b, const v_point &c, 
 	return false;
 }
 
-bool geom::bezier_intersection(const v_point &a, const v_point &b, const v_point &c, const v_point &d, p &t1, p &t2) {
+bool bezier_intersection(const v_point &a, const v_point &b, const v_point &c, const v_point &d, p &t1, p &t2) {
 	if (!bezier_may_intersect(a, b, c, d))
 		return false;
 
@@ -246,7 +247,7 @@ bool geom::bezier_intersection(const v_point &a, const v_point &b, const v_point
 		return false;
 }
 
-p geom::angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2) {
+p angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2) {
 	v_pt a = dir2 - center;
 	p angle = a.angle();
 	a = dir1 - center;
@@ -257,7 +258,7 @@ p geom::angle_absolute(const v_pt &center, const v_pt &dir1, const v_pt &dir2) {
 }
 
 
-void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert one line to list of lines. Each created line consists of one segment. Created lines are marked as group
+void group_line(std::list<v_line> &list, const v_line &line) { // Convert one line to list of lines. Each created line consists of one segment. Created lines are marked as group
 	auto two = line.segment.begin();
 	auto one = two;
 	if ((two != line.segment.end()) && (line.get_type() == v_line_type::stroke))
@@ -287,7 +288,7 @@ void geom::group_line(std::list<v_line> &list, const v_line &line) { // Convert 
 		list.front().set_group(v_line_group::group_normal);
 }
 
-void geom::convert_to_variable_width(v_image &img, int type, const output_params &par) { // Convert lines before exporting to support variable-width lines
+void convert_to_variable_width(v_image &img, int type, const output_params &par) { // Convert lines before exporting to support variable-width lines
 	for (auto c = img.line.begin(); c != img.line.end(); c++) {
 		std::list<v_line> new_list;
 		int new_type = type;
@@ -330,7 +331,7 @@ void geom::convert_to_variable_width(v_image &img, int type, const output_params
 	}
 }
 
-void geom::auto_smooth(v_line &line) { // Forget all control points (except unused - first and last) and place them so the line is smooth
+void auto_smooth(v_line &line) { // Forget all control points (except unused - first and last) and place them so the line is smooth
 	for (auto pt = line.segment.begin(); pt != line.segment.end(); pt++) {
 		auto prev = pt;
 		if (prev == line.segment.begin()) // Skip first point
@@ -356,4 +357,5 @@ void geom::auto_smooth(v_line &line) { // Forget all control points (except unus
 }
 
 
-}; // namespace
+}; // namespace geom
+}; // namespace vectorix
