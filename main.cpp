@@ -105,7 +105,8 @@ int main(int argc, char **argv) { // ./main [configuration]
 	if (pnm_output) {
 		timer render_timer(0);
 		render_timer.start();
-			input_image = renderer::render(vector); // Render bezier curves
+		renderer re;
+		input_image = re.render(vector); // Render bezier curves
 		render_timer.stop();
 		fprintf(stderr, "Render time: %fs\n", render_timer.read());
 		input_image.write(pnm_output); // Write rendered image to file

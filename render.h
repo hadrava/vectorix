@@ -12,9 +12,9 @@ namespace vectorix {
 
 class renderer {
 public:
-	static pnm_image render(const v_image &vector);
-protected:
-	static void bezier_render(pnm_image &bitmap, const v_line &line); // render one line
+	pnm_image render(const v_image &vector);
+private:
+	void bezier_render(pnm_image &bitmap, const v_line &line); // render one line
 };
 
 }; // namespace
