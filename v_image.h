@@ -205,9 +205,9 @@ public:
 	std::list<v_line> line; // Image data
 	std::string underlay_path; // Underlay image for exporting
 
-	static void add_debug_line(v_pt a, v_pt b);
+	void add_debug_line(v_pt a, v_pt b);
 	void show_debug_lines();
-	static std::list<v_line> debug_line;
+	std::list<v_line> debug_line;
 };
 
 }; // namespace

@@ -102,7 +102,4 @@ void v_image::show_debug_lines() {
 	line.splice(line.end(), debug_line);
 }
 
-std::list<v_line> v_image::debug_line;
-
-
 }; // namespace

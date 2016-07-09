@@ -95,7 +95,7 @@ void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outlin
 			p projection = geom::dot_product(center_dir, offset_dir);
 			if (projection < 0.) {
 				std::cout << "Tady se to neprotina, ale pritom je podezreleporadi\n";
-				v_image::add_debug_line((*seg2)[0].main, (*seg)[1].main);
+				image->add_debug_line((*seg2)[0].main, (*seg)[1].main);
 			}
 
 			// Connect segments with arc.

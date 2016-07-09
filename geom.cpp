@@ -324,7 +324,7 @@ void convert_to_variable_width(v_image &img, int type, const output_params &par)
 				c--;
 				break;
 			case 2: // Convert line to its outline and fill it
-				offset convertor;
+				offset convertor(img);
 				convertor.convert_to_outline(*c, par.max_contour_error);
 				break;
 		}
