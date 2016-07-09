@@ -87,12 +87,12 @@ public:
 	int save_params(FILE *fd) const; // Write to filedescriptor
 	int save_params(const std::string filename) const; // Save parameters to file given by name
 private:
-	static int load_var(const char *name, const char *value, const char *my_name, int &data); // Load integer
-	static int load_var(const char *name, const char *value, const char *my_name, p &data); // Load p type (float)
-	static int load_var(const char *name, const char *value, const char *my_name, std::string &data); // Load string
-	static void save_var(FILE *fd, const char *name, int data); // Save integer
-	static void save_var(FILE *fd, const char *name, p data); // Save p type (float)
-	static void save_var(FILE *fd, const char *name, const std::string &data); // Save string
+	int load_var(const char *name, const char *value, const char *my_name, int &data); // Load integer
+	int load_var(const char *name, const char *value, const char *my_name, p &data); // Load p type (float)
+	int load_var(const char *name, const char *value, const char *my_name, std::string &data); // Load string
+	void save_var(FILE *fd, const char *name, int data) const; // Save integer
+	void save_var(FILE *fd, const char *name, p data) const; // Save p type (float)
+	void save_var(FILE *fd, const char *name, const std::string &data) const; // Save string
 };
 
 }; // namespace

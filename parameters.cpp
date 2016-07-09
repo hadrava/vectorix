@@ -31,17 +31,17 @@ int params::load_var(const char *name, const char *value, const char *my_name, s
 	return 0;
 }
 
-void params::save_var(FILE *fd, const char *name, int data) { // Save integer
+void params::save_var(FILE *fd, const char *name, int data) const { // Save integer
 	fprintf(fd, "%s %d\n", name, data);
 }
 
-void params::save_var(FILE *fd, const char *name, p data) { // Save p type (float)
+void params::save_var(FILE *fd, const char *name, p data) const { // Save p type (float)
 	fprintf(fd, "%s ", name);
 	fprintf(fd, p_printf, data);
 	fprintf(fd, "\n");
 }
 
-void params::save_var(FILE *fd, const char *name, const std::string &data) { // Save string
+void params::save_var(FILE *fd, const char *name, const std::string &data) const { // Save string
 	fprintf(fd, "%s %s\n", name, data.c_str());
 }
 
