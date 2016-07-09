@@ -256,6 +256,7 @@ pnm_image &pnm_image::operator=(pnm_image &&move) { // Move image
 		delete[] data;
 	data = move.data;
 	move.data = NULL;
+	return *this;
 }
 
 }; // namespace

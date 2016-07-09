@@ -48,7 +48,6 @@ least_squares::matrix_p least_squares::matrix_p::operator*(const matrix_p &b) co
 		}
 		ans.add_row(row);
 	}
-
 	return ans;
 }
 

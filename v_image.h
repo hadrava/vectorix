@@ -24,6 +24,7 @@ public:
 	v_pt &operator+=(const v_pt &other) { // Simple operators (in header for inlining).
 		x += other.x;
 		y += other.y;
+		return *this;
 	};
 	friend v_pt operator+(v_pt first, const v_pt &other) {
 		first += other;
@@ -32,6 +33,7 @@ public:
 	v_pt &operator-=(const v_pt &other) { // Simple operators (in header for inlining).
 		x -= other.x;
 		y -= other.y;
+		return *this;
 	};
 	friend v_pt operator-(v_pt first, const v_pt &other) {
 		first -= other;
@@ -40,6 +42,7 @@ public:
 	v_pt &operator*=(p mul) { // Simple operators (in header for inlining).
 		x *= mul;
 		y *= mul;
+		return *this;
 	};
 	friend v_pt operator*(v_pt first, p mul) {
 		first *= mul;
@@ -48,6 +51,7 @@ public:
 	v_pt &operator/=(p div) { // Simple operators (in header for inlining).
 		x /= div;
 		y /= div;
+		return *this;
 	};
 	friend v_pt operator/(v_pt first, p div) {
 		first /= div;
@@ -80,6 +84,7 @@ public:
 		val[0] += other.val[0];
 		val[1] += other.val[1];
 		val[2] += other.val[2];
+		return *this;
 	};
 	friend v_co operator+(v_co first, v_co second) {
 		first += second;
@@ -89,11 +94,13 @@ public:
 		val[0] /= other;
 		val[1] /= other;
 		val[2] /= other;
+		return *this;
 	};
 	v_co &operator*=(p mul) {
 		val[0] *= mul;
 		val[1] *= mul;
 		val[2] *= mul;
+		return *this;
 	};
 	friend v_co operator*(v_co first, p mul) {
 		first *= mul;
