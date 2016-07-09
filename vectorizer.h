@@ -13,9 +13,8 @@ namespace vectorix {
 class vectorizer {
 public:
 	virtual v_image vectorize(const pnm_image &image, params &parameters) = 0;
-	vectorizer(): log(log_level::debug) {};
-	//TODO delete;
 protected:
+	vectorizer(): log(log_level::debug) {};
 	logger log;
 };
 

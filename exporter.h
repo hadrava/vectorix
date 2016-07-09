@@ -16,6 +16,7 @@ private:
 	virtual void write_line(const v_line &line) = 0;
 	virtual void write_footer() = 0;
 protected:
+	exporter() = default;
 	FILE *fd;
 	v_image const *image;
 };
