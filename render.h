@@ -12,9 +12,11 @@ namespace vectorix {
 
 class renderer {
 public:
+	renderer(parameters &params): par(&params) {};
 	pnm_image render(const v_image &vector);
 private:
 	void bezier_render(pnm_image &bitmap, const v_line &line); // render one line
+	parameters *par;
 };
 
 }; // namespace

@@ -11,7 +11,10 @@ namespace vectorix {
 
 class vectorizer_potrace: public vectorizer {
 public:
-	virtual v_image vectorize(const pnm_image &image, params &parameters);
+	virtual v_image vectorize(const pnm_image &image);
+	vectorizer_potrace(parameters &params) {
+		par = &params;
+	};
 };
 
 

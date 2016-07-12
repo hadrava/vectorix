@@ -14,7 +14,7 @@
 
 namespace vectorix {
 
-void offset::convert_to_outline(v_line &line, p max_error) { // Calculate outline of each line
+void offset::convert_to_outline(v_line &line) { // Calculate outline of each line
 	if (line.get_type() == v_line_type::fill) // It is already outline
 		return;
 

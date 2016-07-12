@@ -7,6 +7,7 @@
 #include <cstring>
 #include "logger.h"
 #include "config.h"
+#include "parameters.h"
 
 namespace vectorix {
 
@@ -23,13 +24,19 @@ enum class pnm_variant_type {
 
 class pnm_image {
 public:
-	pnm_image(): width(0), height(0), type(pnm_variant_type::ascii_pbm), maxvalue(1), data(NULL), log(VECTORIX_PNM_VERBOSITY) {}; // empty image
-	pnm_image(FILE *fd): log(VECTORIX_PNM_VERBOSITY) { read(fd); }; // load image from open filedescriptor
-	pnm_image(int _width, int _height, pnm_variant_type _type=pnm_variant_type::binary_pgm): width(_width), height(_height), type(_type), log(VECTORIX_PNM_VERBOSITY) { // create empty image with given image size and type
+	pnm_image(parameters &params): width(0), height(0), type(pnm_variant_type::ascii_pbm), maxvalue(1), data(NULL), par(&params) {
+		int *param_pnm_verbosity;
+		par->bind_param(param_pnm_verbosity, "pnm_verbosity", 0);
+		log.set_verbosity((log_level) *param_pnm_verbosity);
+	}; // empty image
+	pnm_image(int _width, int _height, pnm_variant_type _type, parameters &params): pnm_image(params) { // create empty image with given image size and type
+		width = _width;
+		height = _height;
+		type = _type;
 		maxvalue = guess_maxvalue();
 		data = new pnm_data_t[size()];
 	};
-	pnm_image(const pnm_image & copy): width(copy.width), height(copy.height), type(copy.type), maxvalue(copy.maxvalue), log(VECTORIX_PNM_VERBOSITY) { // copy constructor
+	pnm_image(const pnm_image & copy): width(copy.width), height(copy.height), type(copy.type), maxvalue(copy.maxvalue), log(copy.log), par(copy.par) { // copy constructor
 		data = new pnm_data_t[size()];
 		std::memcpy(data, copy.data, sizeof(pnm_data_t) * size());
 	};
@@ -53,6 +60,7 @@ private:
 	int guess_maxvalue(); // Get common maxvalue for image type (1 for bitmap, 255 for others)
 
 	logger log;
+	parameters *par;
 };
 
 }; // namespace

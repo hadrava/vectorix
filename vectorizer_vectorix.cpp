@@ -85,11 +85,11 @@ uchar &vectorizer_vectorix::safeat(const Mat &image, int i, int j) { // Safely a
 
 #ifdef VECTORIX_HIGHGUI
 // For compatibility issues we use const cv::Mat instead of cv::InputArray.
-void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters) { // Display image in highgui named window.
-	if (parameters.zoom_level) { // (Down)scale image before displaying
+void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat) { // Display image in highgui named window.
+	if (*param_zoom_level) { // (Down)scale image before displaying
 		Mat scaled_mat;
-		int w = mat.cols / (log10(parameters.zoom_level+10));
-		int h = mat.rows / (log10(parameters.zoom_level+10));
+		int w = mat.cols / (log10(*param_zoom_level+10));
+		int h = mat.rows / (log10(*param_zoom_level+10));
 		resize(mat, scaled_mat, Size(w, h));
 		return imshow(winname, scaled_mat);
 	}
@@ -103,7 +103,7 @@ void vectorizer_vectorix::vectorize_destroyWindow(const std::string& winname) { 
 	return destroyWindow(winname);
 }
 #else
-void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters) { // Highgui disabled, do nothing
+void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat) { // Highgui disabled, do nothing
 	return;
 }
 int vectorizer_vectorix::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'
@@ -132,24 +132,24 @@ void vectorizer_vectorix::normalize(Mat &out, int max) { // Normalize grayscale 
 	}
 }
 
-void vectorizer_vectorix::step1_threshold(Mat &to_threshold, step1_params &par) {
-	if (par.threshold_type == 0) { // Binary threshold guessed value
+void vectorizer_vectorix::step1_threshold(Mat &to_threshold) {
+	if (*param_threshold_type == 0) { // Binary threshold guessed value
 		log.log<log_level::debug>("threshold: Using Otsu's algorithm\n");
-		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY | THRESH_OTSU);
+		threshold(to_threshold, to_threshold, *param_threshold, 255, THRESH_BINARY | THRESH_OTSU);
 	}
-	else if (par.threshold_type == 1) { // Fixed binary threshold
-		log.log<log_level::debug>("threshold: Using binary threshold %i.\n", par.threshold);
-		threshold(to_threshold, to_threshold, par.threshold, 255, THRESH_BINARY);
+	else if (*param_threshold_type == 1) { // Fixed binary threshold
+		log.log<log_level::debug>("threshold: Using binary threshold %i.\n", *param_threshold);
+		threshold(to_threshold, to_threshold, *param_threshold, 255, THRESH_BINARY);
 	}
-	else if ((par.threshold_type >= 2) && (par.threshold_type <= 3)) { // Adaptive threshold
-		log.log<log_level::debug>("threshold: Using adaptive thresholdbinary threshold %i.\n", par.threshold);
-		par.adaptive_threshold_size |= 1; // Make threshold size odd
-		if (par.adaptive_threshold_size < 3)
-			par.adaptive_threshold_size = 3;
-		int type = ADAPTIVE_THRESH_GAUSSIAN_C; // par.threshold_type==2 -> gaussian
-		if (par.threshold_type == 3)
-			type = ADAPTIVE_THRESH_MEAN_C; // par.threshold_type==3 -> mean
-		adaptiveThreshold(to_threshold, to_threshold, 255, type, THRESH_BINARY, par.adaptive_threshold_size, par.threshold - 128);
+	else if ((*param_threshold_type >= 2) && (*param_threshold_type <= 3)) { // Adaptive threshold
+		log.log<log_level::debug>("threshold: Using adaptive thresholdbinary threshold %i.\n", *param_threshold);
+		*param_adaptive_threshold_size |= 1; // Make threshold size odd
+		if (*param_adaptive_threshold_size < 3)
+			*param_adaptive_threshold_size = 3;
+		int type = ADAPTIVE_THRESH_GAUSSIAN_C; // *param_threshold_type==2 -> gaussian
+		if (*param_threshold_type == 3)
+			type = ADAPTIVE_THRESH_MEAN_C; // *param_threshold_type==3 -> mean
+		adaptiveThreshold(to_threshold, to_threshold, 255, type, THRESH_BINARY, *param_adaptive_threshold_size, *param_threshold - 128);
 	}
 
 	for (int j = 0; j < to_threshold.rows; j += to_threshold.rows-1) { // Clear borders
@@ -163,13 +163,12 @@ void vectorizer_vectorix::step1_threshold(Mat &to_threshold, step1_params &par) 
 		}
 	}
 
-	if (!par.save_threshold_name.empty()) { // Save image after thresholding
-		imwrite(par.save_threshold_name, to_threshold);
+	if (!param_save_threshold_name->empty()) { // Save image after thresholding
+		imwrite(*param_save_threshold_name, to_threshold);
 	}
 }
 
-void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration, params &parameters) {
-	step2_params &par = parameters.step2;
+void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration) {
 	Mat bw     (binary_input.rows, binary_input.cols, CV_8UC(1));
 	Mat source = binary_input.clone();
 	Mat peeled = binary_input.clone(); // Objects in this image are peeled in every step by 1 px
@@ -182,17 +181,17 @@ void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &sk
 
 	double max = 1;
 	iteration = 1;
-	if (par.type == 1)
+	if (*param_skeletonization_type == 1)
 		std::swap(kernel, kernel_2); // use only square
 
 	while (max !=0) {
-		if (!par.save_peeled_name.empty()) { // Save every step of skeletonization
+		if (!param_save_peeled_name->empty()) { // Save every step of skeletonization
 			char filename [128];
-			std::snprintf(filename, sizeof(filename), par.save_peeled_name.c_str(), iteration);
+			std::snprintf(filename, sizeof(filename), param_save_peeled_name->c_str(), iteration);
 			imwrite(filename, peeled);
 		}
-		if (par.show_window == 1) { // Show every step of skeletonization
-			vectorize_imshow("Boundary peeling", peeled, parameters);
+		if (*param_show_steps_window == 1) { // Show every step of skeletonization
+			vectorize_imshow("Boundary peeling", peeled);
 			vectorize_waitKey(0);
 		}
 		int size = iteration * 2 + 1;
@@ -203,7 +202,7 @@ void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &sk
 		add_to_skeleton(skeleton, bw, iteration); // Add them to skeleton
 
 		// distance
-		if (par.type == 3) { // Most precise peeling - with circle
+		if (*param_skeletonization_type == 3) { // Most precise peeling - with circle
 			kernel_2 = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
 			erode(source, next_peeled, kernel_2);
 		}
@@ -216,27 +215,27 @@ void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &sk
 
 		std::swap(peeled, next_peeled);
 		minMaxLoc(peeled, NULL, &max, NULL, NULL); // we have at least one non-zero pixel
-		if (par.type == 0)
+		if (*param_skeletonization_type == 0)
 			std::swap(kernel, kernel_2); // diamond-square
 	}
-	if (par.show_window == 1) {
+	if (*param_show_steps_window == 1) {
 		vectorize_destroyWindow("Boundary peeling"); // Window is not needed anymore
 	}
-	if (!par.save_skeleton_name.empty()) { // Save output to file
-		imwrite(par.save_skeleton_name, skeleton);
+	if (!param_save_skeleton_name->empty()) { // Save output to file
+		imwrite(*param_save_skeleton_name, skeleton);
 	}
-	if (!par.save_distance_name.empty()) { // Save output to file
-		imwrite(par.save_distance_name, distance);
+	if (!param_save_distance_name->empty()) { // Save output to file
+		imwrite(*param_save_distance_name, distance);
 	}
-	if (!par.save_skeleton_normalized_name.empty()) { // Display skeletonization outcome
+	if (!param_save_skeleton_normalized_name->empty()) { // Display skeletonization outcome
 		Mat skeleton_normalized = skeleton.clone();
 		normalize(skeleton_normalized, iteration-1); // Make image more contrast
-		imwrite(par.save_skeleton_normalized_name, skeleton_normalized);
+		imwrite(*param_save_skeleton_normalized_name, skeleton_normalized);
 	}
-	if (!par.save_distance_normalized_name.empty()) { // Display skeletonization outcome
+	if (!param_save_distance_normalized_name->empty()) { // Display skeletonization outcome
 		Mat distance_normalized = distance.clone();
 		normalize(distance_normalized, iteration-1); // Make image more contrast
-		imwrite(par.save_distance_normalized_name, distance_normalized);
+		imwrite(*param_save_distance_normalized_name, distance_normalized);
 	}
 }
 
@@ -269,7 +268,7 @@ void vectorizer_vectorix::find_max_starting_point(std::vector<start_point> &star
 	log.log<log_level::debug>("New start point value: %i\n", max);
 }
 
-void vectorizer_vectorix::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par) {
+void vectorizer_vectorix::step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output) {
 	used_pixels = Scalar(0); // Pixels already used for tracing
 
 	// Speedup using OpenCV region of interest
@@ -287,7 +286,7 @@ void vectorizer_vectorix::step3_tracing(const cv::Mat &color_input, const cv::Ma
 	while (max !=0) { // While we have unused pixel.
 		//log.log<log_level::debug>("start tracing from: %i %i\n", max_pos.x, max_pos.y);
 		v_line line;
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par); // Trace first part of a line
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line); // Trace first part of a line
 		line.reverse();
 
 		// Drop everything (<= 254)
@@ -303,7 +302,7 @@ void vectorizer_vectorix::step3_tracing(const cv::Mat &color_input, const cv::Ma
 		}
 		else
 			line.segment.pop_back();
-		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line, par); //Trace second part of a line
+		trace_part(color_input, skeleton, distance, used_pixels, max_pos, line); //Trace second part of a line
 
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_BINARY); // save first point
 		threshold(used_pixels(step3_roi_get(step3_changed_start)), used_pixels(step3_roi_get(step3_changed_start)), 253, 255, THRESH_BINARY); // save first point
@@ -390,8 +389,8 @@ int vectorizer_vectorix::place_next_point_at(const Mat &skeleton, v_point &new_p
 	return sum;
 }
 
-float vectorizer_vectorix::calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par) { // Get average value from neighborhood with gaussian distribution
-	int limit = par.nearby_limit_gauss;
+float vectorizer_vectorix::calculate_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center) { // Get average value from neighborhood with gaussian distribution
+	int limit = *param_nearby_limit_gauss;
 	float res = 0;
 	for (int y = -limit; y<=limit; y++) {
 		for (int x = -limit; x<=limit; x++) { // Limit to rectangular area
@@ -400,15 +399,15 @@ float vectorizer_vectorix::calculate_gaussian(const Mat &skeleton, const Mat &di
 			if (safeat(skeleton, i, j) && (!safeat(used_pixels, i, j))) {
 				v_pt pixel(j+0.5f, i+0.5f);
 				pixel -= center;
-				res += std::exp(-(pixel.x*pixel.x + pixel.y*pixel.y)/par.distance_coef) * safeat(distance, i, j);
+				res += std::exp(-(pixel.x*pixel.x + pixel.y*pixel.y) / *param_distance_coef) * safeat(distance, i, j);
 			}
 		}
 	}
 	return res;
 }
 
-v_pt vectorizer_vectorix::find_best_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, step3_params &par, float size) { // Find best value in given area
-	if (size < par.gauss_precision) // Our area is lower than desired precision
+v_pt vectorizer_vectorix::find_best_gaussian(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float size) { // Find best value in given area
+	if (size < *param_gauss_precision) // Our area is lower than desired precision
 		return center;
 	float a[3][3];
 	for (int y = -1; y<=1; y++) {
@@ -416,7 +415,7 @@ v_pt vectorizer_vectorix::find_best_gaussian(const Mat &skeleton, const Mat &dis
 			v_pt offset(x, y);
 			offset *= size;
 			offset += center;
-			a[x+1][y+1] = calculate_gaussian(skeleton, distance, used_pixels, offset, par);
+			a[x+1][y+1] = calculate_gaussian(skeleton, distance, used_pixels, offset);
 		}
 	}
 	float i = a[0][0] + a[0][1] + a[1][0] + a[1][1]; // Upper left
@@ -438,10 +437,10 @@ v_pt vectorizer_vectorix::find_best_gaussian(const Mat &skeleton, const Mat &dis
 	else {
 		center += v_pt(size, size); // down + right
 	}
-	return find_best_gaussian(skeleton, distance, used_pixels, center, par, size); // continue in one quarter
+	return find_best_gaussian(skeleton, distance, used_pixels, center, size); // continue in one quarter
 }
 
-float vectorizer_vectorix::calculate_line_fitness(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist, step3_params &par) { // Calculate how 'good' is given line
+float vectorizer_vectorix::calculate_line_fitness(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist) { // Calculate how 'good' is given line
 	Point corner1(center.x - max_dist, center.y - max_dist); // Upper left corner
 	Point corner2(center.x + max_dist + 1, center.y + max_dist + 1); // Lower right corner
 	float res = 0;
@@ -459,43 +458,43 @@ float vectorizer_vectorix::calculate_line_fitness(const Mat &skeleton, const Mat
 					continue;
 				en *= base;
 				en -= pixel;
-				res += std::exp(-(en.x*en.x + en.y*en.y)/par.distance_coef) * safeat(distance, i, j); // Weight * value
+				res += std::exp(-(en.x*en.x + en.y*en.y) / *param_distance_coef) * safeat(distance, i, j); // Weight * value
 			}
 		}
 	}
 	return res;
 }
 
-v_pt vectorizer_vectorix::try_line_point(v_pt center, float angle, step3_params &par) { // Return point in distance par.nearby_limit from center in given angle
+v_pt vectorizer_vectorix::try_line_point(v_pt center, float angle) { // Return point in distance *param_nearby_limit from center in given angle
 	v_pt distpoint(cos(angle), sin(angle));
-	distpoint *= par.nearby_limit;
+	distpoint *= *param_nearby_limit;
 	distpoint += center;
 	return distpoint;
 }
 
-float vectorizer_vectorix::find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float angle, step3_params &par, float size, float min_dist) { // Find best line continuation in given angle
-	if (size < par.angular_precision) // we found maximum with enought precision
+float vectorizer_vectorix::find_best_line(const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt center, float angle, float size, float min_dist) { // Find best line continuation in given angle
+	if (size < *param_angular_precision) // we found maximum with enought precision
 		return angle;
 	size /= 2;
-	v_pt a = try_line_point(center, angle - size, par);
-	v_pt b = try_line_point(center, angle + size, par);
-	float af = calculate_line_fitness(skeleton, distance, used_pixels, center, a, min_dist, par.nearby_limit, par);
-	float bf = calculate_line_fitness(skeleton, distance, used_pixels, center, b, min_dist, par.nearby_limit, par);
+	v_pt a = try_line_point(center, angle - size);
+	v_pt b = try_line_point(center, angle + size);
+	float af = calculate_line_fitness(skeleton, distance, used_pixels, center, a, min_dist, *param_nearby_limit);
+	float bf = calculate_line_fitness(skeleton, distance, used_pixels, center, b, min_dist, *param_nearby_limit);
 	if (af>bf) // Go in a direction of better fitness
-		return find_best_line(skeleton, distance, used_pixels, center, angle - size, par, size, min_dist);
+		return find_best_line(skeleton, distance, used_pixels, center, angle - size, size, min_dist);
 	else
-		return find_best_line(skeleton, distance, used_pixels, center, angle + size, par, size, min_dist);
+		return find_best_line(skeleton, distance, used_pixels, center, angle + size, size, min_dist);
 }
 
-void vectorizer_vectorix::find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) { // Returns best placement of first point
-	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, par, 1); // Find best point in neighborhood of `last'
+void vectorizer_vectorix::find_best_variant_first_point(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match) { // Returns best placement of first point
+	v_pt best = find_best_gaussian(skeleton, distance, used_pixels, last, 1); // Find best point in neighborhood of `last'
 	match.emplace_back(match_variant(v_point(best, apxat_co(color_input, best), apxat(distance, best)*2)));
 	if (geom::distance(best, last) > epsilon) { // We find something else than `last'
 		match.emplace_back(match_variant(v_point(last, apxat_co(color_input, last), apxat(distance, last)*2))); // Return also second variant with exactly `last'
 	}
 }
 
-void vectorizer_vectorix::find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) { // Find best variant for next point, assuming line smoothness
+void vectorizer_vectorix::find_best_variant_smooth(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match) { // Find best variant for next point, assuming line smoothness
 	v_point pred;
 	v_pt prediction = line.segment.back().main;
 	auto hist = line.segment.end();
@@ -512,21 +511,22 @@ void vectorizer_vectorix::find_best_variant_smooth(const Mat &color_input, const
 	prediction -= line.segment.back().main;
 	prediction *= -1;
 	prediction /= prediction.len(); // Normalize
-	pred.control_next = line.segment.back().main + prediction*(par.nearby_limit/3); // Move by parameter
+	pred.control_next = line.segment.back().main + prediction*(*param_nearby_limit/3); // Move by parameter
 
-	step3_params pp = par;
-	pp.nearby_limit = par.nearby_limit + par.size_nearby_smooth;
-	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), par, par.max_angle_search_smooth, par.nearby_limit - par.size_nearby_smooth); // Find best line in given angle
-	pred.main = line.segment.back().main + v_pt(std::cos(angle), std::sin(angle))*par.nearby_limit;
+	p stored_nearby_limit = *param_nearby_limit;
+	*param_nearby_limit = *param_nearby_limit + *param_size_nearby_smooth;
+	float angle = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, prediction.angle(), *param_max_angle_search_smooth, stored_nearby_limit - *param_size_nearby_smooth); // Find best line in given angle
+	pred.main = line.segment.back().main + v_pt(std::cos(angle), std::sin(angle))*stored_nearby_limit;
 
-	pp.nearby_limit = par.nearby_control_smooth;
-	float angle2 = find_best_line(skeleton, distance, used_pixels, pred.main, angle, pp, par.max_angle_search_smooth, -par.size_nearby_smooth);
+	*param_nearby_limit = *param_nearby_control_smooth;
+	float angle2 = find_best_line(skeleton, distance, used_pixels, pred.main, angle, *param_max_angle_search_smooth, -*param_size_nearby_smooth);
 	// find best positon for control point
-	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(par.nearby_limit/3);
+	*param_nearby_limit = stored_nearby_limit;
+	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(*param_nearby_limit/3);
 
 	p smoothness = fabs(angle2 - prediction.angle()); // Calculate smoothness
 	if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
-		if (smoothness < par.smoothness) { // Line is smooth enought
+		if (smoothness < *param_smoothness) { // Line is smooth enought
 			pred.color = apxat_co(color_input, pred.main);
 			pred.width = apxat(distance, pred.main)*2;
 			match.push_back(match_variant(pred)); // Use default coef
@@ -555,43 +555,43 @@ void vectorizer_vectorix::find_best_variant_smooth(const Mat &color_input, const
 	}
 }
 
-void vectorizer_vectorix::find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
+void vectorizer_vectorix::find_best_variant_straight(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match) {
 	// Leave corner (or first point) with straight continuation
-	int size = par.nearby_limit;
-	float *fit = new float[par.angle_steps+2];
+	int size = *param_nearby_limit;
+	float *fit = new float[*param_angle_steps+2];
 	fit++;
-	for (int dir = 0; dir < par.angle_steps; dir++) { // Try every direction
-		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI/par.angle_steps*dir, par); // Place point
-		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, par.min_nearby_straight, par.nearby_limit, par); // Calculate point fitness
+	for (int dir = 0; dir < *param_angle_steps; dir++) { // Try every direction
+		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI / *param_angle_steps*dir); // Place point
+		fit[dir] = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, *param_min_nearby_straight, *param_nearby_limit); // Calculate point fitness
 	}
-	fit[-1] = fit[par.angle_steps-1]; // Make "borders" to array
-	fit[par.angle_steps] = fit[0];
+	fit[-1] = fit[*param_angle_steps-1]; // Make "borders" to array
+	fit[*param_angle_steps] = fit[0];
 
-	float *sortedfit = new float[par.angle_steps]; // Array of local maximas
+	float *sortedfit = new float[*param_angle_steps]; // Array of local maximas
 	int sortedfiti = 0;
-	for (int dir = 0; dir < par.angle_steps; dir++) {
+	for (int dir = 0; dir < *param_angle_steps; dir++) {
 		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) { // Look if direction is local maximum
-			sortedfit[sortedfiti++] = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, 2*M_PI/par.angle_steps*dir, par, 2*M_PI/par.angle_steps); // Move each direction a little
+			sortedfit[sortedfiti++] = find_best_line(skeleton, distance, used_pixels, line.segment.back().main, 2*M_PI / *param_angle_steps*dir, 2*M_PI / *param_angle_steps); // Move each direction a little
 		}
 	}
 	fit--;
 	delete []fit;
 
 	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool { // Sort by line fitness
-			v_pt da = try_line_point(line.segment.back().main, a, par);
-			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, par.min_nearby_straight, par.nearby_limit, par);
-			v_pt db = try_line_point(line.segment.back().main, b, par);
-			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, par.min_nearby_straight, par.nearby_limit, par);
+			v_pt da = try_line_point(line.segment.back().main, a);
+			float fa = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, da, *param_min_nearby_straight, *param_nearby_limit);
+			v_pt db = try_line_point(line.segment.back().main, b);
+			float fb = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, db, *param_min_nearby_straight, *param_nearby_limit);
 			return fa > fb;
 			});
 
 	//log.log<log_level::debug>("count of variants: %i\n", sortedfiti);
 	for (int dir = 0; dir < sortedfiti; dir++) {
 		//v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
-		//float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, 0, par.nearby_limit, par);
+		//float my = calculate_line_fitness(skeleton, distance, used_pixels, line.segment.back().main, distpoint, 0, *param_nearby_limit, par);
 		//log.log<log_level::debug>("Sorted variants: %f: %f\n", sortedfit[dir], my);
 
-		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
+		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir]);
 		v_point out = v_point(distpoint, apxat_co(color_input, distpoint), apxat(distance, distpoint)*2); // Get color and width
 		out.control_next = out.main - line.segment.back().main; // Calculate control points
 		out.control_next /= 3; // should be in one third between main points
@@ -604,7 +604,7 @@ void vectorizer_vectorix::find_best_variant_straight(const Mat &color_input, con
 	delete []sortedfit;
 }
 
-void vectorizer_vectorix::filter_best_variant_end(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
+void vectorizer_vectorix::filter_best_variant_end(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match) {
 	// Detect if first variant is good as ending of line
 	//for (auto var = match.begin(); var != match.end(); var++) {
 	if (match.empty())
@@ -636,10 +636,10 @@ void vectorizer_vectorix::filter_best_variant_end(const Mat &color_input, const 
 	}
 }
 
-void vectorizer_vectorix::find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match, step3_params &par) {
+void vectorizer_vectorix::find_best_variant(const Mat &color_input, const Mat &skeleton, const Mat &distance, const Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match) {
 	// Find all posible continuations of line
 	if (line.segment.empty()) { // Place first point
-		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par);
+		find_best_variant_first_point(color_input, skeleton, distance, used_pixels, last.pt.main, line, match);
 		log.log<log_level::debug>("find var first: %i\n", match.size());
 		return;
 	}
@@ -648,18 +648,18 @@ void vectorizer_vectorix::find_best_variant(const Mat &color_input, const Mat &s
 	if (last.type == variant_type::end) // Last point is marked as ending, do not predict anything
 		return;
 
-	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Try smooth continuation
+	find_best_variant_smooth(color_input, skeleton, distance, used_pixels, last.pt.main, line, match); // Try smooth continuation
 	log.log<log_level::debug>("find var smooth: %i\n", match.size());
-	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Make last point corner -- continue with straight line
+	find_best_variant_straight(color_input, skeleton, distance, used_pixels, last.pt.main, line, match); // Make last point corner -- continue with straight line
 	log.log<log_level::debug>("find var straight: %i\n", match.size());
 
-	filter_best_variant_end(color_input, skeleton, distance, used_pixels, last.pt.main, line, match, par); // Work as filter on existing variants -- if some point seems to be ending, fit its position and mark it
+	filter_best_variant_end(color_input, skeleton, distance, used_pixels, last.pt.main, line, match); // Work as filter on existing variants -- if some point seems to be ending, fit its position and mark it
 	log.log<log_level::debug>("find var end: %i\n", match.size());
 
 	return;
 }
 
-float vectorizer_vectorix::do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point, step3_params &par) {
+float vectorizer_vectorix::do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point) {
 	if (allowed_depth <= 0) {
 		return 0;
 	}
@@ -667,7 +667,7 @@ float vectorizer_vectorix::do_prediction(const cv::Mat &color_input, const cv::M
 	best_match.depth = -1;
 
 	std::vector<match_variant> all_matches;
-	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches, par); // Find all possible variants for next point
+	find_best_variant(color_input, skeleton, distance, used_pixels, last_placed, line, all_matches); // Find all possible variants for next point
 	for (int variant = 0; variant <= all_matches.size(); variant++) { // Try all variants
 		match_variant last_match;
 		if (variant < all_matches.size()) {
@@ -675,14 +675,14 @@ float vectorizer_vectorix::do_prediction(const cv::Mat &color_input, const cv::M
 		}
 		if (last_match.depth > 0) { // We allowed to do recursion
 			int sum = place_next_point_at(skeleton, last_match.pt, allowed_depth, line, used_pixels); // Mark point as used
-			last_match.depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match, allowed_depth - 1, line, new_point, par); // Do recursion with lower depth
+			last_match.depth += do_prediction(color_input, skeleton, distance, used_pixels, last_match, allowed_depth - 1, line, new_point); // Do recursion with lower depth
 			line.segment.pop_back();
 		}
 
 		if (last_match.depth > best_match.depth) { // We found better match
 			best_match = last_match; // best so far ...
 		}
-		if (allowed_depth - best_match.depth <= par.depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ... We found something good enought
+		if (allowed_depth - best_match.depth <= *param_depth_auto_choose) { // 0 = best depth need to be reached, 1 = one error is allowed, ... We found something good enought
 			break; // Do not try anything else
 		}
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), allowed_depth, 0, THRESH_TOZERO); // Drop all markings by recursive call do_prediction()
@@ -691,7 +691,7 @@ float vectorizer_vectorix::do_prediction(const cv::Mat &color_input, const cv::M
 	return best_match.depth;
 }
 
-void vectorizer_vectorix::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par) {
+void vectorizer_vectorix::trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line) {
 	match_variant last_placed;
 	last_placed.pt.main.x = startpoint.x + 0.5f; // Move point to center of pixel
 	last_placed.pt.main.y = startpoint.y + 0.5f;
@@ -700,7 +700,7 @@ void vectorizer_vectorix::trace_part(const cv::Mat &color_input, const cv::Mat &
 	int first_point = 2;
 	for (;;) {
 		match_variant new_point;
-		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, par.max_dfs_depth, line, new_point, par); // Do prediction (by recursion) -- place one new point
+		float depth_found = do_prediction(color_input, skeleton, distance, used_pixels, last_placed, *param_max_dfs_depth, line, new_point); // Do prediction (by recursion) -- place one new point
 
 		threshold(used_pixels(step3_roi_get(step3_changed)), used_pixels(step3_roi_get(step3_changed)), 253, 255, THRESH_TOZERO); // All changed pixels are in roi step3_changed
 		step3_roi_clear(step3_changed, used_pixels.cols, used_pixels.rows);
@@ -773,9 +773,9 @@ void vectorizer_vectorix::step2_changed(int, void *ptr) { // Parameter in step 2
 		*data->state = 4; // second step
 }
 
-v_image vectorizer_vectorix::vectorize(const pnm_image &original, params &parameters) { // Original should be PPM image (color)
+v_image vectorizer_vectorix::vectorize(const pnm_image &original) { // Original should be PPM image (color)
 	Mat orig (original.height, original.width, CV_8UC(3));
-	if (parameters.input.custom_input_name.empty()) {
+	if (param_custom_input_name->empty()) {
 		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures
 			for (int i = 0; i<original.width; i++) {
 				orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
@@ -786,7 +786,7 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original, params &parame
 	}
 	else {
 		// Configuration tell us to read image from file directly by OpenCV
-		orig = imread(parameters.input.custom_input_name, CV_LOAD_IMAGE_COLOR);
+		orig = imread(*param_custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
 	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255)); // Create boarders around image, replicate pixels
@@ -810,40 +810,40 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original, params &parame
 	int max_image_size = (orig.cols+orig.rows)*2;
 	trackbar_refs callback_data;
 	callback_data.state = &state;
-	callback_data.adaptive_threshold_size = &(parameters.step1.adaptive_threshold_size);
+	callback_data.adaptive_threshold_size = param_adaptive_threshold_size;
 	while (state) { // state 0 = end
 		switch (state) {
 			case 2: // First step
-				if (parameters.interactive) {
-					vectorize_imshow("Original", orig, parameters); // Show original color image
-					if (parameters.interactive == 2)
-						createTrackbar("Zoom out", "Original", &parameters.zoom_level, 10000, step1_changed, &callback_data);
-					vectorize_waitKey(parameters.interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
+				if (*param_interactive) {
+					vectorize_imshow("Original", orig); // Show original color image
+					if (*param_interactive == 2)
+						createTrackbar("Zoom out", "Original", param_zoom_level, 10000, step1_changed, &callback_data);
+					vectorize_waitKey(*param_interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 				}
 				cvtColor(orig, grayscale, CV_RGB2GRAY);
-				if (parameters.step1.invert_input)
+				if (*param_invert_input)
 					subtract(Scalar(255,255,255), grayscale, grayscale); // Invert input
-				if (parameters.interactive) {
-					vectorize_imshow("Grayscale", grayscale, parameters); // Show grayscale input image
-					if (parameters.interactive == 2)
-						createTrackbar("Invert input", "Grayscale", &parameters.step1.invert_input, 1, step1_changed, &callback_data);
-					vectorize_waitKey(parameters.interactive-1);
+				if (*param_interactive) {
+					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image
+					if (*param_interactive == 2)
+						createTrackbar("Invert input", "Grayscale", param_invert_input, 1, step1_changed, &callback_data);
+					vectorize_waitKey(*param_interactive-1);
 				}
 				binary = grayscale.clone();
 				threshold_timer.start();
-					step1_threshold(binary, parameters.step1); // First step -- thresholding
+					step1_threshold(binary); // First step -- thresholding
 				threshold_timer.stop();
-				if (parameters.interactive) {
-					vectorize_imshow("Threshold", binary, parameters); // Show after thresholding
-					if (parameters.interactive == 2) {
-						createTrackbar("Threshold type", "Threshold", &parameters.step1.threshold_type, 3, step1_changed, &callback_data);
-						createTrackbar("Threshold", "Threshold", &parameters.step1.threshold, 255, step1_changed, &callback_data);
-						createTrackbar("Adaptive threshold", "Threshold", &parameters.step1.adaptive_threshold_size, max_image_size, step1_changed, &callback_data);
+				if (*param_interactive) {
+					vectorize_imshow("Threshold", binary); // Show after thresholding
+					if (*param_interactive == 2) {
+						createTrackbar("Threshold type", "Threshold", param_threshold_type, 3, step1_changed, &callback_data);
+						createTrackbar("Threshold", "Threshold", param_threshold, 255, step1_changed, &callback_data);
+						createTrackbar("Adaptive threshold", "Threshold", param_adaptive_threshold_size, max_image_size, step1_changed, &callback_data);
 					}
-					vectorize_waitKey(parameters.interactive-1);
+					vectorize_waitKey(*param_interactive-1);
 				}
 				log.log<log_level::info>("Threshold time: %fs\n", threshold_timer.read());
-				if (parameters.interactive == 2)
+				if (*param_interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // ... continue with next step
@@ -852,26 +852,26 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original, params &parame
 				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(binary, skeleton, distance, iteration, parameters); // Second step -- skeletonization
+					step2_skeletonization(binary, skeleton, distance, iteration); // Second step -- skeletonization
 				skeletonization_timer.stop();
 				log.log<log_level::info>("Skeletonization time: %fs\n", skeletonization_timer.read());
 
-				if (parameters.interactive) {
+				if (*param_interactive) {
 					//show distance
 					distance_show = distance.clone();
 					normalize(distance_show, iteration-1); // Normalize image before displaying
-					vectorize_imshow("Distance", distance_show, parameters);
-					vectorize_waitKey(parameters.interactive-1);
+					vectorize_imshow("Distance", distance_show);
+					vectorize_waitKey(*param_interactive-1);
 
 					//show skeleton
 					skeleton_show = skeleton.clone();
 					threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
-					vectorize_imshow("Skeleton", skeleton_show, parameters);
-					if (parameters.interactive == 2)
-						createTrackbar("Skeletonization", "Skeleton", &parameters.step2.type, 3, step2_changed, &callback_data);
-					vectorize_waitKey(parameters.interactive-1);
+					vectorize_imshow("Skeleton", skeleton_show);
+					if (*param_interactive == 2)
+						createTrackbar("Skeletonization", "Skeleton", param_skeletonization_type, 3, step2_changed, &callback_data);
+					vectorize_waitKey(*param_interactive-1);
 				}
-				if (parameters.interactive == 2)
+				if (*param_interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // ... continue with next step
@@ -879,10 +879,10 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original, params &parame
 			case 6:
 				used_pixels = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				tracing_timer.start();
-					step3_tracing(orig, skeleton, distance, used_pixels, vect, parameters.step3); // Third step -- tracing
+					step3_tracing(orig, skeleton, distance, used_pixels, vect); // Third step -- tracing
 				tracing_timer.stop();
 				log.log<log_level::info>("Tracing time: %fs\n", tracing_timer.read());
-				if (parameters.interactive == 2)
+				if (*param_interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // .. and quit

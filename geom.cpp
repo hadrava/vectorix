@@ -288,7 +288,11 @@ void group_line(std::list<v_line> &list, const v_line &line) { // Convert one li
 		list.front().set_group(v_line_group::group_normal);
 }
 
-void convert_to_variable_width(v_image &img, int type, const output_params &par) { // Convert lines before exporting to support variable-width lines
+void convert_to_variable_width(v_image &img, int type, parameters &params) { // Convert lines before exporting to support variable-width lines
+	p *param_auto_contour_variance;
+	params.add_comment("How often draw as contour: higher values: less often, lower: more often, negative: always use contours");
+	params.bind_param(param_auto_contour_variance, "auto_contour_variance", (p) 5);
+
 	for (auto c = img.line.begin(); c != img.line.end(); c++) {
 		std::list<v_line> new_list;
 		int new_type = type;
@@ -308,7 +312,7 @@ void convert_to_variable_width(v_image &img, int type, const output_params &par)
 					variance += (a.width - mean) * (a.width - mean);
 				}
 				variance /= count;
-				if (variance > par.auto_contour_variance)
+				if (variance > *param_auto_contour_variance)
 					new_type = 2; // Width is changing too much, calculate outline and fill it
 				else
 					new_type = 0; // Line has (almost) constant width, do nothing
@@ -324,8 +328,8 @@ void convert_to_variable_width(v_image &img, int type, const output_params &par)
 				c--;
 				break;
 			case 2: // Convert line to its outline and fill it
-				offset convertor(img);
-				convertor.convert_to_outline(*c, par.max_contour_error);
+				offset convertor(img, params);
+				convertor.convert_to_outline(*c);
 				break;
 		}
 	}

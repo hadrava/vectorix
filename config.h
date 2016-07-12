@@ -14,8 +14,6 @@ const p epsilon = 0.00001f; // small value for comparision of two numbers
 
 #define VECTORIX_MAX_VERBOSITY   (log_level::debug) // debug = everything can be logged
 
-#define VECTORIX_PNM_VERBOSITY   (log_level::warning)
-
 #define VECTORIX_VECTORIZER_VERBOSITY   (log_level::debug)
 
 #define VECTORIX_HIGHGUI // Use opencv/highgui windows

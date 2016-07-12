@@ -19,8 +19,11 @@ enum class log_level {
 
 class logger {
 public:
+	logger() = default;
 	logger(log_level verbosity): verbosity_(verbosity) {};
-	logger() = delete;
+	void set_verbosity(log_level verbosity) {
+		verbosity_ = verbosity;
+	}
 
 	template <log_level L> void log(const char *format, ...) {
 		if (L <= VECTORIX_MAX_VERBOSITY) {

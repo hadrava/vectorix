@@ -5,94 +5,138 @@
 
 #include <string>
 #include <cstdio>
+#include <vector>
+#include <memory>
+#include <unordered_map>
 #include "config.h"
 
 namespace vectorix {
 
-typedef struct { // Input reading
-	std::string pnm_input_name;
-	std::string custom_input_name;
-} input_params;
-
-typedef struct { // Custom vectorizer thresholding params
-	int invert_input;
-	int threshold;
-	int threshold_type; // 0=otsu, 1 fixed, 2 adaptive
-	int adaptive_threshold_size;
-	std::string save_threshold_name;
-} step1_params;
-
-typedef struct { // Custom vectorizer skeleronization params
-	int type; // 0=fast diamod-square, 1=square, 2=diamond, 3=circle
-	int show_window; // 0 - no, 1 - yes
-	std::string save_peeled_name; // "out/boundary_%03d.png"
-	std::string save_skeleton_name;
-	std::string save_distance_name;
-	std::string save_skeleton_normalized_name;
-	std::string save_distance_normalized_name;
-} step2_params;
-
-typedef struct { // Custom vectorizer tracing params
-	float depth_auto_choose;
-	int max_dfs_depth;
-	p nearby_limit;
-	p min_nearby_straight;
-	p size_nearby_smooth;
-	p nearby_control_smooth;
-	p max_angle_search_smooth;
-	p smoothness;
-	int nearby_limit_gauss;
-	float distance_coef;
-	float gauss_precision;
-	int angle_steps;
-	float angular_precision;
-} step3_params;
-
-typedef struct { // Renderer params
-	p render_max_distance;
-} opencv_render_params;
-
-typedef struct { // Exporting params
-	int export_type;
-	int output_engine;
-	p max_contour_error;
-	p auto_contour_variance;
-	std::string vector_output_name;
-	std::string pnm_output_name;
-	std::string save_opencv_rendered_name;
-	std::string svg_underlay_image;
-	p svg_force_opacity;
-	p svg_force_width;
-	p false_colors;
-	int show_opencv_rendered_window;
-} output_params;
-
-class params { // All parameters
-public:
-	input_params input;
-	int vectorization_method; // 0-custom, 1-potrace, 2-stupid
-	int interactive; // 0-no, 1-window, 2-infinity
-	step1_params step1;
-	step2_params step2;
-	step3_params step3;
-	opencv_render_params opencv_render;
-	output_params output;
-	int save_parameters_append;
-	std::string save_parameters_name;
-	int zoom_level;
-
-	params();
-	int load_params(FILE *fd); // Read from filedescriptor
-	int load_params(const std::string filename); // Load parameters from file given by name
-	int save_params(FILE *fd) const; // Write to filedescriptor
-	int save_params(const std::string filename) const; // Save parameters to file given by name
+class parameters {
 private:
-	int load_var(const char *name, const char *value, const char *my_name, int &data); // Load integer
-	int load_var(const char *name, const char *value, const char *my_name, p &data); // Load p type (float)
-	int load_var(const char *name, const char *value, const char *my_name, std::string &data); // Load string
-	void save_var(FILE *fd, const char *name, int data) const; // Save integer
-	void save_var(FILE *fd, const char *name, p data) const; // Save p type (float)
-	void save_var(FILE *fd, const char *name, const std::string &data) const; // Save string
+	class param {
+	public:
+		virtual void save_var(FILE *fd) const = 0;
+		virtual void load_var(const char *new_val) = 0;
+		virtual void dafault_var() = 0;
+		std::string name;
+	protected:
+		param() = default;
+	};
+
+	template <typename T> class param_spec: public param {};
+
+	class comment: public param {
+		virtual void save_var(FILE *fd) const {
+			fprintf(fd, "%s\n", name.c_str());
+		};
+		virtual void load_var(const char *new_val) {};
+		virtual void dafault_var() {};
+	};
+public:
+	template <typename T> void bind_param(T *&variable, const char *name, const T&def_value) {
+		std::shared_ptr<param_spec<T>> s = std::make_shared<param_spec<T>>();
+		s->def_value = def_value;
+		s->name = name;
+		s->value = def_value;
+
+		auto old = binded_list.find(s->name);
+		if (old == binded_list.end()) {
+			auto lazy_config = not_loaded.find(s->name);
+			if (lazy_config != not_loaded.end()) {
+				s->load_var(lazy_config->second.c_str());
+			}
+
+			parameter_list.push_back(s);
+			binded_list.insert({s->name, s});
+		}
+		else {
+			s = std::dynamic_pointer_cast<param_spec<T>> (old->second);
+			if (!s) {
+				fprintf(stderr, "Bug found: same parameter (%s) is used for two different types.\n", name);
+				throw std::bad_cast();
+			}
+		}
+
+		variable = &s->value;
+	};
+	void add_comment(const char *name);
+	void reset_to_defaults();
+
+	void load_params(FILE *fd); // Read from filedescriptor
+	void load_params(const std::string filename); // Load parameters from file given by name
+	void save_params(FILE *fd) const; // Write to filedescriptor
+	void save_params(const std::string filename, bool append = true) const; // Save parameters to file given by name
+
+	std::vector<std::shared_ptr<param>> parameter_list;
+	std::unordered_map<std::string, std::string> not_loaded;
+	std::unordered_map<std::string, std::shared_ptr<param>> binded_list;
+		//TODO warn on destoy, if map is not empty;
+		//(unused line in config..., TODO linenumber)
+};
+
+template <>
+class parameters::param_spec<int>: public param {
+public:
+	virtual void save_var(FILE *fd) const {
+		fprintf(fd, "%s %i\n", name.c_str(), value);
+	};
+	virtual void load_var(const char *new_val) {
+		sscanf(new_val, "%d", &value);
+	};
+	virtual void dafault_var() {
+		value = def_value;
+	};
+	int value;
+	int def_value;
+};
+
+template <>
+class parameters::param_spec<float>: public param {
+public:
+	virtual void save_var(FILE *fd) const {
+		fprintf(fd, "%s %f\n", name.c_str(), value);
+	};
+	virtual void load_var(const char *new_val) {
+		sscanf(new_val, "%f", &value);
+	};
+	virtual void dafault_var() {
+		value = def_value;
+	};
+	float value;
+	float def_value;
+};
+
+template <>
+class parameters::param_spec<double>: public param {
+public:
+	virtual void save_var(FILE *fd) const {
+		fprintf(fd, "%s %f\n", name.c_str(), value);
+	};
+	virtual void load_var(const char *new_val) {
+		sscanf(new_val, "%lf", &value);
+	};
+	virtual void dafault_var() {
+		value = def_value;
+	};
+	double value;
+	double def_value;
+};
+
+template <>
+class parameters::param_spec<std::string>: public param {
+public:
+	virtual void save_var(FILE *fd) const {
+		fprintf(fd, "%s %s\n", name.c_str(), value.c_str());
+	};
+	virtual void load_var(const char *new_val) {
+		value = new_val;
+	};
+	virtual void dafault_var() {
+		value = def_value;
+	};
+	std::string value;
+	std::string def_value;
 };
 
 }; // namespace

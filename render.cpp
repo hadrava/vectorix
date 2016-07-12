@@ -49,7 +49,7 @@ void renderer::bezier_render(pnm_image &bitmap, const v_line &line) { // Render 
 }
 
 pnm_image renderer::render(const v_image &vector) {
-	auto bitmap = pnm_image(vector.width, vector.height);
+	auto bitmap = pnm_image(vector.width, vector.height, pnm_variant_type::binary_pgm, *par);
 	bitmap.erase_image();
 	for (v_line line: vector.line) { // Render each line in image
 		bezier_render(bitmap, line);

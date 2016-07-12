@@ -119,7 +119,7 @@ void pnm_image::convert(pnm_variant_type new_type) {
 	if (type == new_type) // Nothing to convert, we are already there
 		return;
 
-	auto dest = pnm_image(width, height, new_type);
+	auto dest = pnm_image(width, height, new_type, *par);
 	int new_size = dest.size();
 
 	int convert_type = (type <= pnm_variant_type::ascii_ppm) ? (int) type : (int) type - 3; // Forget about binary/ascii

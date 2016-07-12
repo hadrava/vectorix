@@ -46,18 +46,109 @@ public:
 
 class vectorizer_vectorix: public vectorizer {
 public:
-	virtual v_image vectorize(const pnm_image &image, params &parameters);
+	virtual v_image vectorize(const pnm_image &image);
+	vectorizer_vectorix(parameters &params) {
+		par = &params;
+
+		par->bind_param(param_custom_input_name, "file_input", (std::string) "");
+
+		par->add_comment("Interactive mode: 0: disable, 1: show windows, 2: show trackbars");
+		par->bind_param(param_interactive, "interactive", 2);
+		par->add_comment("Scale images before viewing in window: 0: No scaling, 100: Small pictures");
+		par->bind_param(param_zoom_level, "zoom_level", 0);
+
+		par->add_comment("Phase 1: Thresholding");
+		par->add_comment("Invert colors: 0: white lines, 1: black lines");
+		par->bind_param(param_invert_input, "invert_colors", 1);
+		par->add_comment("Threshold type: 0: Otsu's algorithm, 1: Fixed value");
+		par->bind_param(param_threshold_type, "threshold_type", 0);
+		par->add_comment("Threshold vale: 0-255");
+		par->bind_param(param_threshold, "threshold", 127);
+		par->add_comment("Adaptive threshold size: 3, 5, 7, ...");
+		par->bind_param(param_adaptive_threshold_size, "adaptive_threshold_size", 7);
+		par->add_comment("Save thresholded image to file: empty: no output");
+		par->bind_param(param_save_threshold_name, "file_threshold_output", (std::string) "");
+
+		par->add_comment("Phase 2: Skeletonization");
+		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow)");
+		par->bind_param(param_skeletonization_type, "type", 0); //TODO rename param
+		par->add_comment("Show steps in separate window");
+		par->bind_param(param_show_steps_window, "show_window_steps", 0); //TODO rename
+		par->add_comment("Save steps to files, %%03d will be replaced with iteration number");// TODO not safe, exploitable config file!
+		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_%03d.png");
+		par->add_comment("Save skeleton/distance with/without normalization");
+		par->bind_param(param_save_skeleton_name, "file_skeleton", (std::string) "out/skeleton.png");
+		par->bind_param(param_save_distance_name, "file_distance", (std::string) "out/distance.png");
+		par->bind_param(param_save_skeleton_normalized_name, "file_skeleton_norm", (std::string) "out/skeleton_norm.png");
+		par->bind_param(param_save_distance_normalized_name, "file_distance_norm", (std::string) "out/distance_norm.png");
+
+		par->add_comment("Phase 3: Tracing");
+		par->add_comment("Auto accept, higher values: slower tracing");
+		par->bind_param(param_depth_auto_choose, "depth_auto_choose", (float) 1);
+		par->add_comment("Maximal prediction depth");
+		par->bind_param(param_max_dfs_depth, "max_dfs_depth", 1);
+		par->add_comment("Maximal neighbourhood in pixel");
+		par->bind_param(param_nearby_limit, "nearby_limit", (p) 10);
+		par->add_comment("Maximal neighbourhood for calculating gaussian error in pixel");
+		par->bind_param(param_nearby_limit_gauss, "nearby_limit_gauss", 2);
+		par->add_comment("Coeficient for gaussian error");
+		par->bind_param(param_distance_coef, "distance_coef", (float) 2);
+		par->bind_param(param_gauss_precision, "gauss_precision", (float) 0.0001);
+		par->bind_param(param_angle_steps, "angle_steps", 20);
+		par->bind_param(param_angular_precision, "angular_precision", (float) 0.001);
+
+		par->bind_param(param_size_nearby_smooth, "size_nearby_smooth", (p) 3);
+		par->bind_param(param_max_angle_search_smooth, "max_angle_search_smooth", (p) 0.8);
+		par->bind_param(param_nearby_control_smooth, "nearby_control_smooth", (p) 5);
+		par->bind_param(param_smoothness, "smoothness", (p) 0.5);
+		par->bind_param(param_min_nearby_straight, "param_min_nearby_straight", (p) 0);
+	};
 private:
-	void vectorize_imshow(const std::string& winname, const cv::Mat mat, const params &parameters); // Display image in window iff graphics (highgui) is enabled
+	std::string *param_custom_input_name;
+
+	int *param_zoom_level;
+	int *param_interactive;
+
+	int *param_invert_input;
+	int *param_threshold_type;
+	int *param_threshold;
+	int *param_adaptive_threshold_size;
+	std::string *param_save_threshold_name;
+
+	int *param_skeletonization_type;
+	int *param_show_steps_window;
+	std::string *param_save_peeled_name;
+	std::string *param_save_skeleton_name;
+	std::string *param_save_distance_name;
+	std::string *param_save_skeleton_normalized_name;
+	std::string *param_save_distance_normalized_name;
+
+	float *param_depth_auto_choose;
+	int *param_max_dfs_depth;
+	p *param_nearby_limit;
+	int *param_nearby_limit_gauss;
+	float *param_distance_coef;
+	float *param_gauss_precision;
+	int *param_angle_steps;
+	float *param_angular_precision;
+
+	p *param_size_nearby_smooth;
+	p *param_max_angle_search_smooth;
+	p *param_nearby_control_smooth;
+	p *param_smoothness;
+	p *param_min_nearby_straight;
+
+
+	void vectorize_imshow(const std::string& winname, const cv::Mat mat); // Display image in window iff graphics (highgui) is enabled
 	int vectorize_waitKey(int delay = 0); // wait for key iff graphics (highgui) is enabled
 	void vectorize_destroyWindow(const std::string& winname); // Destroy named window
 	void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration); // Add pixels from `bw' to `out'. Something like image `or', but with more information
 	void normalize(cv::Mat &out, int max); // Normalize grayscale image for displaying (0-255)
 
-	void step1_threshold(cv::Mat &to_threshold, step1_params &par); // Threshold images
-	void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration, params &par); // Find skeleton
-	void step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output, step3_params &par); // Trace skeleton
-	void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line, step3_params &par); // Trace one line
+	void step1_threshold(cv::Mat &to_threshold); // Threshold images
+	void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration); // Find skeleton
+	void step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output); // Trace skeleton
+	void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line); // Trace one line
 
 	// Trackbar callback functions (passed as parameter to non-member function)
 	static void step1_changed(int, void *ptr);
@@ -68,22 +159,22 @@ private:
 	/*
 	 * Functions for tracing
 	 */
-	float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point, step3_params &par);
-	void find_best_variant(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match, step3_params &par);
-	void find_best_variant_first_point(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par);
-	void find_best_variant_smooth(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par);
-	void find_best_variant_straight(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par);
-	void filter_best_variant_end(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match, step3_params &par);
+	float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point);
+	void find_best_variant(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_first_point(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_smooth(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_straight(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void filter_best_variant_end(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
 
 	// Optimization of placed points
-	float find_best_line(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, float angle, step3_params &par, float size, float min_dist = 0); // Find best line continuation in given angle
-	float calculate_line_fitness(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist, step3_params &par); // Calculate how 'good' is given line
-	v_pt find_best_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, step3_params &par, float size = 1); // Find best value in given area
-	float calculate_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, step3_params &par); // Get average value from neighborhood with gaussian distribution
+	float find_best_line(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, float angle, float size, float min_dist = 0); // Find best line continuation in given angle
+	float calculate_line_fitness(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist); // Calculate how 'good' is given line
+	v_pt find_best_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, float size = 1); // Find best value in given area
+	float calculate_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center); // Get average value from neighborhood with gaussian distribution
 
 	// Placing points
 	int place_next_point_at(const cv::Mat &skeleton, v_point &new_point, int current_depth, v_line &line, cv::Mat &used_pixels); // Add point to line and mark them as used
-	v_pt try_line_point(v_pt center, float angle, step3_params &par); // Return point in distance par.nearby_limit from center in given angle
+	v_pt try_line_point(v_pt center, float angle); // Return point in distance par.nearby_limit from center in given angle
 
 	// Find starting points for lines
 	void prepare_starting_points(const cv::Mat &skeleton, std::vector<start_point> &starting_points); // Find all possible startingpoints

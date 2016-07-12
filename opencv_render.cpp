@@ -11,13 +11,18 @@ using namespace cv;
 
 namespace vectorix {
 
-void opencv_render(const v_image &vector, Mat &output, const params &parameters) { // Render whole vector image
+void opencv_render(const v_image &vector, Mat &output, parameters &params) { // Render whole vector image
+	p *param_render_max_distance;
+	params.add_comment("Phase 5: Export");
+	params.add_comment("Maximal allowed error in OpenCV rendering in pixels");
+	params.bind_param(param_render_max_distance, "render_max_distance", (p) 1);
+
 	output = Scalar(255, 255, 255); // Fill with white color
 	Mat lout(output.rows, output.cols, CV_8UC(3)); // Temporary
 	lout = Scalar(255, 255, 255);
 	for (v_line line: vector.line) { // For every line in image...
 		v_line l = line; // Copy line
-		geom::chop_line(l, parameters.opencv_render.render_max_distance); // Chop line, so there is small length of each segment
+		geom::chop_line(l, *param_render_max_distance); // Chop line, so there is small length of each segment
 
 		if (l.get_type() == v_line_type::stroke) { // Normal lines
 			auto two = l.segment.cbegin();

@@ -12,7 +12,7 @@
 
 namespace vectorix {
 
-v_image vectorizer_potrace::vectorize(const pnm_image &original, params &parameters) { // Vectorize using potrace library
+v_image vectorizer_potrace::vectorize(const pnm_image &original) { // Vectorize using potrace library
 	pnm_image image = original;
 	image.convert(pnm_variant_type::binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
 

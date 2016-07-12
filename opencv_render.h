@@ -8,7 +8,7 @@
 
 namespace vectorix {
 
-void opencv_render(const v_image &vector, cv::Mat &output, const params &parameters);
+void opencv_render(const v_image &vector, cv::Mat &output, parameters &params);
 
 }; // namespace
 

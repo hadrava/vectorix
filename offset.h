@@ -14,10 +14,11 @@ namespace vectorix {
 
 class offset {
 public:
-	offset(v_image &img) {
+	offset(v_image &img, parameters &params) {
 		image = &img;
+		par = &params;
 	}
-	void convert_to_outline(v_line &line, p max_error = 1); // Convert from stroke to fill (calculate line outline)
+	void convert_to_outline(v_line &line); // Convert from stroke to fill (calculate line outline)
 private:
 	void one_point_circle(v_line &line); // Line containing one point will be converted to outline
 	bool segment_outline(v_point &one, v_point &two, std::vector<v_point> &outline);
@@ -35,6 +36,7 @@ private:
 	bool optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main);
 
 	v_image *image;
+	parameters *par;
 };
 
 

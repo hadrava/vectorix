@@ -5,22 +5,22 @@
 
 namespace vectorix {
 
-void finisher::apply_settings(v_image &vector, const params &parameters) {
-	if (parameters.output.false_colors)
-		vector.false_colors(parameters.output.false_colors);
+void finisher::apply_settings(v_image &vector) {
+	if (*param_false_colors)
+		vector.false_colors(*param_false_colors);
 
-	geom::convert_to_variable_width(vector, parameters.output.export_type, parameters.output); // Convert image before writing
+	geom::convert_to_variable_width(vector, *param_export_type, *par); // Convert image before writing
 
 	// TODO show debug lines
 	vector.show_debug_lines();
 
 	for (v_line &line: vector.line) {
 		for (v_point &segment: line.segment) {
-			if (parameters.output.svg_force_width) {
-				segment.width = parameters.output.svg_force_width; // set width of every line to the same value
+			if (*param_force_width) {
+				segment.width = *param_force_width; // set width of every line to the same value
 			}
-			if (parameters.output.svg_force_opacity)
-				segment.opacity = parameters.output.svg_force_opacity; // set opacity of every line to the same value
+			if (*param_force_opacity)
+				segment.opacity = *param_force_opacity; // set opacity of every line to the same value
 		}
 	}
 
@@ -31,8 +31,8 @@ void finisher::apply_settings(v_image &vector, const params &parameters) {
 	// insert back
 
 
-	if (!parameters.output.svg_underlay_image.empty())
-		vector.underlay_path = parameters.output.svg_underlay_image;
+	if (!param_underlay_path->empty())
+		vector.underlay_path = *param_underlay_path;
 }
 
 }; // namespace
