@@ -47,9 +47,7 @@ public:
 class vectorizer_vectorix: public vectorizer {
 public:
 	virtual v_image vectorize(const pnm_image &image);
-	vectorizer_vectorix(parameters &params) {
-		par = &params;
-
+	vectorizer_vectorix(parameters &params): vectorizer(params) {
 		par->bind_param(param_custom_input_name, "file_input", (std::string) "");
 
 		par->add_comment("Interactive mode: 0: disable, 1: show windows, 2: show trackbars");

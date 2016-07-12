@@ -56,7 +56,6 @@ void parameters::load_params(FILE *fd) { // Load parameters from file
 			if (old == not_loaded.end())
 				not_loaded.insert({n,v});
 			else {
-				fprintf(stderr, "parameter repeated: %s, old: %s, new: %s\n", name, old->second.c_str(), value);
 				old->second = v;
 			}
 		}
