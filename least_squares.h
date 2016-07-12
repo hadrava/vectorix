@@ -4,12 +4,17 @@
 #include <vector>
 #include "config.h"
 #include "logger.h"
+#include "parameters.h"
 
 namespace vectorix {
 
 class least_squares {
 public:
-	least_squares(unsigned int variable_count): count(variable_count), log(log_level::debug) {};
+	least_squares(unsigned int variable_count, parameters &params): count(variable_count), par(&params) {
+		int *param_lsq_verbosity;
+		par->bind_param(param_lsq_verbosity, "lsq_verbosity", (int) log_level::warning);
+		log.set_verbosity((log_level) *param_lsq_verbosity);
+	};
 	void add_equation(p *arr);
 	void evaluate();
 	p calc_error() const;
@@ -43,6 +48,7 @@ private:
 	vector_p x_vector;
 	vector_p y_vector;
 	logger log;
+	parameters *par;
 };
 
 }; // namespace

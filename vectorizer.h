@@ -15,7 +15,11 @@ class vectorizer {
 public:
 	virtual v_image vectorize(const pnm_image &image) = 0;
 protected:
-	vectorizer(): log(log_level::debug), par(NULL) {};
+	vectorizer(): par(NULL) {
+		int *param_vectorizer_verbosity;
+		par->bind_param(param_vectorizer_verbosity, "vectorizer_verbosity", (int) log_level::warning);
+		log.set_verbosity((log_level) *param_vectorizer_verbosity);
+	};
 	logger log;
 	parameters *par;
 };

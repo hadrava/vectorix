@@ -461,7 +461,7 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 
 	while (true) {
 		// 2, Compute coefficients by least squares
-		least_squares mat(2);
+		least_squares mat(2, *par);
 		for (int i = 0; i < times.size(); i++) {
 			p t = times[i];
 			p s = 1 - t;
