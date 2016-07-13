@@ -50,35 +50,14 @@ public:
 	vectorizer_vectorix(parameters &params): vectorizer(params) {
 		par->bind_param(param_custom_input_name, "file_input", (std::string) "");
 
-		par->add_comment("Interactive mode: 0: disable, 1: show windows, 2: show trackbars");
+
+		par->add_comment("Interactive mode: 0: disable, 1: show windows and trackbars");
 		par->bind_param(param_interactive, "interactive", 2);
 		par->add_comment("Scale images before viewing in window: 0: No scaling, 100: Small pictures");
 		par->bind_param(param_zoom_level, "zoom_level", 0);
 
-		par->add_comment("Phase 1: Thresholding");
-		par->add_comment("Invert colors: 0: white lines, 1: black lines");
-		par->bind_param(param_invert_input, "invert_colors", 1);
-		par->add_comment("Threshold type: 0: Otsu's algorithm, 1: Fixed value");
-		par->bind_param(param_threshold_type, "threshold_type", 0);
-		par->add_comment("Threshold vale: 0-255");
-		par->bind_param(param_threshold, "threshold", 127);
-		par->add_comment("Adaptive threshold size: 3, 5, 7, ...");
-		par->bind_param(param_adaptive_threshold_size, "adaptive_threshold_size", 7);
-		par->add_comment("Save thresholded image to file: empty: no output");
-		par->bind_param(param_save_threshold_name, "file_threshold_output", (std::string) "");
 
-		par->add_comment("Phase 2: Skeletonization");
-		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow)");
-		par->bind_param(param_skeletonization_type, "type", 0); //TODO rename param
-		par->add_comment("Show steps in separate window");
-		par->bind_param(param_show_steps_window, "show_window_steps", 0); //TODO rename
-		par->add_comment("Save steps to files, %%03d will be replaced with iteration number");// TODO not safe, exploitable config file!
-		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_%03d.png");
-		par->add_comment("Save skeleton/distance with/without normalization");
-		par->bind_param(param_save_skeleton_name, "file_skeleton", (std::string) "out/skeleton.png");
-		par->bind_param(param_save_distance_name, "file_distance", (std::string) "out/distance.png");
-		par->bind_param(param_save_skeleton_normalized_name, "file_skeleton_norm", (std::string) "out/skeleton_norm.png");
-		par->bind_param(param_save_distance_normalized_name, "file_distance_norm", (std::string) "out/distance_norm.png");
+
 
 		par->add_comment("Phase 3: Tracing");
 		par->add_comment("Auto accept, higher values: slower tracing");
@@ -107,20 +86,6 @@ private:
 	int *param_zoom_level;
 	int *param_interactive;
 
-	int *param_invert_input;
-	int *param_threshold_type;
-	int *param_threshold;
-	int *param_adaptive_threshold_size;
-	std::string *param_save_threshold_name;
-
-	int *param_skeletonization_type;
-	int *param_show_steps_window;
-	std::string *param_save_peeled_name;
-	std::string *param_save_skeleton_name;
-	std::string *param_save_distance_name;
-	std::string *param_save_skeleton_normalized_name;
-	std::string *param_save_distance_normalized_name;
-
 	float *param_depth_auto_choose;
 	int *param_max_dfs_depth;
 	p *param_nearby_limit;
@@ -140,10 +105,7 @@ private:
 	void vectorize_imshow(const std::string& winname, const cv::Mat mat); // Display image in window iff graphics (highgui) is enabled
 	int vectorize_waitKey(int delay = 0); // wait for key iff graphics (highgui) is enabled
 	void vectorize_destroyWindow(const std::string& winname); // Destroy named window
-	void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration); // Add pixels from `bw' to `out'. Something like image `or', but with more information
-	void normalize(cv::Mat &out, int max); // Normalize grayscale image for displaying (0-255)
 
-	void step1_threshold(cv::Mat &to_threshold); // Threshold images
 	void step2_skeletonization(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance, int &iteration); // Find skeleton
 	void step3_tracing(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, v_image &vectorization_output); // Trace skeleton
 	void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line); // Trace one line

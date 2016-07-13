@@ -12,6 +12,8 @@
 #include <tuple>
 #include <vector>
 #include "logger.h"
+#include "thresholder.h"
+#include "skeletonizer.h"
 
 // Vectorizer
 
@@ -83,7 +85,6 @@ uchar &vectorizer_vectorix::safeat(const Mat &image, int i, int j) { // Safely a
 	}
 }
 
-#ifdef VECTORIX_HIGHGUI
 // For compatibility issues we use const cv::Mat instead of cv::InputArray.
 void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat) { // Display image in highgui named window.
 	if (*param_zoom_level) { // (Down)scale image before displaying
@@ -95,148 +96,6 @@ void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv:
 	}
 	else
 		return imshow(winname, mat);
-}
-int vectorizer_vectorix::vectorize_waitKey(int delay) { // Wait for key press in any window
-	return waitKey(delay);
-}
-void vectorizer_vectorix::vectorize_destroyWindow(const std::string& winname) { // Close window
-	return destroyWindow(winname);
-}
-#else
-void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat) { // Highgui disabled, do nothing
-	return;
-}
-int vectorizer_vectorix::vectorize_waitKey(int delay) { // Highgui disabled, return `no key pressed'
-	return -1;
-}
-void vectorizer_vectorix::vectorize_destroyWindow(const std::string& winname) { // Nothing to destroy
-	return;
-}
-#endif
-
-void vectorizer_vectorix::add_to_skeleton(Mat &out, Mat &bw, int iteration) { // Add pixels from `bw' to `out'. Something like image `or', but with more information
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			if (!out.data[i*out.step + j]) { // Non-zero pixel
-				out.data[i*out.step + j] = (!!bw.data[i*bw.step + j]) * iteration;
-			}
-		}
-	}
-}
-
-void vectorizer_vectorix::normalize(Mat &out, int max) { // Normalize grayscale image for displaying (0-255)
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			out.data[i*out.step + j] *= 255/max;
-		}
-	}
-}
-
-void vectorizer_vectorix::step1_threshold(Mat &to_threshold) {
-	if (*param_threshold_type == 0) { // Binary threshold guessed value
-		log.log<log_level::debug>("threshold: Using Otsu's algorithm\n");
-		threshold(to_threshold, to_threshold, *param_threshold, 255, THRESH_BINARY | THRESH_OTSU);
-	}
-	else if (*param_threshold_type == 1) { // Fixed binary threshold
-		log.log<log_level::debug>("threshold: Using binary threshold %i.\n", *param_threshold);
-		threshold(to_threshold, to_threshold, *param_threshold, 255, THRESH_BINARY);
-	}
-	else if ((*param_threshold_type >= 2) && (*param_threshold_type <= 3)) { // Adaptive threshold
-		log.log<log_level::debug>("threshold: Using adaptive thresholdbinary threshold %i.\n", *param_threshold);
-		*param_adaptive_threshold_size |= 1; // Make threshold size odd
-		if (*param_adaptive_threshold_size < 3)
-			*param_adaptive_threshold_size = 3;
-		int type = ADAPTIVE_THRESH_GAUSSIAN_C; // *param_threshold_type==2 -> gaussian
-		if (*param_threshold_type == 3)
-			type = ADAPTIVE_THRESH_MEAN_C; // *param_threshold_type==3 -> mean
-		adaptiveThreshold(to_threshold, to_threshold, 255, type, THRESH_BINARY, *param_adaptive_threshold_size, *param_threshold - 128);
-	}
-
-	for (int j = 0; j < to_threshold.rows; j += to_threshold.rows-1) { // Clear borders
-		for (int i = 0; i < to_threshold.cols; i++) {
-			to_threshold.data[i+j*to_threshold.step] = 0;
-		}
-	}
-	for (int j = 0; j < to_threshold.rows; j++) {
-		for (int i = 0; i < to_threshold.cols; i += to_threshold.cols-1) {
-			to_threshold.data[i+j*to_threshold.step] = 0;
-		}
-	}
-
-	if (!param_save_threshold_name->empty()) { // Save image after thresholding
-		imwrite(*param_save_threshold_name, to_threshold);
-	}
-}
-
-void vectorizer_vectorix::step2_skeletonization(const Mat &binary_input, Mat &skeleton, Mat &distance, int &iteration) {
-	Mat bw     (binary_input.rows, binary_input.cols, CV_8UC(1));
-	Mat source = binary_input.clone();
-	Mat peeled = binary_input.clone(); // Objects in this image are peeled in every step by 1 px
-	Mat next_peeled (binary_input.rows, binary_input.cols, CV_8UC(1));
-	skeleton = Scalar(0); // Clear output
-	distance = Scalar(0); // Clear output
-
-	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // diamond
-	Mat kernel_2 = getStructuringElement(MORPH_RECT, Size(3,3)); // square
-
-	double max = 1;
-	iteration = 1;
-	if (*param_skeletonization_type == 1)
-		std::swap(kernel, kernel_2); // use only square
-
-	while (max !=0) {
-		if (!param_save_peeled_name->empty()) { // Save every step of skeletonization
-			char filename [128];
-			std::snprintf(filename, sizeof(filename), param_save_peeled_name->c_str(), iteration);
-			imwrite(filename, peeled);
-		}
-		if (*param_show_steps_window == 1) { // Show every step of skeletonization
-			vectorize_imshow("Boundary peeling", peeled);
-			vectorize_waitKey(0);
-		}
-		int size = iteration * 2 + 1;
-		// skeleton
-		morphologyEx(peeled, bw, MORPH_OPEN, kernel);
-		bitwise_not(bw, bw);
-		bitwise_and(peeled, bw, bw); // Pixels destroyed by opening
-		add_to_skeleton(skeleton, bw, iteration); // Add them to skeleton
-
-		// distance
-		if (*param_skeletonization_type == 3) { // Most precise peeling - with circle
-			kernel_2 = getStructuringElement(MORPH_ELLIPSE, Size(size,size));
-			erode(source, next_peeled, kernel_2);
-		}
-		else {
-			erode(peeled, next_peeled, kernel); // Diamond / square / diamond-square
-		}
-		bitwise_not(next_peeled, bw);
-		bitwise_and(peeled, bw, bw); // Pixels removed by next peeling
-		add_to_skeleton(distance, bw, iteration++); // calculate distance for all pixels
-
-		std::swap(peeled, next_peeled);
-		minMaxLoc(peeled, NULL, &max, NULL, NULL); // we have at least one non-zero pixel
-		if (*param_skeletonization_type == 0)
-			std::swap(kernel, kernel_2); // diamond-square
-	}
-	if (*param_show_steps_window == 1) {
-		vectorize_destroyWindow("Boundary peeling"); // Window is not needed anymore
-	}
-	if (!param_save_skeleton_name->empty()) { // Save output to file
-		imwrite(*param_save_skeleton_name, skeleton);
-	}
-	if (!param_save_distance_name->empty()) { // Save output to file
-		imwrite(*param_save_distance_name, distance);
-	}
-	if (!param_save_skeleton_normalized_name->empty()) { // Display skeletonization outcome
-		Mat skeleton_normalized = skeleton.clone();
-		normalize(skeleton_normalized, iteration-1); // Make image more contrast
-		imwrite(*param_save_skeleton_normalized_name, skeleton_normalized);
-	}
-	if (!param_save_distance_normalized_name->empty()) { // Display skeletonization outcome
-		Mat distance_normalized = distance.clone();
-		normalize(distance_normalized, iteration-1); // Make image more contrast
-		imwrite(*param_save_distance_normalized_name, distance_normalized);
-	}
 }
 
 void vectorizer_vectorix::prepare_starting_points(const cv::Mat &skeleton, std::vector<start_point> &starting_points) { // Find all possible startingpoints
@@ -761,9 +620,6 @@ int vectorizer_vectorix::interactive(int state, int key) { // Process key press 
 
 void vectorizer_vectorix::step1_changed(int, void *ptr) { // Parameter in step 1 changed, rerun
 	trackbar_refs *data = static_cast<trackbar_refs *> (ptr);
-	*data->adaptive_threshold_size |= 1;
-	if (*data->adaptive_threshold_size < 3)
-		*data->adaptive_threshold_size = 3;
 	*data->state = 2; // first step
 }
 
@@ -789,28 +645,24 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) { // Original 
 		orig = imread(*param_custom_input_name, CV_LOAD_IMAGE_COLOR);
 	}
 
-	copyMakeBorder(orig, orig, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255,255,255)); // Create boarders around image, replicate pixels
-
-	Mat grayscale (orig.rows, orig.cols, CV_8UC(1)); // Grayscale original
-	Mat binary (orig.rows, orig.cols, CV_8UC(1)); // Thresholded image
 
 	timer threshold_timer;
 	Mat skeleton; // Skeleton calculated in first step
+	Mat binary; // Thresholded image
+
 	Mat distance; // Distance map calculated in first step
-	int iteration; // Count of iterations in skeletonization step
 	timer skeletonization_timer;
-	Mat distance_show; // Images normalized for displaying
-	Mat skeleton_show; // Images normalized for displaying
 	v_image vect = v_image(orig.cols, orig.rows); // Vector output
 	Mat used_pixels; // Pixels used by tracing
 	timer tracing_timer;
 
 	volatile int state = 2; // State of vectorizer, remembers in which step we are
 
-	int max_image_size = (orig.cols+orig.rows)*2;
 	trackbar_refs callback_data;
 	callback_data.state = &state;
-	callback_data.adaptive_threshold_size = param_adaptive_threshold_size;
+
+	thresholder thr(*par);
+	skeletonizer ske(*par);
 	while (state) { // state 0 = end
 		switch (state) {
 			case 2: // First step
@@ -818,59 +670,29 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) { // Original 
 					vectorize_imshow("Original", orig); // Show original color image
 					if (*param_interactive == 2)
 						createTrackbar("Zoom out", "Original", param_zoom_level, 10000, step1_changed, &callback_data);
-					vectorize_waitKey(*param_interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
+					waitKey(*param_interactive-1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 				}
-				cvtColor(orig, grayscale, CV_RGB2GRAY);
-				if (*param_invert_input)
-					subtract(Scalar(255,255,255), grayscale, grayscale); // Invert input
-				if (*param_interactive) {
-					vectorize_imshow("Grayscale", grayscale); // Show grayscale input image
-					if (*param_interactive == 2)
-						createTrackbar("Invert input", "Grayscale", param_invert_input, 1, step1_changed, &callback_data);
-					vectorize_waitKey(*param_interactive-1);
-				}
-				binary = grayscale.clone();
+
 				threshold_timer.start();
-					step1_threshold(binary); // First step -- thresholding
+					thr.run(orig, binary);
 				threshold_timer.stop();
-				if (*param_interactive) {
-					vectorize_imshow("Threshold", binary); // Show after thresholding
-					if (*param_interactive == 2) {
-						createTrackbar("Threshold type", "Threshold", param_threshold_type, 3, step1_changed, &callback_data);
-						createTrackbar("Threshold", "Threshold", param_threshold, 255, step1_changed, &callback_data);
-						createTrackbar("Adaptive threshold", "Threshold", param_adaptive_threshold_size, max_image_size, step1_changed, &callback_data);
-					}
-					vectorize_waitKey(*param_interactive-1);
-				}
 				log.log<log_level::info>("Threshold time: %fs\n", threshold_timer.read());
+				if (*param_interactive)
+					thr.interactive(step1_changed, &callback_data);
+
 				if (*param_interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
 					state+=2; // ... continue with next step
 				break;
 			case 4:
-				skeleton = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
-				distance = Mat::zeros(orig.rows, orig.cols, CV_8UC(1));
 				skeletonization_timer.start();
-					step2_skeletonization(binary, skeleton, distance, iteration); // Second step -- skeletonization
+					ske.run(binary, skeleton, distance); // Second step -- skeletonization
 				skeletonization_timer.stop();
 				log.log<log_level::info>("Skeletonization time: %fs\n", skeletonization_timer.read());
+				if (*param_interactive)
+					ske.interactive(step2_changed, &callback_data);
 
-				if (*param_interactive) {
-					//show distance
-					distance_show = distance.clone();
-					normalize(distance_show, iteration-1); // Normalize image before displaying
-					vectorize_imshow("Distance", distance_show);
-					vectorize_waitKey(*param_interactive-1);
-
-					//show skeleton
-					skeleton_show = skeleton.clone();
-					threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
-					vectorize_imshow("Skeleton", skeleton_show);
-					if (*param_interactive == 2)
-						createTrackbar("Skeletonization", "Skeleton", param_skeletonization_type, 3, step2_changed, &callback_data);
-					vectorize_waitKey(*param_interactive-1);
-				}
 				if (*param_interactive == 2)
 					state++; // ... and wait in odd state for Enter
 				else
@@ -891,7 +713,7 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) { // Original 
 				state = 0;
 				break;
 			default:
-				int key = vectorize_waitKey(1);
+				int key = waitKey(1);
 				if (key >= 0)
 					log.log<log_level::debug>("Key: %i\n", key);
 				state = interactive(state, key);
