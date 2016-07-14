@@ -17,8 +17,8 @@ public:
 		par->add_comment("Phase 2: Skeletonization");
 		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow)");
 		par->bind_param(param_skeletonization_type, "type", 0); //TODO rename param
-		par->add_comment("Save steps to files, %%03d will be replaced with iteration number");// TODO not safe, exploitable config file!
-		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_%03d.png");
+		par->add_comment("Save steps to files, # will be replaced with iteration number");
+		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_#.png");
 		par->add_comment("Save skeleton/distance with/without normalization");
 		par->bind_param(param_save_skeleton_name, "file_skeleton", (std::string) "out/skeleton.png");
 		par->bind_param(param_save_distance_name, "file_distance", (std::string) "out/distance.png");

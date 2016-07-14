@@ -52,9 +52,14 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 
 	while (max != 0) {
 		if (!param_save_peeled_name->empty()) { // Save every step of skeletonization
-			// TODO fix fixed length
-			char filename [128];
-			std::snprintf(filename, sizeof(filename), param_save_peeled_name->c_str(), iteration);
+			size_t number_sign = param_save_peeled_name->find("#");
+			std::string filename = std::to_string(iteration);
+			int zero = 3 - filename.length();
+			zero = (zero >= 0) ? zero : 0;
+			filename = param_save_peeled_name->substr(0, number_sign)
+			         + std::string(zero, '0')
+			         + filename
+			         + param_save_peeled_name->substr(number_sign + 1);
 			imwrite(filename, peeled);
 		}
 		int size = iteration * 2 + 1;
