@@ -25,6 +25,10 @@ public:
 		par->bind_param(param_adaptive_threshold_size, "adaptive_threshold_size", 7);
 		par->add_comment("Save thresholded image to file: empty: no output");
 		par->bind_param(param_save_threshold_name, "file_threshold_output", (std::string) "");
+		par->add_comment("Fill holes (of given size) in lines: 0 = no filling");
+		par->bind_param(param_fill_holes, "fill_holes", 0);
+		par->add_comment("Save image with filled holes to file: empty = no output");
+		par->bind_param(param_save_filled_name, "file_filled_output", (std::string) "");
 	}
 	void run(const cv::Mat &original, cv::Mat &binary);
 	void interactive(cv::TrackbarCallback onChange = 0, void *userdata = 0);
@@ -35,12 +39,15 @@ private:
 	int *param_threshold;
 	int *param_adaptive_threshold_size;
 	std::string *param_save_threshold_name;
+	int *param_fill_holes;
+	std::string *param_save_filled_name;
 
 	logger log;
 	parameters *par;
 
 	cv::Mat grayscale;
 	cv::Mat binary;
+	cv::Mat filled;
 	int max_image_size;
 };
 

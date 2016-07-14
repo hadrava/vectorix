@@ -31,7 +31,10 @@ void skeletonizer::normalize(Mat &out, int max) {
 void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	// Create boarders around image, white (background) pixels
 	Mat source;
-	copyMakeBorder(binary_input, source, 1, 1, 1, 1, BORDER_REPLICATE, Scalar(255, 255, 255));
+	copyMakeBorder(binary_input, source, 1, 1, 1, 1, BORDER_CONSTANT, Scalar(255, 255, 255));
+
+	log.log<log_level::debug>("Image size without border: %i x %i\n", binary_input.cols, binary_input.rows);
+	log.log<log_level::debug>("Image size with border: %i x %i\n", source.cols, source.rows);
 
 	Mat bw          (source.rows, source.cols, CV_8UC(1));
 	Mat next_peeled (source.rows, source.cols, CV_8UC(1));
@@ -79,7 +82,14 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		minMaxLoc(peeled, NULL, &max, NULL, NULL); // Check for non-zero pixel
 		if (*param_skeletonization_type == 0)
 			std::swap(kernel, kernel_2); // diamond-square
+
+		log.log<log_level::debug>("Skeletonization iteration: %i\n", iteration);
 	}
+
+	Rect crop(1, 1, binary_input.cols, binary_input.rows);
+	skeleton = skeleton(crop);
+	distance = distance(crop);
+	log.log<log_level::debug>("Image size after croping: %i x %i\n", skeleton.cols, skeleton.rows);
 
 	if (!param_save_skeleton_name->empty()) { // Save output to file
 		imwrite(*param_save_skeleton_name, skeleton);
@@ -97,6 +107,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		normalize(distance_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_distance_normalized_name, distance_normalized);
 	}
+
 	this->skeleton = skeleton;
 	this->distance = distance;
 }

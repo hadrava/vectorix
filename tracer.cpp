@@ -37,7 +37,7 @@ void tracer::run(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::
 
 		if (line.empty()) {
 			log.log<log_level::error>("Vectorizer warning: No new point found!\n"); // Vectorization started from one point, but no new line was found. This should not happen
-			spix(used_pixels, max_pos, 255); // Clear pixel to prevent infinite loop
+			used_pixels.at<unsigned char>(max_pos.y, max_pos.x) = 255; // Clear pixel to prevent infinite loop
 		}
 		else
 			line.segment.pop_back();
@@ -498,27 +498,9 @@ int tracer::inc_pix_to_near(const Mat &mask, int value, const v_pt &point, Mat &
 	return sum; // Count of increased pixels
 }
 
-int tracer::pix(const Mat &img, const v_pt &point) { // Get pixel
-	int x = point.x;
-	int y = point.y;
-	return img.data[y*img.step + x];
-}
-
-void tracer::spix(const Mat &img, const v_pt &point, int value) { // Set pixel (at floating-point coordinates)
-	int x = point.x;
-	int y = point.y;
-	img.data[y*img.step + x] = value;
-}
-
-void tracer::spix(const Mat &img, const Point &point, int value) { // Set pixel
-	int x = point.x;
-	int y = point.y;
-	img.data[y*img.step + x] = value;
-}
-
 int tracer::inc_pix_to(const Mat &mask, int value, const v_pt &point, Mat &used_pixels) { // Increase value of pixel
-	if ((pix(mask, point) > 0) && (pix(used_pixels, point) < value)) {
-		spix(used_pixels, point, value); // Set pixel
+	if ((mask.at<unsigned char>(point.y, point.x) > 0) && (used_pixels.at<unsigned char>(point.y, point.x) < value)) {
+		used_pixels.at<unsigned char>(point.y, point.x) = value; // Set pixel
 
 		// Add pixel to corresponding roi
 		if (value < 254) {

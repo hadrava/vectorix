@@ -87,10 +87,8 @@ private:
 	v_co safeat_co(const cv::Mat &image, int i, int j); // Safely access rgb image data
 	float apxat(const cv::Mat &image, v_pt pt); // Get value at non-integer position (aproximate from neighbors)
 
+	// used pixels functions:
 	int inc_pix_to_near(const cv::Mat &mask, int value, const v_pt &point, cv::Mat &used_pixels, int near = 1); // Increase all pixels in neighborhood
-	int pix(const cv::Mat &img, const v_pt &point); // Get pix value
-	void spix(const cv::Mat &img, const v_pt &point, int value); // Set pix value
-	void spix(const cv::Mat &img, const cv::Point &point, int value); // Set pix value
 	int inc_pix_to(const cv::Mat &mask, int value, const v_pt &point, cv::Mat &used_pixels); // Increase pix value
 
 

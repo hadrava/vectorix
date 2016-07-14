@@ -17,7 +17,6 @@ void thresholder::run(const Mat &original, Mat &bin) {
 		subtract(Scalar(255,255,255), grayscale, grayscale);
 
 
-	//TODO is this needed?// bin = Mat(original.rows, original.cols, CV_8UC(1)); // Thresholded image
 	// Do Thresholding
 	if ((*param_threshold_type >= 2) && (*param_threshold_type <= 3)) { // Adaptive threshold
 		log.log<log_level::info>("threshold: Using adaptive thresholdb with bias %i.\n", *param_threshold - 128);
@@ -45,25 +44,35 @@ void thresholder::run(const Mat &original, Mat &bin) {
 		threshold(grayscale, bin, *param_threshold, 255, THRESH_BINARY | THRESH_OTSU);
 	}
 
-	// Close objects (remove small holes in thicker lines)
-	// TODO implement
-	binary = bin;
-
+	this->binary = bin.clone();
 
 	// Save image after thresholding
 	if (!param_save_threshold_name->empty()) {
-		imwrite(*param_save_threshold_name, binary);
+		imwrite(*param_save_threshold_name, this->binary);
 	}
+
+	// Close objects (remove small holes in thicker lines)
+	if (*param_fill_holes)
+		morphologyEx(bin, bin, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(*param_fill_holes, *param_fill_holes)));
+
+	// Save image after filling
+	if (!param_save_filled_name->empty()) {
+		imwrite(*param_save_filled_name, bin);
+	}
+
+	this->filled = bin;
 }
 
 void thresholder::interactive(TrackbarCallback onChange, void *userdata) {
 	/*// TODO vectorize_*/imshow("Grayscale", grayscale); // Show grayscale input image
 	/*// TODO vectorize_*/imshow("Threshold", binary); // Show after thresholding
+	/*// TODO vectorize_*/imshow("Filled", filled); // Show after filling
 
 	createTrackbar("Invert input", "Grayscale", param_invert_input, 1, onChange, userdata);
 	createTrackbar("Threshold type", "Threshold", param_threshold_type, 3, onChange, userdata);
 	createTrackbar("Threshold", "Threshold", param_threshold, 255, onChange, userdata);
 	createTrackbar("Adaptive threshold", "Threshold", param_adaptive_threshold_size, max_image_size, onChange, userdata);
+	createTrackbar("Filling size", "Filled", param_fill_holes, 30, onChange, userdata);
 	waitKey(1);
 };
 

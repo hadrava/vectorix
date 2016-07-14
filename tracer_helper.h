@@ -42,6 +42,11 @@ private:
 	int max_y;
 };
 
+class used_Mat: public cv::Mat {
+public:
+	
+};
+
 }; // namespace (vectorix)
 
 #endif
