@@ -29,8 +29,31 @@ public:
 	void interactive(cv::TrackbarCallback onChange = 0, void *userdata = 0);
 
 private:
-	void add_to_skeleton(cv::Mat &out, cv::Mat &bw, int iteration); // Add pixels from `bw' to `out'. Something like image `or', but with more information
-	void normalize(cv::Mat &out, int max); // Normalize grayscale image for displaying (0-255)
+	// Add pixels from `bw' to `out'. Something like image `or', but with more information
+	template <typename T>
+	void add_to_skeleton(cv::Mat &out, const cv::Mat &bw, int iteration) {
+		for (int i = 0; i < out.rows; i++) {
+			for (int j = 0; j < out.cols; j++) {
+				if (!out.at<T>(i, j)) { // Non-zero pixel
+					out.at<T>(i, j) = (!!bw.at<uint8_t>(i, j)) * iteration;
+				}
+			}
+		}
+	}
+
+	// Normalize grayscale image for displaying (0-255 for 8-bit, 0-255*256 for 16 and 32 bit)
+	template <typename T>
+	void normalize(cv::Mat &out, int max) {
+		int multiply = 255/max;
+		if (sizeof(T) > 1)
+			multiply = 255*256/max;
+
+		for (int i = 0; i < out.rows; i++) {
+			for (int j = 0; j < out.cols; j++) {
+				out.at<T>(i, j) *= multiply;
+			}
+		}
+	}
 
 	int *param_skeletonization_type;
 	std::string *param_save_peeled_name;

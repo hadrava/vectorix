@@ -7,27 +7,6 @@ using namespace cv;
 
 namespace vectorix {
 
-// Add pixels from `bw' to `out'. Something like image `or', but with more information
-void skeletonizer::add_to_skeleton(Mat &out, Mat &bw, int iteration) {
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			if (!out.at<uint8_t>(i, j)) { // Non-zero pixel
-				out.at<uint8_t>(i, j) = (!!bw.at<uint8_t>(i, j)) * iteration;
-			}
-		}
-	}
-}
-
-void add_to_skeleton_dist(Mat &out, Mat &bw, int iteration) {
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			if (!out.at<int32_t>(i, j)) { // Non-zero pixel
-				out.at<int32_t>(i, j) = (!!bw.at<uint8_t>(i, j)) * iteration;
-			}
-		}
-	}
-}
-
 void normalize_dist(Mat &out, int max) {
 	for (int i = 0; i < out.rows; i++) {
 		for (int j = 0; j < out.cols; j++) {
@@ -36,14 +15,6 @@ void normalize_dist(Mat &out, int max) {
 	}
 }
 
-// Normalize grayscale image for displaying (0-255)
-void skeletonizer::normalize(Mat &out, int max) {
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			out.at<uint8_t>(i, j) *= 255/max;
-		}
-	}
-}
 
 
 void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
@@ -86,7 +57,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		morphologyEx(peeled, bw, MORPH_OPEN, kernel);
 		bitwise_not(bw, bw);
 		bitwise_and(peeled, bw, bw); // Pixels destroyed by opening
-		add_to_skeleton(skeleton, bw, iteration); // Add them to skeleton
+		add_to_skeleton<uint8_t>(skeleton, bw, iteration); // Add them to skeleton
 
 		// distance
 		if (*param_skeletonization_type == 3) {
@@ -100,7 +71,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		}
 		bitwise_not(next_peeled, bw);
 		bitwise_and(peeled, bw, bw); // Pixels removed by next peeling
-		add_to_skeleton/*//TODO temp _dist*/(distance, bw, iteration++); // calculate distance for all pixels
+		add_to_skeleton<uint8_t>/*//TODO temp _dist*/(distance, bw, iteration++); // calculate distance for all pixels
 
 		std::swap(peeled, next_peeled);
 		minMaxLoc(peeled, NULL, &max, NULL, NULL); // Check for non-zero pixel
@@ -123,12 +94,12 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	}
 	if (!param_save_skeleton_normalized_name->empty()) { // Display skeletonization outcome
 		Mat skeleton_normalized = skeleton.clone();
-		normalize(skeleton_normalized, iteration-1); // Make image more contrast
+		normalize<uint8_t>(skeleton_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_skeleton_normalized_name, skeleton_normalized);
 	}
 	if (!param_save_distance_normalized_name->empty()) { // Display skeletonization outcome
 		Mat distance_normalized = distance.clone();
-		normalize/*//TODO temp _dist*/(distance_normalized, iteration-1); // Make image more contrast
+		normalize<uint8_t>/*//TODO temp _dist*/(distance_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_distance_normalized_name, distance_normalized);
 	}
 
@@ -142,7 +113,7 @@ void skeletonizer::interactive(TrackbarCallback onChange, void *userdata) {
 
 	//show distance
 	distance_show = distance.clone();
-	normalize/*//TODO temp _dist*/(distance_show, iteration-1); // Normalize image before displaying
+	normalize<uint8_t>/*//TODO temp _dist*/(distance_show, iteration-1); // Normalize image before displaying
 	/*// TODO vectorize_*/imshow("Distance", distance_show);
 
 	//show skeleton
