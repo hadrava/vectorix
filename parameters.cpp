@@ -35,9 +35,8 @@ void parameters::load_params(FILE *fd) { // Load parameters from file
 			continue;
 		}
 		else if ((name) && (!value)) {
-			free(name);
-			free(line);
-			continue;
+			value = (char *) malloc(1);
+			value[0] = '\0';
 		}
 		// Everything is ok
 
