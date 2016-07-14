@@ -82,7 +82,7 @@ private:
 	 */
 	uchar nullpixel; // allways null pixel, cleared and returned by safeat when accessing pixels outside of an image
 
-	uchar &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
+	const uchar &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
 	v_co apxat_co(const cv::Mat &image, v_pt pt); // Get rgb at non-integer position (aproximate from neighbors)
 	v_co safeat_co(const cv::Mat &image, int i, int j); // Safely access rgb image data
 	float apxat(const cv::Mat &image, v_pt pt); // Get value at non-integer position (aproximate from neighbors)

@@ -84,9 +84,9 @@ void vectorizer_vectorix::load_image(const pnm_image &original) {
 	if (param_custom_input_name->empty()) {
 		for (int j = 0; j < original.height; j++) { // Copy data from PNM image to OpenCV image structures
 			for (int i = 0; i<original.width; i++) {
-				orig.data[i*3+j*orig.step+2] = original.data[(i+j*original.width)*3 + 0];
-				orig.data[i*3+j*orig.step+1] = original.data[(i+j*original.width)*3 + 1];
-				orig.data[i*3+j*orig.step+0] = original.data[(i+j*original.width)*3 + 2];
+				orig.at<Vec3b>(j, i)[2] = original.data[(i+j*original.width)*3 + 0];
+				orig.at<Vec3b>(j, i)[1] = original.data[(i+j*original.width)*3 + 1];
+				orig.at<Vec3b>(j, i)[0] = original.data[(i+j*original.width)*3 + 2];
 			}
 		}
 	}

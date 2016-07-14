@@ -433,9 +433,9 @@ float tracer::do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton,
  */
 
 
-uchar &tracer::safeat(const Mat &image, int i, int j) { // Safely acces image data
+const uchar &tracer::safeat(const Mat &image, int i, int j) { // Safely acces image data
 	if (i>=0 && i<image.rows && j>=0 && j<image.step) // Pixel is inside of an image
-		return image.data[i*image.step + j];
+		return image.at<uint8_t>(i, j);
 	else { // Outside of an image
 		nullpixel = 0; // clean data in nullpixel
 		return nullpixel;
@@ -457,7 +457,7 @@ v_co tracer::apxat_co(const Mat &image, v_pt pt) { // Get rgb at non-integer pos
 
 v_co tracer::safeat_co(const Mat &image, int i, int j) { // Safely access rgb image data
 	if (i>=0 && i<image.rows && j>=0 && j<image.step)
-		return v_co(image.data[i*image.step + j*3 + 2], image.data[i*image.step + j*3 + 1], image.data[i*image.step + j*3]);
+		return v_co(image.at<Vec3b>(i, j)[2], image.at<Vec3b>(i, j)[1], image.at<Vec3b>(i, j)[0]);
 	else {
 		return v_co(0, 0, 0); // Pixel is outside of image
 	}

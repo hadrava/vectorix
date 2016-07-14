@@ -15,9 +15,9 @@ namespace vectorix {
 void starting_point::prepare(const Mat &skeleton) {
 	for (int i = 0; i < skeleton.rows; i++) {
 		for (int j = 0; j < skeleton.cols; j++) {
-			if (skeleton.data[i*skeleton.step + j]) { // Pixel is in skeleton
+			if (skeleton.at<uint8_t>(i, j)) { // Pixel is in skeleton
 				st_point pt;
-				pt.val = skeleton.data[i*skeleton.step + j];
+				pt.val = skeleton.at<uint8_t>(i, j);
 				pt.pt = Point(j, i);
 				queue.push_back(pt); // Add it to queue (std::vector)
 			}
@@ -34,7 +34,7 @@ int starting_point::get_max(const Mat &used_pixels, Point &max_pos) {
 	while ((max == 0) && !queue.empty()) {
 		st_point pt = queue.back();
 		queue.pop_back();
-		if (!used_pixels.data[pt.pt.y*used_pixels.step + pt.pt.x]) { // Pixel was not used
+		if (!used_pixels.at<uint8_t>(pt.pt.y, pt.pt.x)) { // Pixel was not used
 			max = pt.val;
 			max_pos = pt.pt;
 		}
