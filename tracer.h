@@ -52,7 +52,6 @@ public:
 		par->bind_param(param_nearby_control_smooth, "nearby_control_smooth", (p) 5);
 		par->bind_param(param_smoothness, "smoothness", (p) 0.5);
 		par->bind_param(param_min_nearby_straight, "param_min_nearby_straight", (p) 0);
-
 	}
 	void run(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, v_image &vectorization_output); // Trace skeleton
 	//void interactive(cv::TrackbarCallback onChange = 0, void *userdata = 0);
@@ -73,56 +72,46 @@ private:
 	p *param_smoothness;
 	p *param_min_nearby_straight;
 
+	void trace_part(cv::Point startpoint, v_line &line); // Trace one line
 
-	void trace_part(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, cv::Point startpoint, v_line &line); // Trace one line
+	/*
+	 * Functions for tracing
+	 */
+	float do_prediction(const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point);
+	void find_best_variant(const match_variant &last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_first_point(v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_smooth(v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void find_best_variant_straight(v_pt last, const v_line &line, std::vector<match_variant> &match);
+	void filter_best_variant_end(v_pt last, const v_line &line, std::vector<match_variant> &match);
+
+	// Optimization of placed points
+	float find_best_line(v_pt center, float angle, float size, float min_dist = 0); // Find best line continuation in given angle
+	float calculate_line_fitness(v_pt center, v_pt end, float min_dist, float max_dist); // Calculate how 'good' is given line
+	v_pt find_best_gaussian(v_pt center, float size = 1); // Find best value in given area
+	float calculate_gaussian(v_pt center); // Get average value from neighborhood with gaussian distribution
+
+	// Placing points
+	int place_next_point_at(v_point &new_point, int current_depth, v_line &line); // Add point to line and mark them as used
+	v_pt try_line_point(v_pt center, float angle); // Return point in distance par.nearby_limit from center in given angle
 
 
 	/*
 	 * Functions for accesing image data
 	 */
-	uchar nullpixel; // allways null pixel, cleared and returned by safeat when accessing pixels outside of an image
+	int32_t nullpixel; // allways null pixel, cleared and returned by safeat when accessing pixels outside of an image
 
-	const uchar &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
-	v_co apxat_co(const cv::Mat &image, v_pt pt); // Get rgb at non-integer position (aproximate from neighbors)
 	v_co safeat_co(const cv::Mat &image, int i, int j); // Safely access rgb image data
+	v_co apxat_co(const cv::Mat &image, v_pt pt); // Get rgb at non-integer position (aproximate from neighbors)
+	const int32_t &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
 	float apxat(const cv::Mat &image, v_pt pt); // Get value at non-integer position (aproximate from neighbors)
-
-	// used pixels functions:
-	int inc_pix_to_near(const cv::Mat &mask, int value, const v_pt &point, cv::Mat &used_pixels, int near = 1); // Increase all pixels in neighborhood
-	int inc_pix_to(const cv::Mat &mask, int value, const v_pt &point, cv::Mat &used_pixels); // Increase pix value
-
-
-	/*
-	 * Functions for tracing
-	 */
-	float do_prediction(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, cv::Mat &used_pixels, const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point);
-	void find_best_variant(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, const match_variant &last, const v_line &line, std::vector<match_variant> &match);
-	void find_best_variant_first_point(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
-	void find_best_variant_smooth(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
-	void find_best_variant_straight(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
-	void filter_best_variant_end(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt last, const v_line &line, std::vector<match_variant> &match);
-
-	// Optimization of placed points
-	float find_best_line(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, float angle, float size, float min_dist = 0); // Find best line continuation in given angle
-	float calculate_line_fitness(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, v_pt end, float min_dist, float max_dist); // Calculate how 'good' is given line
-	v_pt find_best_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center, float size = 1); // Find best value in given area
-	float calculate_gaussian(const cv::Mat &skeleton, const cv::Mat &distance, const cv::Mat &used_pixels, v_pt center); // Get average value from neighborhood with gaussian distribution
-
-	// Placing points
-	int place_next_point_at(const cv::Mat &skeleton, v_point &new_point, int current_depth, v_line &line, cv::Mat &used_pixels); // Add point to line and mark them as used
-	v_pt try_line_point(v_pt center, float angle); // Return point in distance par.nearby_limit from center in given angle
-
-
-
-
 
 	logger log;
 	parameters *par;
 
-	cv::Mat used_pixels; // Pixels used by tracing
-
-	changed_pix_roi changed_roi; // Roi with pixels (value < 254)
-	changed_pix_roi changed_start_roi; // Roi with pixels (value == 254)
+	// Pixels used by tracing are labeled
+	labeled_Mat lab_skel;
+	cv::Mat color;
+	cv::Mat dist;
 };
 
 }; // namespace

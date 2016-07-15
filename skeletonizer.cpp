@@ -7,16 +7,6 @@ using namespace cv;
 
 namespace vectorix {
 
-void normalize_dist(Mat &out, int max) {
-	for (int i = 0; i < out.rows; i++) {
-		for (int j = 0; j < out.cols; j++) {
-			out.at<int32_t>(i, j) *= 255*256/max;
-		}
-	}
-}
-
-
-
 void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	// Create boarders around image, white (background) pixels
 	Mat source;
@@ -28,8 +18,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	Mat bw          (source.rows, source.cols, CV_8UC(1));
 	Mat next_peeled (source.rows, source.cols, CV_8UC(1));
 	skeleton = Mat::zeros(source.rows, source.cols, CV_8UC(1));
-	//distance = Mat::zeros(source.rows, source.cols, CV_32SC1); // TODO temp
-	distance = Mat::zeros(source.rows, source.cols, CV_8UC(1));
+	distance = Mat::zeros(source.rows, source.cols, CV_32SC1);
 	Mat peeled = source.clone(); // Objects in this image are peeled in every step by 1 px
 
 	Mat kernel = getStructuringElement(MORPH_CROSS, Size(3,3)); // diamond
@@ -71,7 +60,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		}
 		bitwise_not(next_peeled, bw);
 		bitwise_and(peeled, bw, bw); // Pixels removed by next peeling
-		add_to_skeleton<uint8_t>/*//TODO temp _dist*/(distance, bw, iteration++); // calculate distance for all pixels
+		add_to_skeleton<int32_t>(distance, bw, iteration++); // calculate distance for all pixels
 
 		std::swap(peeled, next_peeled);
 		minMaxLoc(peeled, NULL, &max, NULL, NULL); // Check for non-zero pixel
@@ -99,7 +88,7 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	}
 	if (!param_save_distance_normalized_name->empty()) { // Display skeletonization outcome
 		Mat distance_normalized = distance.clone();
-		normalize<uint8_t>/*//TODO temp _dist*/(distance_normalized, iteration-1); // Make image more contrast
+		normalize<int32_t>(distance_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_distance_normalized_name, distance_normalized);
 	}
 
@@ -113,7 +102,7 @@ void skeletonizer::interactive(TrackbarCallback onChange, void *userdata) {
 
 	//show distance
 	distance_show = distance.clone();
-	normalize<uint8_t>/*//TODO temp _dist*/(distance_show, iteration-1); // Normalize image before displaying
+	normalize<int32_t>(distance_show, iteration-1); // Normalize image before displaying
 	/*// TODO vectorize_*/imshow("Distance", distance_show);
 
 	//show skeleton
