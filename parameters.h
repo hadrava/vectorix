@@ -64,9 +64,9 @@ public:
 	void reset_to_defaults();
 
 	void load_params(FILE *fd); // Read from filedescriptor
-	void load_params(const std::string filename); // Load parameters from file given by name
+	void load_params(const std::string &filename); // Load parameters from file given by name
 	void save_params(FILE *fd) const; // Write to filedescriptor
-	void save_params(const std::string filename, bool append = true) const; // Save parameters to file given by name
+	void save_params(const std::string &filename, bool append = true) const; // Save parameters to file given by name
 
 	std::vector<std::shared_ptr<param>> parameter_list;
 	std::unordered_map<std::string, std::string> not_loaded;

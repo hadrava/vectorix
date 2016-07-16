@@ -71,7 +71,7 @@ void parameters::save_params(FILE *fd) const { // Write parameters (with simple 
 	}
 }
 
-void parameters::load_params(const std::string filename) { // Load parameters from file given by name
+void parameters::load_params(const std::string &filename) { // Load parameters from file given by name
 	FILE *fd;
 	if ((fd = fopen(filename.c_str(), "r")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for reading.\n");
@@ -81,7 +81,7 @@ void parameters::load_params(const std::string filename) { // Load parameters fr
 	fclose(fd);
 }
 
-void parameters::save_params(const std::string filename, bool append) const { // Save parameters to file given by name
+void parameters::save_params(const std::string &filename, bool append) const { // Save parameters to file given by name
 	FILE *fd;
 	if ((fd = fopen(filename.c_str(), (append) ? "a" : "w")) == NULL) {
 		fprintf(stderr, "Couldn't open config file for writing.\n");

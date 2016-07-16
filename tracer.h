@@ -22,7 +22,7 @@ public:
 	variant_type type; // Tracing state
 	float depth; // Prediction depth (for DFS-like searching)
 	match_variant(): depth(0), type(variant_type::unset) { pt = v_point(); };
-	match_variant(v_point p): depth(1), type(variant_type::unset), pt(p) {};
+	match_variant(v_point point): depth(1), type(variant_type::unset), pt(point) {};
 };
 
 class tracer {
