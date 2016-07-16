@@ -1,17 +1,17 @@
-#include "least_squares.h"
+#include "least_squares_simple.h"
 #include <cmath>
 #include <iostream>
 
 namespace vectorix {
 
-void least_squares::add_equation(p *arr) {
+void least_squares_simple::add_equation(p *arr) {
 	vector_p eq;
 	std::copy(arr, arr+count, std::back_inserter(eq));
 	A.add_row(eq);
 	y_vector.push_back(arr[count]);
 }
 
-void least_squares::matrix_p::transpose() {
+void least_squares_simple::matrix_p::transpose() {
 	matrix_p ans;
 	unsigned int ans_cols = rows();
 
@@ -29,10 +29,8 @@ void least_squares::matrix_p::transpose() {
 	std::swap(ans, *this);
 };
 
-least_squares::matrix_p least_squares::matrix_p::operator*(const matrix_p &b) const {
+least_squares_simple::matrix_p least_squares_simple::matrix_p::operator*(const matrix_p &b) const {
 	matrix_p ans;
-	//std::cout << "mat a: " << a.size() << "x" << a[0].size() << std::endl;
-	//std::cout << "mat b: " << b.size() << "x" << b[0].size() << std::endl;
 	unsigned int ans_rows = rows();
 	unsigned int ans_cols = b[0].size();
 	unsigned int q = b.rows();
@@ -51,7 +49,7 @@ least_squares::matrix_p least_squares::matrix_p::operator*(const matrix_p &b) co
 	return ans;
 }
 
-void least_squares::matrix_p::inverse() {
+void least_squares_simple::matrix_p::inverse() {
 	unsigned int dim = rows();
 
 	matrix_p ans;
@@ -103,15 +101,10 @@ void least_squares::matrix_p::inverse() {
 	std::swap(ans, *this);
 }
 
-void least_squares::evaluate() {
+void least_squares_simple::evaluate() {
 	auto At = A;
 	At.transpose();
-
 	auto m = At * A;
-	// test:
-	//std::cout << "matm0: " << m[0][0] << "\t" << m[0][1] << std::endl;
-	//std::cout << "matm1: " << m[1][0] << "\t" << m[1][1] << std::endl;
-
 
 	m.inverse();
 
@@ -127,7 +120,7 @@ void least_squares::evaluate() {
 	log.log<log_level::debug>("least_squares evaluated\n");
 }
 
-p least_squares::calc_error() const {
+p least_squares_simple::calc_error() const {
 	matrix_p x_mat;
 	x_mat.add_row(x_vector);
 	x_mat.transpose();
@@ -144,7 +137,7 @@ p least_squares::calc_error() const {
 	return error;
 }
 
-p least_squares::operator[](unsigned int i) const{
+p least_squares_simple::operator[](unsigned int i) const{
 	return x_vector[i];
 }
 

@@ -2,7 +2,8 @@
 #include "offset.h"
 #include "v_image.h"
 #include "parameters.h"
-#include "least_squares.h"
+#include "least_squares_simple.h"
+#include "least_squares_opencv.h"
 #include <list>
 #include <vector>
 #include <cmath>
@@ -11,6 +12,7 @@
 #include <cstdio>
 #include <iostream>
 #include <cassert>
+#include <memory>
 
 namespace vectorix {
 
@@ -461,7 +463,11 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 
 	while (true) {
 		// 2, Compute coefficients by least squares
-		least_squares mat(2, *par);
+		std::unique_ptr<least_squares> mat;
+		if (*param_lsq_method == 0)
+			mat = std::unique_ptr<least_squares>(new least_squares_opencv(2, *par));
+		else
+			mat = std::unique_ptr<least_squares>(new least_squares_simple(2, *par));
 		for (int i = 0; i < times.size(); i++) {
 			p t = times[i];
 			p s = 1 - t;
@@ -476,20 +482,20 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 			v_pt c2 = points[i] - a_main*s*s*s - a_main*3*s*s*t - b_main*3*s*t*t - b_main*t*t*t;
 
 			p eqx[] = {c0.x, c1.x, c2.x};
-			mat.add_equation(eqx);
+			mat->add_equation(eqx);
 			p eqy[] = {c0.y, c1.y, c2.y};
-			mat.add_equation(eqy);
+			mat->add_equation(eqy);
 		}
-		mat.evaluate();
-		p error = mat.calc_error();
+		mat->evaluate();
+		p error = mat->calc_error();
 
 		// 3, Find improved parametrization
 		v_point a, b;
 		a.main = a_main;
-		a.control_next = a_n * mat[0] + a_main;
+		a.control_next = a_n * (*mat)[0] + a_main;
 
 		b.main = b_main;
-		b.control_prev = b_p * mat[1] + b_main;
+		b.control_prev = b_p * (*mat)[1] + b_main;
 		for (int i = 0; i < times.size(); i++) {
 			v_point middle;
 			geom::bezier_chop_in_t(a, b, middle, times[i], true);
@@ -510,8 +516,8 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 
 		// 5
 		if (error < 1) { //TODO const
-			a_next = a_n * mat[0] + a_main;
-			b_prev = b_p * mat[1] + b_main;
+			a_next = a_n * (*mat)[0] + a_main;
+			b_prev = b_p * (*mat)[1] + b_main;
 
 #ifdef VECTORIX_OUTLINE_DEBUG
 			v_point a, b;
@@ -531,8 +537,8 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 			return true;
 		}
 		else if (iteration > 5) { // TODO const
-			a_next = a_n * mat[0] + a_main;
-			b_prev = b_p * mat[1] + b_main;
+			a_next = a_n * (*mat)[0] + a_main;
+			b_prev = b_p * (*mat)[1] + b_main;
 
 			return false; // Split segment and try again
 		}

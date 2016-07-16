@@ -17,9 +17,13 @@ public:
 	offset(v_image &img, parameters &params) {
 		image = &img;
 		par = &params;
+		par->add_comment("Least squares method: 0 = OpenCV (default, suggested), 1 = own implementation");
+		par->bind_param(param_lsq_method, "lsq_method", 0);
 	}
 	void convert_to_outline(v_line &line); // Convert from stroke to fill (calculate line outline)
 private:
+	int *param_lsq_method;
+
 	void one_point_circle(v_line &line); // Line containing one point will be converted to outline
 	bool segment_outline(v_point &one, v_point &two, std::vector<v_point> &outline);
 
