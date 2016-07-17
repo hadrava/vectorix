@@ -6,6 +6,24 @@
 namespace vectorix {
 
 void finisher::apply_settings(v_image &vector) {
+#ifndef NDEBUG
+	for (v_line &line: vector.line) {
+		for (v_point &segment: line.segment) {
+			if (!(
+			(segment.main.x == segment.main.x) &&
+			(segment.main.y == segment.main.y) &&
+			(segment.control_next.x == segment.control_next.x) &&
+			(segment.control_next.y == segment.control_next.y) &&
+			(segment.control_prev.x == segment.control_prev.x) &&
+			(segment.control_prev.y == segment.control_prev.y)
+				)) {
+				fprintf(stderr, "Bug: Tracer output contains NaN!\n");
+				throw;
+			}
+		}
+	}
+#endif
+
 	if (*param_false_colors)
 		vector.false_colors(*param_false_colors);
 
