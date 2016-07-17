@@ -20,7 +20,7 @@ class match_variant { // Structure for storing one possible continuation
 public:
 	v_point pt; // Point in image
 	variant_type type; // Tracing state
-	float depth; // Prediction depth (for DFS-like searching)
+	p depth; // Prediction depth (for DFS-like searching)
 	match_variant(): depth(0), type(variant_type::unset) { pt = v_point(); };
 	match_variant(v_point point): depth(1), type(variant_type::unset), pt(point) {};
 };
@@ -34,7 +34,7 @@ public:
 
 		par->add_comment("Phase 3: Tracing");
 		par->add_comment("Auto accept, higher values: slower tracing");
-		par->bind_param(param_depth_auto_choose, "depth_auto_choose", (float) 1);
+		par->bind_param(param_depth_auto_choose, "depth_auto_choose", (p) 1);
 		par->add_comment("Maximal prediction depth");
 		par->bind_param(param_max_dfs_depth, "max_dfs_depth", 1);
 		par->add_comment("Maximal neighbourhood in pixel");
@@ -42,10 +42,10 @@ public:
 		par->add_comment("Maximal neighbourhood for calculating gaussian error in pixel");
 		par->bind_param(param_nearby_limit_gauss, "nearby_limit_gauss", 2);
 		par->add_comment("Coeficient for gaussian error");
-		par->bind_param(param_distance_coef, "distance_coef", (float) 2);
-		par->bind_param(param_gauss_precision, "gauss_precision", (float) 0.0001);
+		par->bind_param(param_distance_coef, "distance_coef", (p) 2);
+		par->bind_param(param_gauss_precision, "gauss_precision", (p) 0.0001);
 		par->bind_param(param_angle_steps, "angle_steps", 20);
-		par->bind_param(param_angular_precision, "angular_precision", (float) 0.001);
+		par->bind_param(param_angular_precision, "angular_precision", (p) 0.001);
 
 		par->bind_param(param_size_nearby_smooth, "size_nearby_smooth", (p) 3);
 		par->bind_param(param_max_angle_search_smooth, "max_angle_search_smooth", (p) 0.8);
@@ -57,14 +57,14 @@ public:
 	//void interactive(cv::TrackbarCallback onChange = 0, void *userdata = 0);
 
 private:
-	float *param_depth_auto_choose;
+	p *param_depth_auto_choose;
 	int *param_max_dfs_depth;
 	p *param_nearby_limit;
 	int *param_nearby_limit_gauss;
-	float *param_distance_coef;
-	float *param_gauss_precision;
+	p *param_distance_coef;
+	p *param_gauss_precision;
 	int *param_angle_steps;
-	float *param_angular_precision;
+	p *param_angular_precision;
 
 	p *param_size_nearby_smooth;
 	p *param_max_angle_search_smooth;
@@ -77,7 +77,7 @@ private:
 	/*
 	 * Functions for tracing
 	 */
-	float do_prediction(const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point);
+	p do_prediction(const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point);
 	void find_best_variant(const match_variant &last, const v_line &line, std::vector<match_variant> &match);
 	void find_best_variant_first_point(v_pt last, const v_line &line, std::vector<match_variant> &match);
 	void find_best_variant_smooth(v_pt last, const v_line &line, std::vector<match_variant> &match);
@@ -85,14 +85,14 @@ private:
 	void filter_best_variant_end(v_pt last, const v_line &line, std::vector<match_variant> &match);
 
 	// Optimization of placed points
-	float find_best_line(v_pt center, float angle, float size, float min_dist = 0); // Find best line continuation in given angle
-	float calculate_line_fitness(v_pt center, v_pt end, float min_dist, float max_dist); // Calculate how 'good' is given line
-	v_pt find_best_gaussian(v_pt center, float size = 1); // Find best value in given area
-	float calculate_gaussian(v_pt center); // Get average value from neighborhood with gaussian distribution
+	p find_best_line(v_pt center, p angle, p size, p min_dist = 0); // Find best line continuation in given angle
+	p calculate_line_fitness(v_pt center, v_pt end, p min_dist, p max_dist); // Calculate how 'good' is given line
+	v_pt find_best_gaussian(v_pt center, p size = 1); // Find best value in given area
+	p calculate_gaussian(v_pt center); // Get average value from neighborhood with gaussian distribution
 
 	// Placing points
 	int place_next_point_at(v_point &new_point, int current_depth, v_line &line); // Add point to line and mark them as used
-	v_pt try_line_point(v_pt center, float angle); // Return point in distance par.nearby_limit from center in given angle
+	v_pt try_line_point(v_pt center, p angle); // Return point in distance par.nearby_limit from center in given angle
 
 
 	/*
@@ -103,7 +103,7 @@ private:
 	v_co safeat_co(const cv::Mat &image, int i, int j); // Safely access rgb image data
 	v_co apxat_co(const cv::Mat &image, v_pt pt); // Get rgb at non-integer position (aproximate from neighbors)
 	const int32_t &safeat(const cv::Mat &image, int i, int j); // Safe access image data for reading or writing
-	float apxat(const cv::Mat &image, v_pt pt); // Get value at non-integer position (aproximate from neighbors)
+	p apxat(const cv::Mat &image, v_pt pt); // Get value at non-integer position (aproximate from neighbors)
 
 	logger log;
 	parameters *par;

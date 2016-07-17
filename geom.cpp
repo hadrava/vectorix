@@ -216,10 +216,28 @@ bool bezier_intersection(const v_point &a, const v_point &b, const v_point &c, c
 	v_point y[3];
 	x[0] = a;
 	x[2] = b;
-	bezier_chop_in_half(x[0], x[2], x[1]);
-
 	y[0] = c;
 	y[2] = d;
+
+	/*
+	 * Move segment to center to reduce precision problems.
+	 *
+	 * This is necesery when p is only a float. Consider coordinates larger
+	 * than 2048. Precision is only about 0.0001 in decimal.
+	 */
+	v_pt center = ((x[0].main + x[0].control_next) + (x[2].control_prev + x[2].main))
+	            + ((y[0].main + y[0].control_next) + (y[2].control_prev + y[2].main));
+	center /= 8;
+	x[0].main         -= center;
+	x[0].control_next -= center;
+	x[2].control_prev -= center;
+	x[2].main         -= center;
+	y[0].main         -= center;
+	y[0].control_next -= center;
+	y[2].control_prev -= center;
+	y[2].main         -= center;
+
+	bezier_chop_in_half(x[0], x[2], x[1]);
 	bezier_chop_in_half(y[0], y[2], y[1]);
 
 	p tx, ty;

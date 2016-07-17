@@ -67,10 +67,10 @@ public:
 		return std::sqrt(x*x + y*y);
 	}
 	p angle() const { // calculate direction of vector
-		float ret = std::atan(y/x);
-		if (x<0)
+		p ret = std::atan(y / x);
+		if (x < 0)
 			ret += M_PI;
-		if (ret<0)
+		if (ret < 0)
 			ret += 2*M_PI;
 		return ret;
 	}

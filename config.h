@@ -5,9 +5,7 @@
 
 namespace vectorix {
 
-typedef float p; // Vector data precision -- float should be enought
-const char p_scanf[] = "%f"; // scanf string for loading type "p"
-const char p_printf[] = "%f"; // printf string format for printing type "p"
+typedef double p; // Vector data precision -- float is working too, but double is much safer
 const p epsilon = 0.00001f; // small value for comparision of two numbers
 
 }; // namespace

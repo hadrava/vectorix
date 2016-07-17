@@ -67,6 +67,26 @@ void offset::convert_to_outline(v_line &line) { // Calculate outline of each lin
 		// + something between them, calculated from central point between seg and seg2 ((*seg)[2]).
 
 		p t1, t2; // Times of intersection
+		if (!(
+			((*seg)[0].main.x == (*seg)[0].main.x) &&
+			((*seg)[0].main.y == (*seg)[0].main.y) &&
+			((*seg)[0].control_next.x == (*seg)[0].control_next.x) &&
+			((*seg)[0].control_next.y == (*seg)[0].control_next.y) &&
+			((*seg)[1].control_prev.x == (*seg)[1].control_prev.x) &&
+			((*seg)[1].control_prev.y == (*seg)[1].control_prev.y) &&
+			((*seg)[1].main.x == (*seg)[1].main.x) &&
+			((*seg)[1].main.y == (*seg)[1].main.y) &&
+			((*seg2)[0].main.x == (*seg2)[0].main.x) &&
+			((*seg2)[0].main.y == (*seg2)[0].main.y) &&
+			((*seg2)[0].control_next.x == (*seg2)[0].control_next.x) &&
+			((*seg2)[0].control_next.y == (*seg2)[0].control_next.y) &&
+			((*seg2)[1].control_prev.x == (*seg2)[1].control_prev.x) &&
+			((*seg2)[1].control_prev.y == (*seg2)[1].control_prev.y) &&
+			((*seg2)[1].main.x == (*seg2)[1].main.x) &&
+			((*seg2)[1].main.y == (*seg2)[1].main.y)
+			)) {
+			std::cout << "Found NaN in bezier\n";
+		}
 		if (geom::distance((*seg)[1].main, (*seg2)[0].main) < epsilon) {
 			std::cout << "Merguju\n";
 			// Segments can be connected directly by main points.

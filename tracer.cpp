@@ -63,7 +63,7 @@ void tracer::trace_part(cv::Point startpoint, v_line &line) {
 	int first_point = 2;
 	for (;;) {
 		match_variant new_point;
-		float depth_found = do_prediction(last_placed, *param_max_dfs_depth, line, new_point); // Do prediction (by recursion) -- place one new point
+		p depth_found = do_prediction(last_placed, *param_max_dfs_depth, line, new_point); // Do prediction (by recursion) -- place one new point
 
 		lab_skel.drop_smaller_or_equal_labels(253);
 
@@ -116,9 +116,9 @@ int tracer::place_next_point_at(v_point &new_point, int current_depth, v_line &l
 	return sum;
 }
 
-float tracer::calculate_gaussian(v_pt center) { // Get average value from neighborhood with gaussian distribution
+p tracer::calculate_gaussian(v_pt center) { // Get average value from neighborhood with gaussian distribution
 	int limit = *param_nearby_limit_gauss;
-	float res = 0;
+	p res = 0;
 	for (int y = -limit; y<=limit; y++) {
 		for (int x = -limit; x<=limit; x++) { // Limit to rectangular area
 			int j = center.x + x;
@@ -133,10 +133,10 @@ float tracer::calculate_gaussian(v_pt center) { // Get average value from neighb
 	return res;
 }
 
-v_pt tracer::find_best_gaussian(v_pt center, float size) { // Find best value in given area
+v_pt tracer::find_best_gaussian(v_pt center, p size) { // Find best value in given area
 	if (size < *param_gauss_precision) // Our area is lower than desired precision
 		return center;
-	float a[3][3];
+	p a[3][3];
 	for (int y = -1; y<=1; y++) {
 		for (int x = -1; x<=1; x++) { // Calculate at nine positions (3x3)
 			v_pt offset(x, y);
@@ -145,11 +145,11 @@ v_pt tracer::find_best_gaussian(v_pt center, float size) { // Find best value in
 			a[x+1][y+1] = calculate_gaussian(offset);
 		}
 	}
-	float i = a[0][0] + a[0][1] + a[1][0] + a[1][1]; // Upper left
-	float j = a[1][0] + a[1][1] + a[2][0] + a[2][1]; // Upper right
-	float k = a[0][1] + a[0][2] + a[1][1] + a[1][2]; // Lower left
-	float l = a[1][1] + a[1][2] + a[2][1] + a[2][2]; // Lower right
-	float m = max(max(i,j),max(k,l));
+	p i = a[0][0] + a[0][1] + a[1][0] + a[1][1]; // Upper left
+	p j = a[1][0] + a[1][1] + a[2][0] + a[2][1]; // Upper right
+	p k = a[0][1] + a[0][2] + a[1][1] + a[1][2]; // Lower left
+	p l = a[1][1] + a[1][2] + a[2][1] + a[2][2]; // Lower right
+	p m = max(max(i,j),max(k,l));
 	size /= 2;
 	// Move center
 	if (m == i) {
@@ -167,10 +167,10 @@ v_pt tracer::find_best_gaussian(v_pt center, float size) { // Find best value in
 	return find_best_gaussian(center, size); // continue in one quarter
 }
 
-float tracer::calculate_line_fitness(v_pt center, v_pt end, float min_dist, float max_dist) { // Calculate how 'good' is given line
+p tracer::calculate_line_fitness(v_pt center, v_pt end, p min_dist, p max_dist) { // Calculate how 'good' is given line
 	Point corner1(center.x - max_dist, center.y - max_dist); // Upper left corner
 	Point corner2(center.x + max_dist + 1, center.y + max_dist + 1); // Lower right corner
-	float res = 0;
+	p res = 0;
 	for (int i = corner1.y; i < corner2.y; i++) {
 		for (int j = corner1.x; j < corner2.x; j++) { // for every pixel in rectangle
 			if (lab_skel.safeat(i, j, true)) { // pixel is in skeleton and was not used (unlabeled)
@@ -180,7 +180,7 @@ float tracer::calculate_line_fitness(v_pt center, v_pt end, float min_dist, floa
 				pixel -= center;
 				v_pt en = end - center;
 				en /= en.len();
-				float base = pixel.x*en.x + pixel.y*en.y; // distance to center squared
+				p base = pixel.x*en.x + pixel.y*en.y; // distance to center squared
 				if ((base < 0) && (min_dist >= 0))
 					continue;
 				en *= base;
@@ -192,21 +192,21 @@ float tracer::calculate_line_fitness(v_pt center, v_pt end, float min_dist, floa
 	return res;
 }
 
-v_pt tracer::try_line_point(v_pt center, float angle) { // Return point in distance *param_nearby_limit from center in given angle
+v_pt tracer::try_line_point(v_pt center, p angle) { // Return point in distance *param_nearby_limit from center in given angle
 	v_pt distpoint(cos(angle), sin(angle));
 	distpoint *= *param_nearby_limit;
 	distpoint += center;
 	return distpoint;
 }
 
-float tracer::find_best_line(v_pt center, float angle, float size, float min_dist) { // Find best line continuation in given angle
+p tracer::find_best_line(v_pt center, p angle, p size, p min_dist) { // Find best line continuation in given angle
 	if (size < *param_angular_precision) // we found maximum with enought precision
 		return angle;
 	size /= 2;
 	v_pt a = try_line_point(center, angle - size);
 	v_pt b = try_line_point(center, angle + size);
-	float af = calculate_line_fitness(center, a, min_dist, *param_nearby_limit);
-	float bf = calculate_line_fitness(center, b, min_dist, *param_nearby_limit);
+	p af = calculate_line_fitness(center, a, min_dist, *param_nearby_limit);
+	p bf = calculate_line_fitness(center, b, min_dist, *param_nearby_limit);
 	if (af>bf) // Go in a direction of better fitness
 		return find_best_line(center, angle - size, size, min_dist);
 	else
@@ -242,11 +242,11 @@ void tracer::find_best_variant_smooth(v_pt last, const v_line &line, std::vector
 
 	p stored_nearby_limit = *param_nearby_limit;
 	*param_nearby_limit = *param_nearby_limit + *param_size_nearby_smooth;
-	float angle = find_best_line(line.segment.back().main, prediction.angle(), *param_max_angle_search_smooth, stored_nearby_limit - *param_size_nearby_smooth); // Find best line in given angle
+	p angle = find_best_line(line.segment.back().main, prediction.angle(), *param_max_angle_search_smooth, stored_nearby_limit - *param_size_nearby_smooth); // Find best line in given angle
 	pred.main = line.segment.back().main + v_pt(std::cos(angle), std::sin(angle))*stored_nearby_limit;
 
 	*param_nearby_limit = *param_nearby_control_smooth;
-	float angle2 = find_best_line(pred.main, angle, *param_max_angle_search_smooth, -*param_size_nearby_smooth);
+	p angle2 = find_best_line(pred.main, angle, *param_max_angle_search_smooth, -*param_size_nearby_smooth);
 	// find best positon for control point
 	*param_nearby_limit = stored_nearby_limit;
 	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(*param_nearby_limit/3);
@@ -264,7 +264,7 @@ void tracer::find_best_variant_smooth(v_pt last, const v_line &line, std::vector
 			// It looks more like corner
 			log.log<log_level::debug>("Corner detected\n");
 			pred.main = geom::intersect(line.segment.back().main, prediction, pred.main, pred.control_prev - pred.main); // Find best position for corner
-			float len = (pred.main - line.segment.back().main).len();
+			p len = (pred.main - line.segment.back().main).len();
 			pred.control_next = line.segment.back().main + prediction*(len/3);
 			pred.control_prev = line.segment.back().main + prediction*(len*2/3); // Recalculate control points
 
@@ -287,7 +287,7 @@ void tracer::find_best_variant_smooth(v_pt last, const v_line &line, std::vector
 void tracer::find_best_variant_straight(v_pt last, const v_line &line, std::vector<match_variant> &match) {
 	// Leave corner (or first point) with straight continuation
 	int size = *param_nearby_limit;
-	float *fit = new float[*param_angle_steps+2];
+	p *fit = new p[*param_angle_steps+2];
 	fit++;
 	for (int dir = 0; dir < *param_angle_steps; dir++) { // Try every direction
 		v_pt distpoint = try_line_point(line.segment.back().main, 2*M_PI / *param_angle_steps*dir); // Place point
@@ -296,7 +296,7 @@ void tracer::find_best_variant_straight(v_pt last, const v_line &line, std::vect
 	fit[-1] = fit[*param_angle_steps-1]; // Make "borders" to array
 	fit[*param_angle_steps] = fit[0];
 
-	float *sortedfit = new float[*param_angle_steps]; // Array of local maximas
+	p *sortedfit = new p[*param_angle_steps]; // Array of local maximas
 	int sortedfiti = 0;
 	for (int dir = 0; dir < *param_angle_steps; dir++) {
 		if ((fit[dir] > fit[dir+1]) && (fit[dir] > fit[dir-1]) && (fit[dir] > epsilon)) { // Look if direction is local maximum
@@ -306,18 +306,18 @@ void tracer::find_best_variant_straight(v_pt last, const v_line &line, std::vect
 	fit--;
 	delete []fit;
 
-	std::sort(sortedfit, sortedfit+sortedfiti, [&](float a, float b)->bool { // Sort by line fitness
+	std::sort(sortedfit, sortedfit+sortedfiti, [&](p a, p b)->bool { // Sort by line fitness
 			v_pt da = try_line_point(line.segment.back().main, a);
-			float fa = calculate_line_fitness(line.segment.back().main, da, *param_min_nearby_straight, *param_nearby_limit);
+			p fa = calculate_line_fitness(line.segment.back().main, da, *param_min_nearby_straight, *param_nearby_limit);
 			v_pt db = try_line_point(line.segment.back().main, b);
-			float fb = calculate_line_fitness(line.segment.back().main, db, *param_min_nearby_straight, *param_nearby_limit);
+			p fb = calculate_line_fitness(line.segment.back().main, db, *param_min_nearby_straight, *param_nearby_limit);
 			return fa > fb;
 			});
 
 	//log.log<log_level::debug>("count of variants: %i\n", sortedfiti);
 	for (int dir = 0; dir < sortedfiti; dir++) {
 		//v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir], par);
-		//float my = calculate_line_fitness(line.segment.back().main, distpoint, 0, *param_nearby_limit, par);
+		//p my = calculate_line_fitness(line.segment.back().main, distpoint, 0, *param_nearby_limit, par);
 		//log.log<log_level::debug>("Sorted variants: %f: %f\n", sortedfit[dir], my);
 
 		v_pt distpoint = try_line_point(line.segment.back().main, sortedfit[dir]);
@@ -388,7 +388,7 @@ void tracer::find_best_variant(const match_variant &last, const v_line &line, st
 	return;
 }
 
-float tracer::do_prediction(const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point) {
+p tracer::do_prediction(const match_variant &last_placed, int allowed_depth, v_line &line, match_variant &new_point) {
 	if (allowed_depth <= 0) {
 		return 0;
 	}
@@ -457,7 +457,7 @@ const int32_t &tracer::safeat(const Mat &image, int i, int j) { // Safely acces 
 }
 
 
-float tracer::apxat(const Mat &image, v_pt pt) { // Get value at non-integer position (aproximate from neighbors)
+p tracer::apxat(const Mat &image, v_pt pt) { // Get value at non-integer position (aproximate from neighbors)
 	int x = pt.x - 0.5f;
 	int y = pt.y - 0.5f;
 	pt.x -= x + 0.5f;
