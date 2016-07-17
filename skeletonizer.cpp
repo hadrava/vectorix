@@ -82,14 +82,16 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	if (!param_save_distance_name->empty()) { // Save output to file
 		imwrite(*param_save_distance_name, distance);
 	}
-	if (!param_save_skeleton_normalized_name->empty()) { // Display skeletonization outcome
-		Mat skeleton_normalized = skeleton.clone();
-		normalize<uint8_t>(skeleton_normalized, iteration-1); // Make image more contrast
+	// Display skeletonization outcome
+	if (!param_save_skeleton_normalized_name->empty()) {
+		Mat skeleton_normalized;
+		normalize(skeleton, skeleton_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_skeleton_normalized_name, skeleton_normalized);
 	}
-	if (!param_save_distance_normalized_name->empty()) { // Display skeletonization outcome
-		Mat distance_normalized = distance.clone();
-		normalize<int32_t>(distance_normalized, iteration-1); // Make image more contrast
+	// Display skeletonization outcome
+	if (!param_save_distance_normalized_name->empty()) {
+		Mat distance_normalized;
+		normalize(distance, distance_normalized, iteration-1); // Make image more contrast
 		imwrite(*param_save_distance_normalized_name, distance_normalized);
 	}
 
@@ -97,16 +99,20 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 	this->distance = distance;
 }
 
+void skeletonizer::normalize(const cv::Mat &in, cv::Mat &out, int max) {
+	in.convertTo(out, CV_8U, 255. / max);
+}
+
 void skeletonizer::interactive(TrackbarCallback onChange, void *userdata) {
 	Mat distance_show; // Images normalized for displaying
 	Mat skeleton_show; // Images normalized for displaying
 
-	//show distance
+	// Show distance (normalized)
 	distance_show = distance.clone();
-	normalize<int32_t>(distance_show, iteration-1); // Normalize image before displaying
+	normalize(distance, distance_show, iteration-1);
 	zoom_imshow("Distance", distance_show);
 
-	//show skeleton
+	// Show skeleton
 	skeleton_show = skeleton.clone();
 	threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
 	zoom_imshow("Skeleton", skeleton_show);

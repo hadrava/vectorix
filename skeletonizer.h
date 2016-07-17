@@ -16,7 +16,7 @@ public:
 
 		par->add_comment("Phase 2: Skeletonization");
 		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow)");
-		par->bind_param(param_skeletonization_type, "type", 0); //TODO rename param
+		par->bind_param(param_skeletonization_type, "skeletonization_type", 0);
 		par->add_comment("Save steps to files, # will be replaced with iteration number");
 		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_#.png");
 		par->add_comment("Save skeleton/distance with/without normalization");
@@ -40,20 +40,7 @@ private:
 			}
 		}
 	}
-
-	// Normalize grayscale image for displaying (0-255 for 8-bit, 0-255*256 for 16 and 32 bit)
-	template <typename T>
-	void normalize(cv::Mat &out, int max) {
-		int multiply = 255/max;
-		if (sizeof(T) > 1)
-			multiply = 255*256/max;
-
-		for (int i = 0; i < out.rows; i++) {
-			for (int j = 0; j < out.cols; j++) {
-				out.at<T>(i, j) *= multiply;
-			}
-		}
-	}
+	void normalize(const cv::Mat &in, cv::Mat &out, int max);
 
 	int *param_skeletonization_type;
 	std::string *param_save_peeled_name;

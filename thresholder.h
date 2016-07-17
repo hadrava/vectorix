@@ -27,7 +27,9 @@ public:
 		par->bind_param(param_save_threshold_name, "file_threshold_output", (std::string) "");
 		par->add_comment("Fill holes (of given size) in lines: 0 = no filling");
 		par->bind_param(param_fill_holes, "fill_holes", 0);
-		par->add_comment("Save image with filled holes to file: empty = no output");
+		par->add_comment("Remove dust (with smaller grains): 0 = no change");
+		par->bind_param(param_dust_size, "dust_size", 0);
+		par->add_comment("Save image with filled holes (and removed dust) to file: empty = no output");
 		par->bind_param(param_save_filled_name, "file_filled_output", (std::string) "");
 	}
 	void run(const cv::Mat &original, cv::Mat &binary);
@@ -40,6 +42,7 @@ private:
 	int *param_adaptive_threshold_size;
 	std::string *param_save_threshold_name;
 	int *param_fill_holes;
+	int *param_dust_size;
 	std::string *param_save_filled_name;
 
 	logger log;

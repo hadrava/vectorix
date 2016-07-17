@@ -30,8 +30,8 @@ private:
 		par->bind_param(param_max_window_size, "max_window_size", 640);
 		par->add_comment("Scale images before viewing in window: 0: small picture, 100: original resolution");
 		par->bind_param(param_zoom_level, "zoom_level", 0);
-		pos_x = 1;
-		pos_y = 1;
+		pos_x = 0.5;
+		pos_y = 0.5;
 	}
 	void render(std::unordered_map<std::string, std::tuple<cv::Mat, bool>>::iterator ref);
 	void refresh();

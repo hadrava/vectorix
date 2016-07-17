@@ -23,7 +23,7 @@ void zoom_window::imshow(const std::string &winname, const cv::Mat &mat, bool ov
 		old = ins.first;
 		first_time = true;
 	}
-	mat.convertTo(std::get<0>(old->second), CV_8U);
+	//mat.convertTo(std::get<0>(old->second), CV_8U);
 
 	render(old);
 	if (overview && first_time) {
@@ -52,12 +52,13 @@ void zoom_window::mouse_callback(int event, int x, int y, int, void *object) {
 
 	obj->pos_x = (double) (x - obj->scaled_roi_size.width / 2)  / (obj->overview_size.width - obj->scaled_roi_size.width);
 	obj->pos_y = (double) (y - obj->scaled_roi_size.height / 2) / (obj->overview_size.height - obj->scaled_roi_size.height);
-	if (obj->pos_x < 0)
+	// First two are also true when pos_. is NaN.
+	if (!(obj->pos_x >= 0))
 		obj->pos_x = 0;
+	if (!(obj->pos_y >= 0))
+		obj->pos_y = 0;
 	if (obj->pos_x > 1)
 		obj->pos_x = 1;
-	if (obj->pos_y < 0)
-		obj->pos_y = 0;
 	if (obj->pos_y > 1)
 		obj->pos_y = 1;
 
@@ -73,7 +74,11 @@ void zoom_window::render(std::unordered_map<std::string, std::tuple<cv::Mat, boo
 	cv::Mat *img = &std::get<0>(ref->second);
 
 	int window_w, window_h;
-	if (img->cols > img->rows) {
+	if ((*param_max_window_size > img->cols) && (*param_max_window_size > img->rows)) {
+		window_w = img->cols;
+		window_h = img->rows;
+	}
+	else if (img->cols > img->rows) {
 		window_w = *param_max_window_size;
 		window_h = *param_max_window_size * img->rows / img->cols;
 	}
@@ -81,6 +86,10 @@ void zoom_window::render(std::unordered_map<std::string, std::tuple<cv::Mat, boo
 		window_w = *param_max_window_size * img->cols / img->rows;
 		window_h = *param_max_window_size;
 	}
+	if (*param_zoom_level < 0)
+		*param_zoom_level = 0;
+	if (*param_zoom_level > 100)
+		*param_zoom_level = 100;
 
 	int view_w, view_h;
 	view_w = (*param_zoom_level * window_w + (100 - *param_zoom_level) * img->cols) / 100;

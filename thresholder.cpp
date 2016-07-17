@@ -20,7 +20,7 @@ void thresholder::run(const Mat &original, Mat &bin) {
 
 	// Do Thresholding
 	if ((*param_threshold_type >= 2) && (*param_threshold_type <= 3)) { // Adaptive threshold
-		log.log<log_level::info>("threshold: Using adaptive thresholdb with bias %i.\n", *param_threshold - 128);
+		log.log<log_level::info>("threshold: Using adaptive threshold with bias %i.\n", *param_threshold - 128);
 
 		// Make threshold size odd and >= 3.
 		*param_adaptive_threshold_size |= 1;
@@ -56,6 +56,10 @@ void thresholder::run(const Mat &original, Mat &bin) {
 	if (*param_fill_holes)
 		morphologyEx(bin, bin, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(*param_fill_holes, *param_fill_holes)));
 
+	// Open objects (remove small points)
+	if (*param_dust_size)
+		morphologyEx(bin, bin, MORPH_OPEN, getStructuringElement(MORPH_ELLIPSE, Size(*param_dust_size, *param_dust_size)));
+
 	// Save image after filling
 	if (!param_save_filled_name->empty()) {
 		imwrite(*param_save_filled_name, bin);
@@ -73,7 +77,8 @@ void thresholder::interactive(TrackbarCallback onChange, void *userdata) {
 	createTrackbar("Threshold type", "Threshold", param_threshold_type, 3, onChange, userdata);
 	createTrackbar("Threshold", "Threshold", param_threshold, 255, onChange, userdata);
 	createTrackbar("Adaptive threshold", "Threshold", param_adaptive_threshold_size, max_image_size, onChange, userdata);
-	createTrackbar("Filling size", "Filled", param_fill_holes, 30, onChange, userdata);
+	createTrackbar("Filling size", "Filled", param_fill_holes, 50, onChange, userdata);
+	createTrackbar("Dust removal size", "Filled", param_dust_size, 50, onChange, userdata);
 	waitKey(1);
 };
 
