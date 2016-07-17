@@ -18,8 +18,6 @@ void opencv_render(const v_image &vector, Mat &output, parameters &params) { // 
 	params.bind_param(param_render_max_distance, "render_max_distance", (p) 1);
 
 	output = Scalar(255, 255, 255); // Fill with white color
-	Mat lout(output.rows, output.cols, CV_8UC(3)); // Temporary
-	lout = Scalar(255, 255, 255);
 	for (v_line line: vector.line) { // For every line in image...
 		v_line l = line; // Copy line
 		geom::chop_line(l, *param_render_max_distance); // Chop line, so there is small length of each segment
@@ -41,7 +39,7 @@ void opencv_render(const v_image &vector, Mat &output, parameters &params) { // 
 				c.val[1] = (one->color.val[1] + two->color.val[1])/2;
 				c.val[2] = (one->color.val[0] + two->color.val[0])/2;
 				int w = (one->width + two->width)/2; // average width
-				cv::line(lout, a, b, c, w); // Draw line to temporary image
+				cv::line(output, a, b, c, w); // Draw line to temporary image
 
 				one=two;
 				two++;
@@ -64,19 +62,8 @@ void opencv_render(const v_image &vector, Mat &output, parameters &params) { // 
 			c.val[1] /= i;
 			c.val[2] /= i;
 			const Point* fillpoints[1] = { &pts[0] };
-			fillPoly(lout, fillpoints, &count, 1, c); // Draw just 1 polygon
+			fillPoly(output, fillpoints, &count, 1, c); // Draw just 1 polygon
 			delete []pts;
-		}
-
-		if ((l.get_group() == v_line_group::group_normal) || (l.get_group() == v_line_group::group_last)) { // Copy image to output
-			for (int i = 0; i < output.rows; i++) {
-				for (int j = 0; j < output.cols; j++) {
-					if (lout.at<Vec3b>(i,j) != Vec3b(255,255,255)) { // lout is not empty at this pixel
-						output.at<Vec3b>(i,j) = lout.at<Vec3b>(i,j);
-					}
-				}
-			}
-			lout = Scalar(255, 255, 255); // Clean temporary image for next line
 		}
 	}
 }
