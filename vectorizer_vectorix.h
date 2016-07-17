@@ -30,10 +30,6 @@ private:
 	int *param_zoom_level;
 	int *param_interactive;
 
-
-	void vectorize_imshow(const std::string& winname, const cv::Mat mat); // Display image in window iff graphics (highgui) is enabled
-
-
 	// Trackbar callback functions (passed as parameter to non-member function)
 	static void step1_changed(int, void *ptr);
 	static void step2_changed(int, void *ptr);

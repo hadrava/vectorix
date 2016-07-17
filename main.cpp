@@ -14,6 +14,7 @@
 #include "opencv_render.h"
 #include "parameters.h"
 #include "finisher.h"
+#include "zoom_window.h"
 #include <opencv2/opencv.hpp>
 
 using namespace std;
@@ -70,6 +71,8 @@ int main(int argc, char **argv) { // ./main [configuration]
 		//fclose(input);
 	}
 
+	zoom_set_params(par);
+
 	/*
 	 * Load input image
 	 */
@@ -82,7 +85,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	else if (my_pars.pnm_input_name->empty()) {
 		fprintf(stderr, "No PNM input file speficied.\n");
 		if (!my_pars.save_parameters_name->empty()) { // We should write config file (useful for creating empty config)
-			par.save_params(*my_pars.save_parameters_name, *my_pars.save_parameters_append == 1);
+			par.save_params(*my_pars.save_parameters_name, (*my_pars.save_parameters_append) == 1);
 		}
 		return 1; // No input file, halting
 	}
@@ -126,7 +129,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 		cv::Mat output = cv::Mat::zeros(vector.height, vector.width, CV_8UC(3));
 		opencv_render(vector, output, par); // Render whole image
 		if (*my_pars.show_opencv_rendered_window) {
-			cv::imshow("Opencv render", output); // Display output
+			zoom_imshow("Opencv render", output); // Display output
 			cv::waitKey();
 		}
 		if (!my_pars.save_opencv_rendered_name->empty())
@@ -173,7 +176,7 @@ int main(int argc, char **argv) { // ./main [configuration]
 	 * Save parameters
 	 */
 	if (!my_pars.save_parameters_name->empty()) {
-		par.save_params(*my_pars.save_parameters_name);
+		par.save_params(*my_pars.save_parameters_name, (*my_pars.save_parameters_append) == 1);
 	}
 	return 0;
 }

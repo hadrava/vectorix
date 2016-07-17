@@ -2,6 +2,7 @@
 #include "parameters.h"
 #include "logger.h"
 #include "skeletonizer.h"
+#include "zoom_window.h"
 
 using namespace cv;
 
@@ -103,12 +104,12 @@ void skeletonizer::interactive(TrackbarCallback onChange, void *userdata) {
 	//show distance
 	distance_show = distance.clone();
 	normalize<int32_t>(distance_show, iteration-1); // Normalize image before displaying
-	/*// TODO vectorize_*/imshow("Distance", distance_show);
+	zoom_imshow("Distance", distance_show);
 
 	//show skeleton
 	skeleton_show = skeleton.clone();
 	threshold(skeleton_show, skeleton_show, 0, 255, THRESH_BINARY);
-	/*// TODO vectorize_*/imshow("Skeleton", skeleton_show);
+	zoom_imshow("Skeleton", skeleton_show);
 
 	createTrackbar("Skeletonization", "Skeleton", param_skeletonization_type, 3, onChange, userdata);
 	waitKey(1);

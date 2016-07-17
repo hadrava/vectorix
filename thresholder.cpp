@@ -2,6 +2,7 @@
 #include "parameters.h"
 #include "logger.h"
 #include "thresholder.h"
+#include "zoom_window.h"
 
 using namespace cv;
 
@@ -64,9 +65,9 @@ void thresholder::run(const Mat &original, Mat &bin) {
 }
 
 void thresholder::interactive(TrackbarCallback onChange, void *userdata) {
-	/*// TODO vectorize_*/imshow("Grayscale", grayscale); // Show grayscale input image
-	/*// TODO vectorize_*/imshow("Threshold", binary); // Show after thresholding
-	/*// TODO vectorize_*/imshow("Filled", filled); // Show after filling
+	zoom_imshow("Grayscale", grayscale); // Show grayscale input image
+	zoom_imshow("Threshold", binary); // Show after thresholding
+	zoom_imshow("Filled", filled); // Show after filling
 
 	createTrackbar("Invert input", "Grayscale", param_invert_input, 1, onChange, userdata);
 	createTrackbar("Threshold type", "Threshold", param_threshold_type, 3, onChange, userdata);

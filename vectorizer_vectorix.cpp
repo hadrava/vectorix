@@ -15,25 +15,13 @@
 #include "thresholder.h"
 #include "skeletonizer.h"
 #include "tracer.h"
+#include "zoom_window.h"
 
 // Vectorizer
 
 using namespace cv;
 
 namespace vectorix {
-
-// For compatibility issues we use const cv::Mat instead of cv::InputArray.
-void vectorizer_vectorix::vectorize_imshow(const std::string& winname, const cv::Mat mat) { // Display image in highgui named window.
-	if (*param_zoom_level) { // (Down)scale image before displaying
-		Mat scaled_mat;
-		int w = mat.cols / (log10(*param_zoom_level+10));
-		int h = mat.rows / (log10(*param_zoom_level+10));
-		resize(mat, scaled_mat, Size(w, h));
-		return imshow(winname, scaled_mat);
-	}
-	else
-		return imshow(winname, mat);
-}
 
 int vectorizer_vectorix::interactive(int state, int key) { // Process key press and decide what to do
 	int ret = state;
@@ -113,8 +101,8 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) {
 		while (state) { // state 0 = end
 			switch (state) {
 				case 2: // First step
-					vectorize_imshow("Original", orig); // Show original color image
-					createTrackbar("Zoom out", "Original", param_zoom_level, 10000, step1_changed, (void*) &state);
+					zoom_imshow("Original", orig, true); // Show original color image
+					//createTrackbar("Zoom out", "Original", param_zoom_level, 100, step1_changed, (void*) &state);
 					waitKey(1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 
 					threshold_timer.start();
