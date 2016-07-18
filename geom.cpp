@@ -206,7 +206,8 @@ bool bezier_intersection(const v_point &a, const v_point &b, const v_point &c, c
 	if (!bezier_may_intersect(a, b, c, d))
 		return false;
 
-	if (bezier_maximal_length(a, b) + bezier_maximal_length(c, d) < 0.001) { // TODO const
+	// Lines are touching if distance is smaller than 1, so this constant is small enought
+	if (bezier_maximal_length(a, b) + bezier_maximal_length(c, d) < 0.001) {
 		t1 = 0.5;
 		t2 = 0.5;
 		return true;
@@ -308,7 +309,7 @@ void group_line(std::list<v_line> &list, const v_line &line) { // Convert one li
 
 void convert_to_variable_width(v_image &img, int type, parameters &params) { // Convert lines before exporting to support variable-width lines
 	p *param_auto_contour_variance;
-	params.add_comment("How often draw as contour: higher values: less often, lower: more often, negative: always use contours");
+	params.add_comment("How often draw as contour: higher values: less often, lower: more often, 0: always use contours");
 	params.bind_param(param_auto_contour_variance, "auto_contour_variance", (p) 5);
 
 	for (auto c = img.line.begin(); c != img.line.end(); c++) {
@@ -323,6 +324,8 @@ void convert_to_variable_width(v_image &img, int type, parameters &params) { // 
 			}
 			if (count == 0)
 				new_type = 0;
+			else if (count == 1)
+				new_type = 2; // Single point line is changed to circle
 			else {
 				mean /= count;
 				p variance = 0;
@@ -330,7 +333,7 @@ void convert_to_variable_width(v_image &img, int type, parameters &params) { // 
 					variance += (a.width - mean) * (a.width - mean);
 				}
 				variance /= count;
-				if (variance > *param_auto_contour_variance)
+				if (variance >= *param_auto_contour_variance)
 					new_type = 2; // Width is changing too much, calculate outline and fill it
 				else
 					new_type = 0; // Line has (almost) constant width, do nothing
@@ -340,6 +343,7 @@ void convert_to_variable_width(v_image &img, int type, parameters &params) { // 
 			case 0: // Do not convert anything
 				break;
 			case 1: // Chop each line to separate segments
+				// It is really hard to work with this, so this variant is not used.
 				group_line(new_list, *c);
 				img.line.splice(c, new_list);
 				img.line.erase(c);

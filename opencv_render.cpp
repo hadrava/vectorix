@@ -27,6 +27,8 @@ void opencv_render(const v_image &vector, Mat &output, parameters &params) { // 
 			auto one = two;
 			if (two != l.segment.cend())
 				two++;
+			if (two == l.segment.cend()) // Just one point, draw circle
+				two--;
 			while (two != l.segment.cend()) { // For each segment...
 				// Segment is short enought, so we can ignore control points
 				Point a,b;
