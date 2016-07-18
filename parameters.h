@@ -71,8 +71,6 @@ public:
 	std::vector<std::shared_ptr<param>> parameter_list;
 	std::unordered_map<std::string, std::string> not_loaded;
 	std::unordered_map<std::string, std::shared_ptr<param>> binded_list;
-		//TODO warn on destoy, if map is not empty;
-		//(unused line in config..., TODO linenumber)
 };
 
 template <>

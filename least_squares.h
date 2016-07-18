@@ -2,6 +2,7 @@
 #define VECTORIX__LEAST_SQUARES_H
 
 #include <vector>
+#include <cassert>
 #include "config.h"
 #include "logger.h"
 #include "parameters.h"

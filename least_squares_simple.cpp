@@ -11,6 +11,13 @@ void least_squares_simple::add_equation(p *arr) {
 	y_vector.push_back(arr[count]);
 }
 
+void least_squares_simple::matrix_p::add_row(vector_p v) {
+	assert((data.size() == 0) ?
+		true :
+		(data.front().size() == v.size()));
+	data.push_back(v);
+};
+
 void least_squares_simple::matrix_p::transpose() {
 	matrix_p ans;
 	unsigned int ans_cols = rows();

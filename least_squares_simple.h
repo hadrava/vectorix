@@ -20,10 +20,7 @@ private:
 	typedef std::vector<p> vector_p;
 	class matrix_p {
 	public:
-		void add_row(vector_p v) {
-			// TODO assert save vector size
-			data.push_back(v);
-		};
+		void add_row(vector_p v);
 		unsigned int rows() const {
 			return data.size();
 		};

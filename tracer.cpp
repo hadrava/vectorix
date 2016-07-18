@@ -32,8 +32,6 @@ void tracer::run(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::
 
 		if (line.empty()) {
 			log.log<log_level::error>("Vectorizer warning: No new point found!\n"); // Vectorization started from one point, but no new line was found. This should not happen
-			//TODO: old_way:  used_pixels.at<unsigned char>(max_pos.y, max_pos.x) = 255; // Clear pixel to prevent infinite loop
-			// new_way:
 			lab_skel.label_pix(255, v_pt(max_pos.x, max_pos.y));
 		}
 		else
@@ -252,8 +250,6 @@ void tracer::find_best_variant_smooth(v_pt last, const v_line &line, std::vector
 	pred.control_prev = pred.main - v_pt(std::cos(angle2), std::sin(angle2))*(*param_nearby_limit/3);
 
 	p smoothness = fabs(angle2 - prediction.angle()); // Calculate smoothness
-	//TODO OLD if was: if (apxat(skeleton, pred.main) && (!apxat(used_pixels, pred.main))) {
-	// That means there is some pixel in skeleton and _none_ of pixels was used (labeled)
 	if (lab_skel.apxat(pred.main, true)) {
 		if (smoothness < *param_smoothness) { // Line is smooth enought
 			pred.color = apxat_co(color, pred.main);
