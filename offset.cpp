@@ -535,7 +535,7 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 		iteration++;
 
 		// 5
-		if (error < 1) { //TODO const
+		if (error < *param_offset_error) {
 			a_next = a_n * (*mat)[0] + a_main;
 			b_prev = b_p * (*mat)[1] + b_main;
 
@@ -556,7 +556,7 @@ bool offset::optimize_control_point_lengths(const std::vector<v_pt> &points, std
 
 			return true;
 		}
-		else if (iteration > 5) { // TODO const
+		else if (iteration > *param_offset_iterations) {
 			a_next = a_n * (*mat)[0] + a_main;
 			b_prev = b_p * (*mat)[1] + b_main;
 

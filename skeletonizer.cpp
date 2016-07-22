@@ -68,13 +68,13 @@ void skeletonizer::run(const Mat &binary_input, Mat &skeleton, Mat &distance) {
 		if (*param_skeletonization_type == 0)
 			std::swap(kernel, kernel_2); // diamond-square
 
-		log.log<log_level::debug>("Skeletonization iteration: %i\n", iteration);
+		log.log<log_level::info>("Skeletonizer iteration: %i\n", iteration - 1);
 	}
 
 	Rect crop(1, 1, binary_input.cols, binary_input.rows);
 	skeleton = skeleton(crop);
 	distance = distance(crop);
-	log.log<log_level::debug>("Image size after croping: %i x %i\n", skeleton.cols, skeleton.rows);
+	log.log<log_level::debug>("Image size after cropping: %i x %i\n", skeleton.cols, skeleton.rows);
 
 	if (!param_save_skeleton_name->empty()) { // Save output to file
 		imwrite(*param_save_skeleton_name, skeleton);

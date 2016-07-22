@@ -90,6 +90,13 @@ void v_image::false_colors(p hue_step) { // Colorize each line with saturated co
 	}
 }
 
+void v_image::force_black() {
+	v_co col(0, 0, 0);
+	for (auto l = line.begin(); l != line.end(); l++) {
+		l->set_color(col); // Set color for current line
+	}
+}
+
 void v_image::add_debug_line(v_pt a, v_pt b) {
 	v_line lin;
 	lin.add_point(a);

@@ -26,6 +26,8 @@ void finisher::apply_settings(v_image &vector) {
 
 	if (*param_false_colors)
 		vector.false_colors(*param_false_colors);
+	if (*param_force_black)
+		vector.force_black();
 
 	geom::convert_to_variable_width(vector, *param_export_type, *par); // Convert image before writing
 

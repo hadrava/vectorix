@@ -78,7 +78,7 @@ public:
 
 class v_co { // Color (3D vector)
 public:
-	v_co(int _r, int _g, int _b) { val[0] = _r; val[1] = _g; val[2] = _b; };
+	v_co(p _r, p _g, p _b) { val[0] = _r; val[1] = _g; val[2] = _b; };
 	v_co() { val[0] = 0; val[1] = 0; val[2] = 0; };
 	v_co &operator+=(const v_co &other) { // Simple operators (in header for inlining).
 		val[0] += other.val[0];
@@ -90,7 +90,7 @@ public:
 		first += second;
 		return first;
 	};
-	v_co &operator/=(int other) {
+	v_co &operator/=(p other) {
 		val[0] /= other;
 		val[1] /= other;
 		val[2] /= other;
@@ -128,7 +128,7 @@ public:
 		hue = fmodf(hue, 360);
 		val[2] = from_hue(hue);
 	}
-	int val[3];
+	p val[3];
 };
 
 class v_point { // Control point of Bezier curve
@@ -200,6 +200,7 @@ public:
 	// type == 3: calculate variance of width and guess, whether line should be converted to outline
 	//            max allowed variance is given by parameter par.auto_contour_variance
 	void false_colors(p hue_step); // Color each line with different color
+	void force_black(); // Set every line color to black
 	p width; // Image dimensions
 	p height;
 	std::list<v_line> line; // Image data

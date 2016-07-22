@@ -423,7 +423,7 @@ p tracer::do_prediction(const match_variant &last_placed, int allowed_depth, v_l
  */
 
 v_co tracer::safeat_co(const Mat &image, int i, int j) { // Safely access rgb image data
-	if (i>=0 && i<image.rows && j>=0 && j<image.step)
+	if (i>=0 && i<image.rows && j>=0 && j<image.cols)
 		return v_co(image.at<Vec3b>(i, j)[2], image.at<Vec3b>(i, j)[1], image.at<Vec3b>(i, j)[0]);
 	else {
 		return v_co(0, 0, 0); // Pixel is outside of image
@@ -440,11 +440,21 @@ v_co tracer::apxat_co(const Mat &image, v_pt pt) { // Get rgb at non-integer pos
 		   safeat_co(image, y,   x+1) * (pt.x     * (1-pt.y)) + \
 		   safeat_co(image, y+1, x  ) * ((1-pt.x) * pt.y    ) + \
 		   safeat_co(image, y+1, x+1) * (pt.x     * pt.y    );
+	assert(
+			((1-pt.x) * (1-pt.y)) + \
+			(pt.x     * (1-pt.y)) + \
+			((1-pt.x) * pt.y    ) + \
+			(pt.x     * pt.y    ) > 0.999f);
+	assert(
+			((1-pt.x) * (1-pt.y)) + \
+			(pt.x     * (1-pt.y)) + \
+			((1-pt.x) * pt.y    ) + \
+			(pt.x     * pt.y    ) < 1.001f);
 	return out;
 }
 
 const int32_t &tracer::safeat(const Mat &image, int i, int j) { // Safely acces image data
-	if (i>=0 && i<image.rows && j>=0 && j<image.step) // Pixel is inside of an image
+	if (i>=0 && i<image.rows && j>=0 && j<image.cols) // Pixel is inside of an image
 		return image.at<int32_t>(i, j);
 	else { // Outside of an image
 		nullpixel = 0; // clean data in nullpixel
