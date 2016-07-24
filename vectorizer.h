@@ -17,7 +17,7 @@ public:
 protected:
 	vectorizer(parameters &params): par(&params) {
 		int *param_vectorizer_verbosity;
-		par->bind_param(param_vectorizer_verbosity, "vectorizer_verbosity", (int) log_level::warning);
+		par->bind_param(param_vectorizer_verbosity, "vectorizer_verbosity", (int) log_level::info);
 		log.set_verbosity((log_level) *param_vectorizer_verbosity);
 	};
 	logger log;

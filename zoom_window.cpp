@@ -24,6 +24,7 @@ void zoom_window::imshow(const std::string &winname, const cv::Mat &mat, bool ov
 		first_time = true;
 	}
 	//mat.convertTo(std::get<0>(old->second), CV_8U);
+	std::get<0>(old->second) = mat;
 
 	render(old);
 	if (overview && first_time) {

@@ -3,13 +3,23 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include "parameters.h"
+#include "logger.h"
 
 namespace vectorix {
 
 class zhang_suen {
 public:
 	int skeletonize(const cv::Mat &inupt, cv::Mat &skeleton, cv::Mat &distance);
+	zhang_suen(parameters &params): par(&params) {
+		int *param_vectorizer_verbosity;
+		par->bind_param(param_vectorizer_verbosity, "vectorizer_verbosity", (int) log_level::warning);
+		log.set_verbosity((log_level) *param_vectorizer_verbosity);
+	}
 private:
+	logger log;
+	parameters *par;
+
 	cv::Mat *itp;
 	cv::Mat inq;
 	cv::Mat *skel;

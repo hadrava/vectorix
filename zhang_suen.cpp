@@ -48,6 +48,7 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 			}
 		}
 		first_iteration ^= 1;
+		log.log<log_level::info>("Skeletonizer (Zhang-Suen) iteration: %i\n", iteration);
 		iteration++;
 	}
 	return iteration;
