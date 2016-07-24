@@ -42,6 +42,11 @@ private:
 	}
 	void normalize(const cv::Mat &in, cv::Mat &out, int max);
 
+	void skeletonize_circle(const cv::Mat &input, cv::Mat &skeleton, cv::Mat &distance);
+	void skeletonize_diamond_square(const cv::Mat &input, cv::Mat &skeleton, cv::Mat &distance);
+	int sum_8_connected(const cv::Mat &img, cv::Point p);
+	int sum_4_connected(const cv::Mat &img, cv::Point p);
+
 	int *param_skeletonization_type;
 	std::string *param_save_peeled_name;
 	std::string *param_save_skeleton_name;

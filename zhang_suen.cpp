@@ -17,6 +17,7 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 	bool first_iteration = 1;
 	int iteration = 1;
 	while (border_queue.size()) {
+		log.log<log_level::info>("Skeletonizer (Zhang-Suen) iteration: %i (%i points)\n", iteration, border_queue.size());
 		delete_queue.clear();
 		for (auto p: border_queue) {
 			int i = p.y;
@@ -48,7 +49,6 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 			}
 		}
 		first_iteration ^= 1;
-		log.log<log_level::info>("Skeletonizer (Zhang-Suen) iteration: %i\n", iteration);
 		iteration++;
 	}
 	return iteration;
