@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <string>
 #include "zhang_suen.h"
 
 #include <iostream>
@@ -18,6 +19,17 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 	int iteration = 1;
 	while (border_queue.size()) {
 		log.log<log_level::info>("Skeletonizer (Zhang-Suen) iteration: %i (%i points)\n", iteration, border_queue.size());
+		if (!param_save_peeled_name->empty()) { // Save every step of skeletonization
+			size_t number_sign = param_save_peeled_name->find("#");
+			std::string filename = std::to_string(iteration);
+			int zero = 3 - filename.length();
+			zero = (zero >= 0) ? zero : 0;
+			filename = param_save_peeled_name->substr(0, number_sign)
+				 + std::string(zero, '0')
+				 + filename
+				 + param_save_peeled_name->substr(number_sign + 1);
+			imwrite(filename, it);
+		}
 		delete_queue.clear();
 		for (auto p: border_queue) {
 			int i = p.y;

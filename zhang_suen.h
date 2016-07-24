@@ -15,8 +15,12 @@ public:
 		int *param_vectorizer_verbosity;
 		par->bind_param(param_vectorizer_verbosity, "vectorizer_verbosity", (int) log_level::warning);
 		log.set_verbosity((log_level) *param_vectorizer_verbosity);
+
+		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_#.png");
 	}
 private:
+	std::string *param_save_peeled_name;
+
 	logger log;
 	parameters *par;
 
