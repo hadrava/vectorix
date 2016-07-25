@@ -38,7 +38,12 @@ void approximation::run(v_image &image) {
 			// Approximate segments
 			last = two;
 			--last;
+			log.log<log_level::debug>("Approximated contol_next length before: %f\n", geom::distance(one->control_next, one->main));
+			log.log<log_level::debug>("Approximated contol_prev length before: %f\n", geom::distance(last->control_prev, last->main));
 			approximate_with_one_segment(one, two, *one, *last);
+			log.log<log_level::debug>("Approximated contol_next length after: %f\n", geom::distance(one->control_next, one->main));
+			log.log<log_level::debug>("Approximated contol_prev length after: %f\n", geom::distance(last->control_prev, last->main));
+
 			one++;
 			li.segment.erase(one, last);
 			one = last;
@@ -53,11 +58,6 @@ std::list<v_point>::iterator approximation::find_longest_aproximable(const std::
 	++two; // Change to the second point
 	++two; // Change to the third point
 
-	/*
-	if (two == li.segment.end)
-		return two; // Only one segment, it is trivialy aproximable
-	*/
-
 	do {
 		++two;
 		v_point a, b;
@@ -69,7 +69,7 @@ std::list<v_point>::iterator approximation::find_longest_aproximable(const std::
 	return two;
 }
 
-bool approximation::approximate_with_one_segment(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end, v_point &a, v_point b) {
+bool approximation::approximate_with_one_segment(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end, v_point &a, v_point &b) {
 	auto two = begin; // Right point of current segment
 	auto one = two; // Left point of current segment
 	++two; // Change to the second point
@@ -78,7 +78,9 @@ bool approximation::approximate_with_one_segment(const std::list<v_point>::itera
 	do {
 		for (int i = 1; i < 8; i++) {
 			v_point middle;
-			geom::bezier_chop_in_t(*one, *two, middle, i/8.);
+			v_point x = *one;
+			v_point y = *two;
+			geom::bezier_chop_in_t(x, y, middle, i/8.);
 			points.push_back(middle.main);
 		}
 		points.push_back(two->main);
