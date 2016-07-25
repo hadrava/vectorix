@@ -31,7 +31,7 @@ v_smooth_type v_point::get_smooth() {
 		prev /= pl;
 		next /= nl;
 
-		prev -= next; // vector will be zero iff prev and next are heading in opposite direction
+		prev += next; // vector will be zero iff prev and next are heading in opposite direction
 		if (prev.len() <= epsilon) {
 			if ((pl - nl > epsilon) || (nl - pl > epsilon))
 				return v_smooth_type::smooth;

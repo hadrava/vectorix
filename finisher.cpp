@@ -29,8 +29,6 @@ void finisher::apply_settings(v_image &vector) {
 	if (*param_force_black)
 		vector.force_black();
 
-	geom::convert_to_variable_width(vector, *param_export_type, *par); // Convert image before writing
-
 	for (v_line &line: vector.line) {
 		for (v_point &segment: line.segment) {
 			if (*param_force_width)

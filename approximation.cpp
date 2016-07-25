@@ -10,8 +10,24 @@
 namespace vectorix {
 
 void approximation::run(v_image &image) {
+	geom::convert_to_variable_width(image, *param_export_type, *par); // Convert image before writing
+
 	for (v_line &li: image.line) {
+		if (li.get_type() == v_line_type::fill) // It is already outline
+			continue;
 		log.log<log_level::debug>("Approximating line of %d points\n", li.segment.size());
+
+		// Mean width, mean opacity
+		p mean_width = 0;
+		p mean_opacity = 0;
+		int count = 0;
+		for (v_point &segment: li.segment) {
+			mean_width += segment.width;
+			mean_opacity += segment.opacity;
+			count++;
+		}
+		mean_width /= count;
+		mean_opacity /= count;
 
 		auto one = li.segment.begin(); // Left point of current segment
 
@@ -44,6 +60,11 @@ void approximation::run(v_image &image) {
 			log.log<log_level::debug>("Approximated contol_next length after: %f\n", geom::distance(one->control_next, one->main));
 			log.log<log_level::debug>("Approximated contol_prev length after: %f\n", geom::distance(last->control_prev, last->main));
 
+			one->width = mean_width;
+			one->opacity = mean_opacity;
+			last->width = mean_width;
+			last->opacity = mean_opacity;
+
 			one++;
 			li.segment.erase(one, last);
 			one = last;
@@ -56,9 +77,16 @@ void approximation::run(v_image &image) {
 std::list<v_point>::iterator approximation::find_longest_aproximable(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end) {
 	auto two = begin; // Right point of current segment
 	++two; // Change to the second point
-	++two; // Change to the third point
+	++two; // Change to the third point (represent one segment)
 
 	do {
+		if (*param_approximation_preserve_corners) {
+			auto last = two;
+			last--;
+			if (last->get_smooth() == v_smooth_type::corner)
+				return two;
+		}
+		
 		++two;
 		v_point a, b;
 		if (!approximate_with_one_segment(begin, two, a, b)) {
