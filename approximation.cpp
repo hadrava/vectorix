@@ -131,7 +131,7 @@ bool approximation::optimize_control_point_lengths(const std::vector<v_pt> &poin
 			geom::bezier_chop_in_t(a, b, middle, times[i], true);
 
 			v_pt error_vector = points[i] - middle.main;
-			middle.control_next -= middle.main;
+			middle.control_next -= middle.control_prev;
 			middle.control_next /= middle.control_next.len();
 
 			log.log<log_level::debug>("Approximation time %f", times[i]);
