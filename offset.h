@@ -9,22 +9,21 @@
 #include "v_image.h"
 #include "config.h"
 #include "parameters.h"
+#include "approximation.h"
 
 namespace vectorix {
 
 class offset {
 public:
-	offset(v_image &img, parameters &params) {
+	offset(v_image &img, parameters &params): apx(params) {
 		image = &img;
 		par = &params;
-		par->add_comment("Least squares method: 0 = OpenCV (default, suggested), 1 = own implementation");
-		par->bind_param(param_lsq_method, "lsq_method", 0);
 		par->bind_param(param_offset_error, "offset_error", (p) 1);
 		par->bind_param(param_offset_iterations, "offset_iterations", 5);
+		apx.bind_limits(*param_offset_error, *param_offset_iterations);
 	}
 	void convert_to_outline(v_line &line); // Convert from stroke to fill (calculate line outline)
 private:
-	int *param_lsq_method;
 	p *param_offset_error;
 	int *param_offset_iterations;
 
@@ -45,6 +44,7 @@ private:
 
 	v_image *image;
 	parameters *par;
+	approximation apx;
 };
 
 
