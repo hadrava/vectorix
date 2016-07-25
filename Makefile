@@ -1,6 +1,6 @@
 all: vectorix
 
-COMP=g++
+COMP=g++ -DNDEBUG
 L_FLAGS=
 
 # clang is not fully supported, use at your own risk

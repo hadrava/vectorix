@@ -15,6 +15,7 @@
 #include "thresholder.h"
 #include "skeletonizer.h"
 #include "tracer.h"
+#include "approximation.h"
 #include "zoom_window.h"
 
 // Vectorizer
@@ -25,10 +26,14 @@ namespace vectorix {
 
 int vectorizer_vectorix::interactive(int state, int key) { // Process key press and decide what to do
 	int ret = state;
-	switch (key & 0xFF) {
+	switch (key & ((2 << 16) - 1)) {
 		case 0:
 		case 0xFF:
-		case -1:
+		case 0xFFFF:
+		case 0xFF51:
+		case 0xFF52:
+		case 0xFF53:
+		case 0xFF54:
 			break; // Nothing
 		case 'q':
 		case 'Q':
@@ -91,11 +96,13 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) {
 	thresholder thr(*par);
 	skeletonizer ske(*par);
 	tracer tra(*par);
+	approximation apx(*par);
 
 	if (*param_interactive) {
 		timer threshold_timer;
 		timer skeletonization_timer;
 		timer tracing_timer;
+		timer approximation_timer;
 		volatile int state = 2; // State of vectorizer, remembers in which step we are
 
 		while (state) { // state 0 = end
@@ -131,13 +138,22 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) {
 					state++; // ... and wait in odd state for Enter
 					break;
 				case 8:
+					approximation_timer.start();
+					apx.run(vect);
+					approximation_timer.stop();
+					log.log<log_level::info>("Approximation time: %fs\n", approximation_timer.read());
+
+					state++; // ... and wait in odd state for Enter
+					break;
+				case 10:
 					state = 0;
 					break;
 				default:
 					int key = waitKey(1);
-					if (key >= 0)
+					if (key >= 0) {
 						log.log<log_level::debug>("Key: %i\n", key);
-					state = interactive(state, key);
+						state = interactive(state, key);
+					}
 			}
 		}
 	}
@@ -145,6 +161,7 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) {
 		thr.run(orig, binary);
 		ske.run(binary, skeleton, distance); // Second step -- skeletonization
 		tra.run(orig, skeleton, distance, vect);
+		apx.run(vect);
 	}
 	log.log<log_level::debug>("end of vectorization\n");
 

@@ -10,6 +10,7 @@ using namespace cv;
 namespace vectorix {
 
 void tracer::run(const cv::Mat &color_input, const cv::Mat &skeleton, const cv::Mat &distance, v_image &vectorization_output) {
+	vectorization_output.clean();
 	lab_skel = labeled_Mat(*par);
 	lab_skel.init(skeleton);
 

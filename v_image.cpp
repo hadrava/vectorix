@@ -13,6 +13,10 @@ void v_image::clean() { // Remove all lines
 		_line.segment.erase(_line.segment.begin(), _line.segment.end());
 	}
 	line.erase(line.begin(), line.end());
+	for (v_line _line: debug_line) {
+		_line.segment.erase(_line.segment.begin(), _line.segment.end());
+	}
+	debug_line.erase(debug_line.begin(), debug_line.end());
 }
 
 v_smooth_type v_point::get_smooth() {

@@ -9,6 +9,74 @@
 
 namespace vectorix {
 
+void approximation::run(v_image &image) {
+	for (v_line &li: image.line) {
+		log.log<log_level::debug>("Approximating line of %d points\n", li.segment.size());
+		auto two = li.segment.begin(); // Right point of current segment
+		if (two == li.segment.end())
+			continue; // Empty line
+		auto one = two; // Left point of current segment
+		++two; // Change to the second point
+		if (two == li.segment.end())
+			continue; // Only one point
+		++two; // Change to the second point
+		if (two == li.segment.end())
+			continue; // Only one segment
+
+		// now we have two segments
+		do {
+			one++;
+			two++;
+		} while (two != li.segment.end());
+		two = one;
+		one = li.segment.begin();
+
+		approximate_with_one_segment(li.segment.begin(), li.segment.end(), *one, *two);
+		one++;
+		li.segment.erase(one, two);
+		log.log<log_level::debug>("Approximated with %d points\n", li.segment.size());
+	}
+}
+
+bool approximation::approximate_with_one_segment(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end, v_point &a, v_point b) {
+	auto two = begin; // Right point of current segment
+	auto one = two; // Left point of current segment
+	++two; // Change to the second point
+
+	std::vector<v_pt> points;
+	do {
+		for (int i = 1; i < 8; i++) {
+			v_point middle;
+			geom::bezier_chop_in_t(*one, *two, middle, i/8.);
+			points.push_back(middle.main);
+		}
+		points.push_back(two->main);
+		one++;
+		two++;
+	} while (two != end);
+	points.pop_back();
+
+	std::vector<p> times;
+	p total_length = geom::distance(begin->main, points[0]);
+	times.push_back(total_length);
+	for (int i = 1; i < points.size(); i++) {
+		total_length += geom::distance(points[i-1], points[i]);
+		times.push_back(total_length);
+	}
+	total_length += geom::distance(points.back(), one->main);
+
+	for (int i = 0; i < times.size(); i++) {
+		times[i] /= total_length;
+	}
+
+	a.main = begin->main;
+	a.control_next = begin->control_next;
+	b.control_prev = one->control_prev;
+	b.main = one->main;
+
+	return optimize_control_point_lengths(points, times, a.main, a.control_next, b.control_prev, b.main);
+}
+
 bool approximation::optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main) {
 	v_pt a_n = a_next - a_main;
 	v_pt b_p = b_prev - b_main;
@@ -49,6 +117,7 @@ bool approximation::optimize_control_point_lengths(const std::vector<v_pt> &poin
 		}
 		mat->evaluate();
 		p error = mat->calc_error();
+		log.log<log_level::debug>("Approximation error %f\n", error);
 
 		// 3, Find improved parametrization
 		v_point a, b;
@@ -65,11 +134,13 @@ bool approximation::optimize_control_point_lengths(const std::vector<v_pt> &poin
 			middle.control_next -= middle.main;
 			middle.control_next /= middle.control_next.len();
 
+			log.log<log_level::debug>("Approximation time %f", times[i]);
 			times[i] += geom::dot_product(middle.control_next, error_vector) / total_length;
 			if (times[i] < 0.)
 				times[i] = 0.;
 			else if (times[i] > 1.)
 				times[i] = 1.;
+			log.log<log_level::debug>(" -> %f\n", times[i]);
 		}
 
 		// 4
@@ -97,7 +168,7 @@ bool approximation::optimize_control_point_lengths(const std::vector<v_pt> &poin
 
 			return true;
 		}
-		else if (iteration > *param_approximation_iterations) {
+		else if (iteration >= *param_approximation_iterations) {
 			a_next = a_n * (*mat)[0] + a_main;
 			b_prev = b_p * (*mat)[1] + b_main;
 
