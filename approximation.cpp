@@ -12,30 +12,61 @@ namespace vectorix {
 void approximation::run(v_image &image) {
 	for (v_line &li: image.line) {
 		log.log<log_level::debug>("Approximating line of %d points\n", li.segment.size());
-		auto two = li.segment.begin(); // Right point of current segment
-		if (two == li.segment.end())
-			continue; // Empty line
-		auto one = two; // Left point of current segment
-		++two; // Change to the second point
-		if (two == li.segment.end())
-			continue; // Only one point
-		++two; // Change to the second point
-		if (two == li.segment.end())
-			continue; // Only one segment
 
-		// now we have two segments
-		do {
+		auto one = li.segment.begin(); // Left point of current segment
+
+		while (one != li.segment.end()) {
+			auto two = one; // Right point of current segment
+			++two; // Change to the second point
+			if (two == li.segment.end())
+				break; // Only one point
+			++two; // Change to the third point
+			if (two == li.segment.end())
+				break; // Only one segment
+
+			// now we have at least two segments,
+			two = find_longest_aproximable(one, li.segment.end());
+
+			// check if we found more than one segment
+			auto last = two;
+			--last;
+			--last;
+			if (one == last) {
+				++one;
+				continue;
+			}
+			// Approximate segments
+			last = two;
+			--last;
+			approximate_with_one_segment(one, two, *one, *last);
 			one++;
-			two++;
-		} while (two != li.segment.end());
-		two = one;
-		one = li.segment.begin();
-
-		approximate_with_one_segment(li.segment.begin(), li.segment.end(), *one, *two);
-		one++;
-		li.segment.erase(one, two);
+			li.segment.erase(one, last);
+			one = last;
+		}
 		log.log<log_level::debug>("Approximated with %d points\n", li.segment.size());
 	}
+}
+
+// Expects at least two segments = three points!
+std::list<v_point>::iterator approximation::find_longest_aproximable(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end) {
+	auto two = begin; // Right point of current segment
+	++two; // Change to the second point
+	++two; // Change to the third point
+
+	/*
+	if (two == li.segment.end)
+		return two; // Only one segment, it is trivialy aproximable
+	*/
+
+	do {
+		++two;
+		v_point a, b;
+		if (!approximate_with_one_segment(begin, two, a, b)) {
+			--two;
+			return two;
+		}
+	} while (two != end);
+	return two;
 }
 
 bool approximation::approximate_with_one_segment(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end, v_point &a, v_point b) {

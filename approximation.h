@@ -34,6 +34,7 @@ private:
 	int *param_approximation_iterations;
 
 	bool approximate_with_one_segment(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end, v_point &a, v_point b);
+	std::list<v_point>::iterator find_longest_aproximable(const std::list<v_point>::iterator begin, const std::list<v_point>::iterator end);
 
 
 	logger log;
