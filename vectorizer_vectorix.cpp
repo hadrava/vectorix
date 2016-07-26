@@ -109,7 +109,6 @@ v_image vectorizer_vectorix::vectorize(const pnm_image &original) {
 			switch (state) {
 				case 2: // First step
 					zoom_imshow("Original", orig, true); // Show original color image
-					//createTrackbar("Zoom out", "Original", param_zoom_level, 100, step1_changed, (void*) &state);
 					waitKey(1); // interactive == 1: wait until the key is pressed; interactive == 0: Continue after one milisecond
 
 					threshold_timer.start();
