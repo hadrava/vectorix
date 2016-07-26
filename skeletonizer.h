@@ -16,7 +16,7 @@ public:
 
 		par->add_comment("Phase 2: Skeletonization");
 		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow), 4: zhang-suen + diamod-square");
-		par->bind_param(param_skeletonization_type, "skeletonization_type", 0);
+		par->bind_param(param_skeletonization_type, "skeletonization_type", 4);
 		par->add_comment("Save steps to files, # will be replaced with iteration number");
 		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_#.png");
 		par->add_comment("Save skeleton/distance with/without normalization");

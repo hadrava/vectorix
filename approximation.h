@@ -17,7 +17,7 @@ public:
 		log.set_verbosity((log_level) *param_approximation_verbosity);
 
 		par->add_comment("Variable-width export: 0: mean, 1: grouped, 2: contour, 3: auto-detect");
-		par->bind_param(param_export_type, "export_type", 0);
+		par->bind_param(param_export_type, "export_type", 3);
 		par->add_comment("Least squares method: 0 = OpenCV (default, suggested), 1 = own implementation");
 		par->bind_param(param_lsq_method, "lsq_method", 0);
 		par->add_comment("Approximation of Bezier splines");

@@ -20,7 +20,7 @@ public:
 		par->bind_param(param_custom_input_name, "file_input", (std::string) "");
 
 		par->add_comment("Interactive mode: 0: disable, 1: show windows and trackbars");
-		par->bind_param(param_interactive, "interactive", 2);
+		par->bind_param(param_interactive, "interactive", 1);
 		par->add_comment("Scale images before viewing in window: 0: No scaling, 100: Small pictures");
 		par->bind_param(param_zoom_level, "zoom_level", 0);
 	};
