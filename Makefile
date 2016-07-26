@@ -1,11 +1,18 @@
 all: vectorix
 
 COMP=g++
-L_FLAGS=
 
-# clang is not fully supported, use at your own risk
+C_FLAGS+=-O2
+
+#C_FLAGS+=-ggdb
+
+#L_FLAGS+=-L potrace/lib/ -lpotrace
+#C_FLAGS+=-D VECTORIX_USE_POTRACE
+
+# Clang is not fully tested, use at your own risk
+# There is no known reason, why it should not work
 #COMP=clang
-#L_FLAGS=-lstdc++
+#L_FLAGS+=-lstdc++
 
 OPENCV_LIBRARY2 = opencv_core opencv_imgproc opencv_highgui
 OPENCV_LIBRARY3 = opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs
@@ -23,13 +30,12 @@ L_OPENCV=${L_OPENCV_3.0.0}
 C_OPENCV=${C_OPENCV_3.0.0}
 
 OBJS = main.o v_image.o pnm_handler.o vectorizer.o render.o vectorizer_potrace.o vectorizer_vectorix.o opencv_render.o parameters.o exporter.o exporter_svg.o exporter_ps.o geom.o offset.o least_squares_opencv.o least_squares_simple.o finisher.o thresholder.o skeletonizer.o tracer.o tracer_helper.o zoom_window.o zhang_suen.o approximation.o
-DEBUG = -ggdb
 
 vectorix: ${OBJS}
-	${COMP} $^ -o $@ ${L_OPENCV} -L potrace/lib/ -lpotrace -lm ${L_FLAGS}
+	${COMP} $^ -o $@ ${L_OPENCV} -lm ${L_FLAGS}
 
 %.o: %.cpp
-	${COMP} -c -o $@ $< ${C_OPENCV} -std=c++11 ${DEBUG}
+	${COMP} -c -o $@ $< ${C_OPENCV} -std=c++11 ${C_FLAGS}
 
 clean:
 	rm -f vectorix ${OBJS}
@@ -37,6 +43,9 @@ clean:
 remake: clean all
 
 vectorix.tar.bz2:
-	git archive master | bzip2 > $@
+	git archive master --prefix=vectorix/ | bzip2 > $@
 
-.PHONY: all clean remake vectorix.tar.bz2
+vectorix.tar.gz:
+	git archive master --prefix=vectorix/ | gzip > $@
+
+.PHONY: all clean remake vectorix.tar.bz2 vectorix.tar.gz

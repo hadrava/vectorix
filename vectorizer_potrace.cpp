@@ -2,16 +2,20 @@
 #include <cerrno>
 #include <cstdio>
 #include <new>
-#include "potrace/include/potracelib.h"
 #include "v_image.h"
 #include "pnm_handler.h"
 #include "vectorizer_potrace.h"
 #include "logger.h"
 
+#ifdef VECTORIX_USE_POTRACE
+#include "potrace/include/potracelib.h"
+#endif
+
 // Vectorize using potracelib
 
 namespace vectorix {
 
+#ifdef VECTORIX_USE_POTRACE
 v_image vectorizer_potrace::vectorize(const pnm_image &original) { // Vectorize using potrace library
 	pnm_image image = original;
 	image.convert(pnm_variant_type::binary_pbm); // Potrace uses binary images, packed in word -- almost similar to binary PBM
@@ -81,5 +85,12 @@ v_image vectorizer_potrace::vectorize(const pnm_image &original) { // Vectorize 
 
 	return vector;
 }
+#else
+v_image vectorizer_potrace::vectorize(const pnm_image &original) { // Vectorize using potrace library
+	v_image vector(original.width, original.height); // Prepare empty v_image for output
+	log.log<log_level::warning>("Warning: Vectorix was not compiled with Potrace support, the output will be empty\n");
+	return vector;
+}
+#endif
 
 }; // namespace

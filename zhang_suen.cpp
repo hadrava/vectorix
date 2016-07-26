@@ -3,7 +3,6 @@
 #include <string>
 #include "zhang_suen.h"
 
-#include <iostream>
 using namespace cv;
 
 namespace vectorix {
@@ -46,8 +45,6 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 
 		border_queue.clear();
 		for (auto p: delete_queue) {
-			if (delete_queue.size()==2)
-				std::cerr << "p: " << p.x << " " << p.y << "\n";
 			it.at<uint8_t>(p) = 0;
 			distance.at<int32_t>(p) = iteration;
 

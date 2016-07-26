@@ -9,7 +9,7 @@ using namespace cv;
 namespace vectorix {
 
 void thresholder::run(const Mat &original, Mat &bin) {
-	max_image_size = (original.cols + original.rows) * 2;
+	max_image_size = original.cols + original.rows;
 	grayscale = Mat(original.rows, original.cols, CV_8UC(1)); // Grayscale original
 	cvtColor(original, grayscale, CV_RGB2GRAY);
 
