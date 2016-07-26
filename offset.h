@@ -15,9 +15,11 @@ namespace vectorix {
 
 class offset {
 public:
-	offset(v_image &img, parameters &params): apx(params) {
-		image = &img;
-		par = &params;
+	offset(v_image &img, parameters &params): apx(params), par(&params), image(&img) {
+		int *param_offset_verbosity;
+		par->bind_param(param_offset_verbosity, "offset_verbosity", (int) log_level::info);
+		log.set_verbosity((log_level) *param_offset_verbosity);
+
 		par->bind_param(param_offset_error, "offset_error", (p) 1);
 		par->bind_param(param_offset_iterations, "offset_iterations", 5);
 		apx.bind_limits(*param_offset_error, *param_offset_iterations);
@@ -43,6 +45,7 @@ private:
 	bool optimize_control_point_lengths(const std::vector<v_pt> &points, std::vector<p> &times, const v_pt &a_main, v_pt &a_next, v_pt &b_prev, const v_pt &b_main);
 
 	v_image *image;
+	logger log;
 	parameters *par;
 	approximation apx;
 };

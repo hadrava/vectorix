@@ -1,6 +1,5 @@
 #include "least_squares_simple.h"
 #include <cmath>
-#include <iostream>
 
 namespace vectorix {
 
@@ -104,7 +103,6 @@ void least_squares_simple::matrix_p::inverse() {
 			}
 		}
 	}
-	//std::cout << "mat: " << size() << "x" << (*this)[0].size() << std::endl;
 	std::swap(ans, *this);
 }
 

@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdio>
-#include <iostream>
 #include <cassert>
 #include <memory>
 
@@ -84,10 +83,10 @@ void offset::convert_to_outline(v_line &line) { // Calculate outline of each lin
 			((*seg2)[1].main.x == (*seg2)[1].main.x) &&
 			((*seg2)[1].main.y == (*seg2)[1].main.y)
 			)) {
-			std::cout << "Found NaN in bezier\n";
+			log.log<log_level::warning>("Found NaN in Bezier\n");
 		}
 		if (geom::distance((*seg)[1].main, (*seg2)[0].main) < epsilon) {
-			std::cout << "Merguju\n";
+			log.log<log_level::debug>("Offset: Merging\n");
 			// Segments can be connected directly by main points.
 			(*seg)[1].control_next = (*seg2)[0].control_next;
 			(*seg2)[0].control_prev = (*seg)[1].control_prev;
@@ -97,7 +96,7 @@ void offset::convert_to_outline(v_line &line) { // Calculate outline of each lin
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
 		}
 		else if (geom::bezier_intersection((*seg)[0], (*seg)[1], (*seg2)[0], (*seg2)[1], t1, t2)) {
-			std::cout << "Sektím\n";
+			log.log<log_level::debug>("Offset: Intersection found\n");
 			// Segments are intersecting, chop them in this intersection.
 			v_point intersection_1, intersection_2;
 			geom::bezier_chop_in_t((*seg)[0], (*seg)[1], intersection_1, t1);
@@ -110,12 +109,12 @@ void offset::convert_to_outline(v_line &line) { // Calculate outline of each lin
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
 		}
 		else {
-			std::cout << "Cyklím\n";
+			log.log<log_level::debug>("Offset: Cycle\n");
 			v_pt center_dir = (*seg)[2].control_next - (*seg)[2].control_prev;
 			v_pt offset_dir = (*seg2)[0].main - (*seg)[1].main;
 			p projection = geom::dot_product(center_dir, offset_dir);
 			if (projection < 0.) {
-				std::cout << "Tady se to neprotina, ale pritom je podezreleporadi\n";
+				log.log<log_level::debug>("Offset: No intersection found, but order is suspicious\n");
 				image->add_debug_line((*seg2)[0].main, (*seg)[1].main);
 			}
 
@@ -336,51 +335,6 @@ void offset::prepare_tangent_offset_points(std::vector<p> &times, std::vector<v_
 }
 
 int offset::remove_hidden_offset_points(std::vector<v_pt> &center_pt, std::vector<v_pt> &offset_pt, std::vector<p> &times, std::vector<p> &width) {
-	/*
-	// Old version
-	// 1.5, Check for backward directions
-	int bagr = 0; // TODO remove
-	for (int i = 1; i < center_pt.size(); i++) {
-		v_pt center_dir = center_pt[i] - center_pt[i-1];
-		v_pt offset_dir = offset_pt[i] - offset_pt[i-1];
-		p projection = geom::dot_product(center_dir, offset_dir);
-		if (projection < 0.) {
-			bagr++;
-		//if (projection < -18) {
-			//v_image::add_debug_line(center_pt[i], center_pt[i-1]);
-			//v_image::add_debug_line(offset_pt[i], offset_pt[i-1]);
-			//Trochu lepší debug:
-			v_image::add_debug_line(center_pt[i], offset_pt[i]);
-			//TODO něco s tím udělat
-			//std::cout << "projection: " << projection << "\n";
-			//std::cout << "projection: " << i << "\n";
-		}
-	}
-	if (bagr == 8) {
-		// TODO
-		//Trochu lepší debug:
-		//v_image::add_debug_line(center_pt[0], offset_pt[0]);
-		//v_image::add_debug_line(offset_pt[8], center_pt[8]);
-		//std::cout << "bagr\n";
-	}
-	*/
-	/*
-	int ret = 0;
-	for (int i = 1; i < center_pt.size() - 1; i++) {
-		if ((geom::distance(offset_pt[i], center_pt[i-1]) < width[i-1]/2) || (geom::distance(offset_pt[i], center_pt[i+1]) < width[i+1]/2)) {
-			v_image::add_debug_line(center_pt[i], offset_pt[i]);
-
-			center_pt.erase(center_pt.begin() + i);
-			offset_pt.erase(offset_pt.begin() + i);
-			times.erase(times.begin() + i-1);
-			width.erase(width.begin() + i);
-			ret++;
-			i--;
-
-		}
-	}
-	return ret;
-	*/
 	int ret = 0;
 	for (int i = 1; i < center_pt.size(); i++) {
 		v_pt center_dir = center_pt[i] - center_pt[i-1];
@@ -439,7 +393,7 @@ bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const
 	offset_pt.erase(offset_pt.begin());
 	// and delete them back ^, ^^
 	assert(7 - r == offset_pt.size());
-	std::cout << "deleted " << r << "\n";
+	log.log<log_level::debug>("Offset: deleted points count: %d\n", r);
 	if (r > 5)
 		return 1;
 	// not enought points left ^, do not run optimization
@@ -463,7 +417,7 @@ bool offset::optimize_offset_control_point_lengths(v_point &a, v_point &b, const
 
 	// 2 -- 5
 	bool ret = apx.optimize_control_point_lengths(offset_pt, times, a.main, a.control_next, b.control_prev, b.main);
-	std::cout << "ret: " << ret << "\n";
+	log.log<log_level::debug>("Offset: return %d\n", ret);
 	return ret;
 }
 
