@@ -86,6 +86,10 @@ void vectorizer_vectorix::load_image(const pnm_image &original) {
 	else {
 		// Configuration tell us to read image from file directly by OpenCV
 		orig = imread(*param_custom_input_name, CV_LOAD_IMAGE_COLOR);
+		if (!orig.data) {
+			log.log<log_level::error>("Unable to read image from file \"%s\"\n", param_custom_input_name->c_str());
+			throw("Unable to read input image");
+		}
 	}
 }
 

@@ -37,7 +37,7 @@ public:
 		par.bind_param(vectorization_method, "vectorization_method", 0);
 		par.add_comment("Save parameters to file on exit: 0: overwrite, 1: append");
 		par.bind_param(save_parameters_append, "parameters_append", 0);
-		par.bind_param(save_parameters_name, "file_parameters", (std::string) "vectorix.conf");
+		par.bind_param(save_parameters_name, "file_parameters", (std::string) "");
 		par.add_comment("General input pnm file");
 		par.bind_param(pnm_input_name, "file_pnm_input", (std::string) "");
 		par.add_comment("Input from any file format supported by OpenCV (only with Custom vectorization method, this option overrides pnm_input):");
@@ -60,8 +60,12 @@ int main(int argc, char **argv) { // ./main [configuration]
 	my_pars.bind(par);
 
 	if (argc == 1) {
-		fprintf(stderr, "Reading parameters from standard input...\n");
-		par.load_params(stdin);
+		fprintf(stderr, "No config file given, new will be created, please enter name:\n");
+		char *name;
+		scanf("%ms", &name);
+		*my_pars.save_parameters_name = name;
+		par.save_params(*my_pars.save_parameters_name, (*my_pars.save_parameters_append) == 1);
+		return 0;
 	}
 	else {
 		fprintf(stderr, "Reading parameters from file...\n");

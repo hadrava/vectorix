@@ -28,7 +28,23 @@ public:
 	template <log_level L> void log(const char *format, ...) {
 		if (L <= VECTORIX_MAX_VERBOSITY) {
 			if (L <= verbosity_) {
-				fprintf(stderr, "<%d, %d>: ", L, verbosity_);
+				switch (L) {
+					case log_level::error:
+						fprintf(stderr, "<Error>: ");
+						break;
+					case log_level::warning:
+						fprintf(stderr, "<Warning>: ");
+						break;
+					case log_level::info:
+						fprintf(stderr, "<Info>: ");
+						break;
+					case log_level::debug:
+						fprintf(stderr, "<Debug>: ");
+						break;
+					default:
+						fprintf(stderr, "<Unknown>: ");
+						break;
+				}
 				va_list args;
 				va_start(args, format);
 				vfprintf(stderr, format, args);
