@@ -1,3 +1,7 @@
+/*
+ * Vectorix -- line-based image vectorizer
+ * (c) 2016 Jan Hadrava <had@atrey.karlin.mff.cuni.cz>
+ */
 #include <cstdio>
 #include "parameters.h"
 #include <cstdlib>

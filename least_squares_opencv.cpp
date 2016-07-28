@@ -1,3 +1,7 @@
+/*
+ * Vectorix -- line-based image vectorizer
+ * (c) 2016 Jan Hadrava <had@atrey.karlin.mff.cuni.cz>
+ */
 #include "least_squares_opencv.h"
 #include <cmath>
 #include <opencv2/opencv.hpp>

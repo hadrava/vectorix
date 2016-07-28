@@ -1,3 +1,7 @@
+/*
+ * Vectorix -- line-based image vectorizer
+ * (c) 2016 Jan Hadrava <had@atrey.karlin.mff.cuni.cz>
+ */
 #ifndef VECTORIX__LEAST_SQUARES_OPENCV_H
 #define VECTORIX__LEAST_SQUARES_OPENCV_H
 

@@ -1,3 +1,7 @@
+/*
+ * Vectorix -- line-based image vectorizer
+ * (c) 2016 Jan Hadrava <had@atrey.karlin.mff.cuni.cz>
+ */
 #ifndef VECTORIX__TIME_MEASUREMENT_H
 #define VECTORIX__TIME_MEASUREMENT_H
 
