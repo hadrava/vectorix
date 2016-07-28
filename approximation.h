@@ -25,7 +25,7 @@ public:
 		par->add_comment("Least squares method: 0 = OpenCV (default, suggested), 1 = own implementation");
 		par->bind_param(param_lsq_method, "lsq_method", 0);
 		par->add_comment("Approximation of Bezier splines");
-		par->bind_param(param_approximation_error, "approximation_error", (p) 100);
+		par->bind_param(param_approximation_error, "approximation_error", (p) 1.8);
 		par->bind_param(param_approximation_iterations, "approximation_iterations", 5);
 		par->bind_param(param_approximation_preserve_corners, "approximation_preserve_corners", 1);
 	}

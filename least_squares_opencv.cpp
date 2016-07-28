@@ -28,11 +28,20 @@ void least_squares_opencv::evaluate() {
 p least_squares_opencv::calc_error() const {
 	Mat x_mat = A * x_vector;
 
+	/*
 	unsigned int rows = x_mat.rows;
 	p error = 0;
 	for (int j = 0; j < rows; j++) {
 		p err = x_mat.at<double>(j, 0) - y_vector.at<double>(j, 0);
 		error += err * err;
+	}
+	*/
+	unsigned int rows = x_mat.rows;
+	p error = 0;
+	for (int j = 0; j < rows; j++) {
+		p err = x_mat.at<double>(j, 0) - y_vector.at<double>(j, 0);
+		if (!(err < error))
+			error = err;
 	}
 
 	return error;

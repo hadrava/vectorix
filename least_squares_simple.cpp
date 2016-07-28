@@ -136,11 +136,20 @@ p least_squares_simple::calc_error() const {
 
 	x_mat = A * x_mat;
 
+	/*
 	unsigned int rows = x_mat.rows();
 	p error = 0;
 	for (int j = 0; j < rows; j++) {
 		p err = x_mat[j][0] - y_vector[j];
 		error += err * err;
+	}
+	*/
+	unsigned int rows = x_mat.rows();
+	p error = 0;
+	for (int j = 0; j < rows; j++) {
+		p err = x_mat[j][0] - y_vector[j];
+		if (!(err < error))
+			error = err;
 	}
 
 	return error;
