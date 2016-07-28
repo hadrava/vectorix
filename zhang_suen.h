@@ -33,6 +33,7 @@ private:
 	cv::Mat *skel;
 	std::vector<cv::Point> border_queue;
 	std::vector<cv::Point> delete_queue;
+	std::vector<cv::Point> to_next_step_queue;
 
 	int B(cv::Point pt) const;
 	int A(cv::Point pt) const;

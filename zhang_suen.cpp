@@ -34,6 +34,8 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 			imwrite(filename, it);
 		}
 		delete_queue.clear();
+		border_queue.insert(border_queue.end(), to_next_step_queue.begin(), to_next_step_queue.end());
+		to_next_step_queue.clear();
 		for (auto p: border_queue) {
 			int i = p.y;
 			int j = p.x;
@@ -43,8 +45,11 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 			    it.at<uint8_t>(i - 1, j) * it.at<uint8_t>(i,     j + 1) * (it.at<uint8_t>(i + 1, j) + !first_iteration) * (it.at<uint8_t>(i,     j - 1) + first_iteration) == 0 &&
 			    (it.at<uint8_t>(i - 1, j) + first_iteration) * (it.at<uint8_t>(i,     j + 1) + !first_iteration) * it.at<uint8_t>(i + 1, j) * it.at<uint8_t>(i,     j - 1) == 0) {
 				delete_queue.emplace_back(Point(j, i));
+				inq.at<uint8_t>(i, j) = 0;
 			}
-			inq.at<uint8_t>(i, j) = 0;
+			else if (inq.at<uint8_t>(i, j) == 2)
+				to_next_step_queue.emplace_back(Point(j, i));
+			inq.at<uint8_t>(i, j)--;
 		}
 
 		border_queue.clear();
@@ -54,10 +59,10 @@ int zhang_suen::skeletonize(const Mat &input, Mat &it, Mat &distance) {
 
 			for (int i = p.y - 1; i <= p.y + 1; i++) {
 				for (int j = p.x - 1; j <= p.x + 1; j++) {
-					if (!inq.at<uint8_t>(i, j) && it.at<uint8_t>(i, j)) {
+					if (inq.at<uint8_t>(i, j) != 2 && it.at<uint8_t>(i, j)) {
 						border_queue.emplace_back(Point(j, i));
-						inq.at<uint8_t>(i, j) = 1;
 					}
+					inq.at<uint8_t>(i, j) = 2;
 				}
 			}
 		}
@@ -99,6 +104,7 @@ void zhang_suen::init_queue() {
 		for (int j = 1 ; j < itp->cols - 1; j++) {
 			if (itp->at<uint8_t>(i, j) && B(Point(j, i)) <= 6) {
 				border_queue.emplace_back(Point(j, i));
+				inq.at<uint8_t>(i, j) = 2;
 			}
 		}
 	}
