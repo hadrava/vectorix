@@ -94,6 +94,12 @@ void tracer::trace_part(cv::Point startpoint, v_line &line) {
  */
 
 int tracer::place_next_point_at(v_point &new_point, int current_depth, v_line &line) { // Add point to line and mark them as used
+	if (!((new_point.main.x == new_point.main.x) && (new_point.main.y == new_point.main.y)))
+		log.log<log_level::warning>("place_next_point_at: Found NaN\n");
+	if (!((new_point.control_prev.x == new_point.control_prev.x) && (new_point.control_prev.y == new_point.control_prev.y)))
+		log.log<log_level::warning>("place_next_point_at: Found NaN\n");
+	if (!((new_point.control_next.x == new_point.control_next.x) && (new_point.control_next.y == new_point.control_next.y)))
+		log.log<log_level::warning>("place_next_point_at: Found NaN\n");
 	int sum = 0;
 	if (line.empty()) {
 		sum += lab_skel.label_near_pixels(current_depth, new_point.main); // add First point
@@ -415,6 +421,12 @@ p tracer::do_prediction(const match_variant &last_placed, int allowed_depth, v_l
 
 	}
 	new_point = best_match; // Return best match
+	if (!((new_point.pt.main.x == new_point.pt.main.x) && (new_point.pt.main.y == new_point.pt.main.y)))
+		log.log<log_level::warning>("do_prediction: Found NaN\n");
+	if (!((new_point.pt.control_prev.x == new_point.pt.control_prev.x) && (new_point.pt.control_prev.y == new_point.pt.control_prev.y)))
+		log.log<log_level::warning>("do_prediction: Found NaN\n");
+	if (!((new_point.pt.control_next.x == new_point.pt.control_next.x) && (new_point.pt.control_next.y == new_point.pt.control_next.y)))
+		log.log<log_level::warning>("do_prediction: Found NaN\n");
 	return best_match.depth;
 }
 
