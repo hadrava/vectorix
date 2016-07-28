@@ -27,7 +27,7 @@ public:
 		par->bind_param(param_force_black, "force_black", 1);
 		par->bind_param(param_force_width, "force_width", (p) 0);
 		par->bind_param(param_force_opacity, "force_opacity", (p) 0);
-		par->bind_param(param_underlay_path, "underlay_image", (std::string) ""); // TODO ->path
+		par->bind_param(param_underlay_path, "underlay_image", (std::string) "");
 		par->add_comment("Show debug lines: 0 = off");
 		par->bind_param(param_debug_lines, "debug_lines", 0);
 	};

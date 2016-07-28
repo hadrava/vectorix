@@ -128,7 +128,7 @@ void offset::convert_to_outline(v_line &line) { // Calculate outline of each lin
 			seg->pop_back(); // remove (*seg)[2], we do not need it anymore
 
 			p angle = geom::angle_absolute(center, (*seg2)[0].main, (*seg)[1].main);
-			int middle_points = angle; // TODO const
+			int middle_points = angle;
 			angle /= middle_points + 1;
 
 			v_pt base_dir = (*seg2)[0].main - center;
@@ -235,7 +235,7 @@ bool offset::segment_outline(v_point &one, v_point &two, std::vector<v_point> &o
 
 	bool a = optimize_offset_control_point_lengths(outline[0], outline[1], one.main, one.control_next, two.control_prev, two.main, one.width, two.width);
 	bool b = optimize_offset_control_point_lengths(outline[2], outline[3], two.main, two.control_prev, one.control_next, one.main, two.width, one.width);
-	bool segment_is_short = geom::bezier_maximal_length(one, two) < 1; //TODO const
+	bool segment_is_short = geom::bezier_maximal_length(one, two) < 1;
 
 	return (a & b) | segment_is_short;
 }

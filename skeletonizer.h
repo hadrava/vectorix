@@ -22,12 +22,12 @@ public:
 		par->add_comment("Skeletonization type: 0: diamond-square, 1: square, 2: diamond, 3: circle (slow), 4: zhang-suen + diamod-square");
 		par->bind_param(param_skeletonization_type, "skeletonization_type", 4);
 		par->add_comment("Save steps to files, # will be replaced with iteration number");
-		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "out/skeletonization_#.png");
+		par->bind_param(param_save_peeled_name, "files_steps_output", (std::string) "");
 		par->add_comment("Save skeleton/distance with/without normalization");
-		par->bind_param(param_save_skeleton_name, "file_skeleton", (std::string) "out/skeleton.png");
-		par->bind_param(param_save_distance_name, "file_distance", (std::string) "out/distance.png");
-		par->bind_param(param_save_skeleton_normalized_name, "file_skeleton_norm", (std::string) "out/skeleton_norm.png");
-		par->bind_param(param_save_distance_normalized_name, "file_distance_norm", (std::string) "out/distance_norm.png");
+		par->bind_param(param_save_skeleton_name, "file_skeleton", (std::string) "");
+		par->bind_param(param_save_distance_name, "file_distance", (std::string) "");
+		par->bind_param(param_save_skeleton_normalized_name, "file_skeleton_norm", (std::string) "");
+		par->bind_param(param_save_distance_normalized_name, "file_distance_norm", (std::string) "");
 	}
 	void run(const cv::Mat &binary_input, cv::Mat &skeleton, cv::Mat &distance);
 	void interactive(cv::TrackbarCallback onChange = 0, void *userdata = 0);

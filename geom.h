@@ -31,7 +31,6 @@ namespace geom {
 	v_pt intersect(v_pt a, v_pt b, v_pt c, v_pt d); // Calculate intersection between line A-B and C-D; points A and C are absolute, B is relative to A and D to C
 
 
-	// TODO: private: (4 functions)
 	bool right_of(const v_pt &center, v_pt heading, v_pt right);
 	int four_points_to_hull(v_pt *x);
 	bool segment_intersect(const v_pt &a, const v_pt &b, const v_pt &c, const v_pt &d);

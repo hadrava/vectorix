@@ -80,7 +80,6 @@ void changed_pix_roi::update(int x, int y) { // Add pixel (x,y) to roi
 
 int labeled_Mat::label_near_pixels(int value, const v_pt &point, p near) {
 	int sum = 0;
-	// TODO check ranges, near used to be int, now it is p.…
 	for (int i = -near; i<=near; i++) {
 		for (int j = -near; j<=near; j++) {
 			v_pt a = point;
