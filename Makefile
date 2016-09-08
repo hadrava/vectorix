@@ -8,6 +8,7 @@ C_FLAGS+=-O2
 
 #L_FLAGS+=-L potrace/lib/ -lpotrace
 #C_FLAGS+=-D VECTORIX_USE_POTRACE
+C_FLAGS+=-D NDEBUG
 
 # Clang is not fully tested, use at your own risk
 # There is no known reason, why it should not work
